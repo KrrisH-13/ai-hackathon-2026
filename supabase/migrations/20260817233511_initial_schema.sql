@@ -131,3 +131,18 @@ create policy "submissions_update_staff_admin" on submissions
 
 create policy "submissions_delete_own" on submissions
   for delete using (auth.uid() = user_id);
+
+-- ============================================================
+-- Table privileges
+-- ============================================================
+-- The RLS policies above restrict *which rows* a query can touch, but
+-- Postgres checks table-level GRANTs before RLS is even evaluated. This
+-- local/hosted Supabase instance doesn't auto-grant DML on new tables,
+-- so it must be done explicitly here or every query 403s with
+-- "permission denied for table ...".
+
+grant select, insert, update, delete on profiles to authenticated;
+grant select, insert, update, delete on submissions to authenticated;
+
+grant all on profiles to service_role;
+grant all on submissions to service_role;

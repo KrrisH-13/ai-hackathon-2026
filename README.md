@@ -13,6 +13,23 @@ is generic and topic-agnostic by design.
 - **shadcn/ui** + Tailwind CSS
 - **React Hook Form** + **Zod**
 
+## Prerequisites
+
+Install these before doing anything else. If you already have them, skip ahead.
+
+1. **Node.js 20.9 or later** (required by Next.js 16).
+   - Download the LTS installer from [nodejs.org](https://nodejs.org/) and run it (Windows/Mac/Linux).
+   - Verify: `node -v` should print `v20.x` or higher.
+   - If you manage multiple Node versions, [nvm](https://github.com/nvm-sh/nvm) (Mac/Linux) or [nvm-windows](https://github.com/coreybutler/nvm-windows) works too.
+2. **Git** — [git-scm.com](https://git-scm.com/downloads). Verify: `git --version`.
+3. **Docker Desktop** — only required for [Option A](#option-a--local-supabase-stack-no-cloud-account-needed) below (local Supabase). Skip it if you're only doing Option B.
+   - Download from [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/) and install.
+   - **Windows:** the installer will prompt to enable WSL2 — accept it. After installing, launch the **Docker Desktop app** and wait for the whale icon in the system tray to say "Docker Desktop is running" before running any `db:*` script. Docker Desktop does not start automatically after a reboot unless you enable "Start Docker Desktop when you log in" in its settings.
+   - Verify it's actually running (not just installed): `docker info` should print server details with no connection errors.
+4. A code editor — [VS Code](https://code.visualstudio.com/) is a safe default if you don't have a preference.
+
+Once all of the above are installed, clone the repo and continue below.
+
 ## Getting started
 
 Install dependencies first:
