@@ -4,6 +4,7 @@ import { createServerComponentClient } from "@/lib/supabase/server";
 import { getMySubmissions, getDistrictSubmissions, getAllSubmissions } from "@/lib/db/queries";
 import { SubmissionForm } from "@/components/forms/SubmissionForm";
 import { SubmissionList } from "@/components/dashboard/SubmissionList";
+import { SubmissionsMap } from "@/components/map/SubmissionsMap";
 import { ROUTES } from "@/lib/constants";
 
 export default async function SubmissionsPage() {
@@ -35,6 +36,7 @@ export default async function SubmissionsPage() {
 
       <section className="space-y-4">
         <h2 className="text-lg font-medium">Submissions</h2>
+        {submissions.length > 0 && <SubmissionsMap submissions={submissions} />}
         <SubmissionList submissions={submissions} showDistrict={profile.role !== "citizen"} />
       </section>
     </div>

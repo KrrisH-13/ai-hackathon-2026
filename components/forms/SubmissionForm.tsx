@@ -9,6 +9,7 @@ import { API_ROUTES } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { LocationPicker } from "@/components/map/LocationPicker";
 
 export function SubmissionForm() {
   const router = useRouter();
@@ -17,10 +18,17 @@ export function SubmissionForm() {
     register,
     handleSubmit,
     reset,
+    setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<SubmissionFormData>({
     resolver: zodResolver(submissionSchema),
   });
+
+  const latitude = watch("latitude");
+  const longitude = watch("longitude");
+  const location =
+    typeof latitude === "number" && typeof longitude === "number" ? { latitude, longitude } : null;
 
   async function onSubmit(data: SubmissionFormData) {
     setFormError(null);
@@ -58,27 +66,26 @@ export function SubmissionForm() {
           <span className="text-sm text-destructive">{errors.description.message}</span>
         )}
       </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Input
-            type="number"
-            step="any"
-            placeholder="Latitude"
-            {...register("latitude", { valueAsNumber: true })}
-          />
-          {errors.latitude && <span className="text-sm text-destructive">{errors.latitude.message}</span>}
-        </div>
-        <div>
-          <Input
-            type="number"
-            step="any"
-            placeholder="Longitude"
-            {...register("longitude", { valueAsNumber: true })}
-          />
-          {errors.longitude && (
-            <span className="text-sm text-destructive">{errors.longitude.message}</span>
-          )}
-        </div>
+      <div className="space-y-2">
+        <p className="text-sm font-medium">Location</p>
+        <p className="text-sm text-muted-foreground">
+          Click on the map or search for an address to set where this is happening.
+        </p>
+        <LocationPicker
+          value={location}
+          onChange={({ latitude, longitude }) => {
+            setValue("latitude", latitude, { shouldValidate: true });
+            setValue("longitude", longitude, { shouldValidate: true });
+          }}
+        />
+        {location && (
+          <p className="text-xs text-muted-foreground">
+            Selected: {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}
+          </p>
+        )}
+        {(errors.latitude || errors.longitude) && (
+          <span className="text-sm text-destructive">Please select a location on the map.</span>
+        )}
       </div>
       {formError && <p className="text-sm text-destructive">{formError}</p>}
       <Button type="submit" disabled={isSubmitting}>
