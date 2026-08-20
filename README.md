@@ -5,6 +5,10 @@ the project (this README, `package.json` `name`, and `lib/constants.ts`
 `APP_NAME`) once the actual hackathon topic is decided — everything else
 is generic and topic-agnostic by design.
 
+## Demo
+
+Live: [ai-hackathon-espoo.vercel.app](https://ai-hackathon-espoo.vercel.app/)
+
 ## Stack
 
 - **Next.js** (App Router) + TypeScript
