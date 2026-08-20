@@ -41,6 +41,35 @@ export type SubmissionUpdate = Partial<
   Pick<Submission, "title" | "description" | "status" | "district_id">
 >;
 
+export type JobStatus = "pending" | "processing" | "completed" | "failed";
+
+/**
+ * Background job queue (see lib/jobs/). Only ever accessed with the
+ * service-role client (lib/supabase/admin.ts) from trusted server code —
+ * there's no RLS policy for anon/authenticated on this table.
+ */
+export type Job = {
+  id: string;
+  type: string;
+  payload: Record<string, unknown>;
+  status: JobStatus;
+  attempts: number;
+  max_attempts: number;
+  last_error: string | null;
+  run_after: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type JobInsert = {
+  type: string;
+  payload?: Record<string, unknown>;
+  max_attempts?: number;
+  run_after?: string;
+};
+
+export type JobUpdate = Partial<Pick<Job, "status" | "last_error">>;
+
 export type Database = {
   public: {
     Tables: {
@@ -56,9 +85,20 @@ export type Database = {
         Update: SubmissionUpdate;
         Relationships: [];
       };
+      jobs: {
+        Row: Job;
+        Insert: JobInsert;
+        Update: JobUpdate;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      claim_jobs: {
+        Args: { job_limit: number };
+        Returns: Job[];
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };
