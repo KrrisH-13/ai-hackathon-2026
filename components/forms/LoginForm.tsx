@@ -8,6 +8,7 @@ import { loginSchema, type LoginFormData } from "@/lib/validation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { GoogleAuthButton } from "@/components/forms/GoogleAuthButton";
 
 export function LoginForm() {
   const router = useRouter();
@@ -39,19 +40,32 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div>
-        <Input type="email" placeholder="Email" {...register("email")} />
-        {errors.email && <span className="text-sm text-destructive">{errors.email.message}</span>}
+    <div className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <div>
+          <Input type="email" placeholder="Email" {...register("email")} />
+          {errors.email && <span className="text-sm text-destructive">{errors.email.message}</span>}
+        </div>
+        <div>
+          <Input type="password" placeholder="Password" {...register("password")} />
+          {errors.password && <span className="text-sm text-destructive">{errors.password.message}</span>}
+        </div>
+        {formError && <p className="text-sm text-destructive">{formError}</p>}
+        <Button type="submit" disabled={isSubmitting} className="w-full">
+          {isSubmitting ? "Logging in..." : "Log in"}
+        </Button>
+      </form>
+
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-background px-2 text-muted-foreground">Or</span>
+        </div>
       </div>
-      <div>
-        <Input type="password" placeholder="Password" {...register("password")} />
-        {errors.password && <span className="text-sm text-destructive">{errors.password.message}</span>}
-      </div>
-      {formError && <p className="text-sm text-destructive">{formError}</p>}
-      <Button type="submit" disabled={isSubmitting} className="w-full">
-        {isSubmitting ? "Logging in..." : "Log in"}
-      </Button>
-    </form>
+
+      <GoogleAuthButton />
+    </div>
   );
 }

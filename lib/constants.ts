@@ -21,6 +21,7 @@ export const ROUTES = {
   home: "/",
   login: "/login",
   signup: "/signup",
+  callback: "/callback",
   unauthorized: "/unauthorized",
   offline: "/offline",
   dashboard: (role: Role) => `/${role}`,
