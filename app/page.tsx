@@ -22,9 +22,6 @@ export default async function HomePage() {
         <Link href={ROUTES.login} className={cn(buttonVariants({ variant: "default" }))}>
           Log in
         </Link>
-        <Link href={ROUTES.signup} className={cn(buttonVariants({ variant: "outline" }))}>
-          Sign up
-        </Link>
       </div>
     </div>
   );

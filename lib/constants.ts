@@ -20,7 +20,6 @@ export type SubmissionStatus = (typeof SUBMISSION_STATUSES)[number];
 export const ROUTES = {
   home: "/",
   login: "/login",
-  signup: "/signup",
   callback: "/callback",
   unauthorized: "/unauthorized",
   offline: "/offline",
