@@ -13,6 +13,13 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const MODEL_NAME = "gemini-3.7-flash";
 
+/** "Car" alone doesn't tell the model much — fold in car type/CO2 when it's set. */
+function describeCommute(userProfile: UserProfile): string {
+  if (userProfile.commuteHabit !== "Car" || !userProfile.carType) return userProfile.commuteHabit;
+  const co2 = userProfile.carCo2GramsPerKm != null ? `, ~${userProfile.carCo2GramsPerKm} g CO2/km` : "";
+  return `Car (${userProfile.carType}${co2})`;
+}
+
 /**
  * 1. AI Assistant Chat tailored for Finland, Espoo 2030, and Finnish daily routines
  */
@@ -36,7 +43,7 @@ Context & Core Domain Knowledge:
 User Context:
 ${
   userProfile
-    ? `Resident: ${userProfile.name}, District: ${userProfile.district}, Housing: ${userProfile.housingType} (${userProfile.livingAreaSqM}m², ${userProfile.householdSize} persons), Heating: ${userProfile.heatingSystem}, Electricity: ${userProfile.electricityContract}, Sauna: ${userProfile.saunaType} (${userProfile.saunaTimesPerWeek}x/wk), Commute: ${userProfile.commuteHabit}, Current Footprint: ${userProfile.estimatedFootprintTonnes} t CO2e (Target: ${userProfile.targetFootprintTonnes} t).`
+    ? `Resident: ${userProfile.name}, District: ${userProfile.district}, Housing: ${userProfile.housingType} (${userProfile.livingAreaSqM}m², ${userProfile.householdSize} persons), Heating: ${userProfile.heatingSystem}, Electricity: ${userProfile.electricityContract}, Sauna: ${userProfile.saunaType} (${userProfile.saunaTimesPerWeek}x/wk), Commute: ${describeCommute(userProfile)}, Current Footprint: ${userProfile.estimatedFootprintTonnes} t CO2e (Target: ${userProfile.targetFootprintTonnes} t).`
     : "General Espoo resident."
 }
 Current Season: ${currentSeason}
@@ -157,7 +164,7 @@ export async function optimizeDailyEnergy(
   spotPrices: { hour: number; priceCentsKwh: number; gridCo2IntensityGramsKwh: number }[]
 ): Promise<DailyEnergyPlan> {
   const prompt = `Analyze today's Finnish Nord Pool hourly spot prices and outdoor temperature (${outdoorTemp}°C, Season: ${currentSeason}) for this Espoo household:
-Resident: ${userProfile.name}, Housing: ${userProfile.housingType} (${userProfile.livingAreaSqM}m²), Heating: ${userProfile.heatingSystem}, Electricity Contract: ${userProfile.electricityContract}, Sauna: ${userProfile.saunaType} (${userProfile.saunaTimesPerWeek}x/wk), Commute: ${userProfile.commuteHabit}.
+Resident: ${userProfile.name}, Housing: ${userProfile.housingType} (${userProfile.livingAreaSqM}m²), Heating: ${userProfile.heatingSystem}, Electricity Contract: ${userProfile.electricityContract}, Sauna: ${userProfile.saunaType} (${userProfile.saunaTimesPerWeek}x/wk), Commute: ${describeCommute(userProfile)}.
 
 Hourly spot price snapshot:
 ${spotPrices.map((p) => `Hour ${p.hour}:00 -> ${p.priceCentsKwh} c/kWh, ${p.gridCo2IntensityGramsKwh} g CO2/kWh`).join("\n")}
@@ -300,8 +307,7 @@ Housing Type: ${userProfile.housingType} (${userProfile.livingAreaSqM} m², ${us
 Heating: ${userProfile.heatingSystem}
 Electricity Contract: ${userProfile.electricityContract}
 Sauna: ${userProfile.saunaType} (${userProfile.saunaTimesPerWeek} times/week)
-Commute: ${userProfile.commuteHabit}
-Diet: ${userProfile.dietPreference}
+Commute: ${describeCommute(userProfile)}
 Current Footprint: ${userProfile.estimatedFootprintTonnes} tonnes CO2e/year (Target: ${userProfile.targetFootprintTonnes} tonnes)
 Season: ${season}
 

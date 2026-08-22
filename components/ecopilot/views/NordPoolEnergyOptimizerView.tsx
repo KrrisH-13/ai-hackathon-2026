@@ -9,10 +9,12 @@ import { optimizeDailyEnergyAPI } from "@/lib/ecopilot/client";
 interface NordPoolEnergyOptimizerViewProps {
   userProfile: UserProfile;
   currentSeason: Season;
+  /** Real current outdoor temperature (or a seasonal mock fallback) — see EcopilotApp. */
+  outdoorTempCelsius: number;
   isFinnish: boolean;
 }
 
-export function NordPoolEnergyOptimizerView({ userProfile, currentSeason, isFinnish }: NordPoolEnergyOptimizerViewProps) {
+export function NordPoolEnergyOptimizerView({ userProfile, currentSeason, outdoorTempCelsius, isFinnish }: NordPoolEnergyOptimizerViewProps) {
   const [selectedSaunaHour, setSelectedSaunaHour] = useState<number>(21);
   const [saunaTempTarget, setSaunaTempTarget] = useState<number>(75);
   const [aiEnergyPlan, setAiEnergyPlan] = useState<DailyEnergyPlan | null>(null);
@@ -23,7 +25,7 @@ export function NordPoolEnergyOptimizerView({ userProfile, currentSeason, isFinn
   const fetchDailyPlan = async () => {
     setIsComputingPlan(true);
     try {
-      const plan = await optimizeDailyEnergyAPI(userProfile, currentSeason, seasonInfo.typicalTemp, MOCK_HOURLY_SPOT_PRICES);
+      const plan = await optimizeDailyEnergyAPI(userProfile, currentSeason, outdoorTempCelsius, MOCK_HOURLY_SPOT_PRICES);
       setAiEnergyPlan(plan);
     } catch (err) {
       console.error(err);
@@ -36,7 +38,7 @@ export function NordPoolEnergyOptimizerView({ userProfile, currentSeason, isFinn
     // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch on profile/season change
     fetchDailyPlan();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userProfile.id, currentSeason]);
+  }, [userProfile.id, currentSeason, outdoorTempCelsius]);
 
   // Sauna energy calculation (assuming 7 kW kiuas, 1.5h session = 10.5 kWh)
   const kiuasKwh = 10.5;
