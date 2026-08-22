@@ -9,11 +9,13 @@ import { SEASONAL_PRESETS } from "@/lib/ecopilot/data";
 interface AiClimateCopilotViewProps {
   userProfile: UserProfile;
   currentSeason: Season;
+  /** Real current outdoor temperature (or a seasonal mock fallback) — see EcopilotApp. */
+  outdoorTempCelsius: number;
   isFinnish: boolean;
   onNavigateTab: (tab: EcopilotTab) => void;
 }
 
-export function AiClimateCopilotView({ userProfile, currentSeason, isFinnish, onNavigateTab }: AiClimateCopilotViewProps) {
+export function AiClimateCopilotView({ userProfile, currentSeason, outdoorTempCelsius, isFinnish, onNavigateTab }: AiClimateCopilotViewProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "welcome",
@@ -127,7 +129,7 @@ How can I help power your climate choices today?`,
               {userProfile.name} • {userProfile.housingType}
             </div>
             <p className="text-[11px] text-slate-500 truncate">
-              {userProfile.district.split("(")[0]} • {userProfile.heatingSystem.split("(")[0]}
+              {userProfile.district.split("(")[0]} • {userProfile.heatingSystem.split("(")[0]} • {userProfile.commuteHabit}
             </p>
           </div>
         </div>
@@ -140,7 +142,7 @@ How can I help power your climate choices today?`,
             <div className="text-xs font-bold text-emerald-950">{isFinnish ? seasonInfo.nameFi : seasonInfo.nameEn}</div>
           </div>
           <span className="px-2.5 py-1 rounded-xl bg-white text-xs font-mono font-bold text-emerald-800 border border-emerald-200 shadow-2xs">
-            {seasonInfo.typicalTemp > 0 ? `+${seasonInfo.typicalTemp}°C` : `${seasonInfo.typicalTemp}°C`}
+            {outdoorTempCelsius > 0 ? `+${outdoorTempCelsius}°C` : `${outdoorTempCelsius}°C`}
           </span>
         </div>
 

@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X, Save } from "lucide-react";
-import type { UserProfile, HousingType, EspooDistrict, HeatingSystem, ElectricityContract, CommuteHabit } from "@/lib/ecopilot/types";
+import type { UserProfile, HousingType, EspooDistrict, HeatingSystem, ElectricityContract, CommuteHabit, CarType, WasteManagementSystem } from "@/lib/ecopilot/types";
+import { ESPOO_DISTRICTS, HEATING_SYSTEMS, ELECTRICITY_CONTRACTS, COMMUTE_HABITS } from "@/lib/ecopilot/types";
+import { CAR_TYPE_OPTIONS, CAR_TYPE_DEFAULT_CO2_G_PER_KM, WASTE_MANAGEMENT_OPTIONS, COMMON_ENERGY_SAVING_MEASURES } from "@/lib/ecopilot/data";
 
 interface ProfileCustomizerModalProps {
   isOpen: boolean;
@@ -21,6 +23,18 @@ export function ProfileCustomizerModal({
 }: ProfileCustomizerModalProps) {
   const [formData, setFormData] = useState<UserProfile>({ ...userProfile });
 
+  // This component never unmounts (it just returns null while closed), so
+  // formData needs an explicit re-sync on open — otherwise it stays frozen
+  // at whatever userProfile looked like on first mount and a later save can
+  // submit stale/renamed enum values that no longer pass validation.
+  useEffect(() => {
+    if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- re-sync form with the latest profile whenever the modal opens
+      setFormData({ ...userProfile });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -29,38 +43,16 @@ export function ProfileCustomizerModal({
     onClose();
   };
 
-  const DISTRICTS: EspooDistrict[] = [
-    "Suur-Tapiola (Tapiola, Otaniemi, Keilaniemi)",
-    "Suur-Leppävaara (Leppävaara, Kera, Karakallio)",
-    "Suur-Matinkylä (Matinkylä, Olari, Henttaa)",
-    "Suur-Espoonlahti (Espoonlahti, Kivenlahti, Soukka)",
-    "Vanha-Espoo (Espoon keskus, Tuomarila, Kauklahti)",
-    "Pohjois-Espoo (Nuuksio, Kalajärvi, Järvenperä)",
-  ];
+  const isDrivingCommute = formData.commuteHabit === "Car";
 
-  const HEATING_SYSTEMS: HeatingSystem[] = [
-    "Kaukolämpö (District Heating / Fortum Clean Heat)",
-    "Maalämpö (Geothermal Heat Pump)",
-    "Ilmalämpöpumppu + Suora sähkö (Air Heat Pump + Electric)",
-    "Suora sähkölämmitys (Direct Electric)",
-    "Puulämmitys / Varaava takka (Wood / Masonry Heater)",
-    "Öljylämmitys / Poistuva (Oil / Transitioning)",
-  ];
-
-  const ELECTRICITY_CONTRACTS: ElectricityContract[] = [
-    "Pörssisähkö (Nord Pool Hourly Spot)",
-    "Kiinteähintainen (Fixed-Price Contract)",
-    "Uusiutuva / EKOenergia (100% Certified Green)",
-  ];
-
-  const COMMUTE_HABITS: CommuteHabit[] = [
-    "Pääosin HSL (Metro, Pikaratikka 15, Juna, Bussi)",
-    "Kävellen ja Pyörällä (Cycling & Walking / Baana)",
-    "Sähköauto (Electric Vehicle)",
-    "Ladattava hybridi (PHEV)",
-    "Polttomoottoriauto (Bensiini / Diesel)",
-    "Etätyö / Hybridityö (Remote First)",
-  ];
+  const toggleEnergyMeasure = (measure: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      energySavingMeasures: prev.energySavingMeasures.includes(measure)
+        ? prev.energySavingMeasures.filter((m) => m !== measure)
+        : [...prev.energySavingMeasures, measure],
+    }));
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
@@ -91,14 +83,10 @@ export function ProfileCustomizerModal({
         <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="font-bold text-slate-700">{isFinnish ? "Nimi / Kotitalous:" : "Name:"}</label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
-                required
-              />
+              <label className="font-bold text-slate-700">{isFinnish ? "Nimi (Googlesta):" : "Name (from Google):"}</label>
+              <div className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600">
+                {formData.name}
+              </div>
             </div>
 
             <div className="space-y-1">
@@ -108,7 +96,7 @@ export function ProfileCustomizerModal({
                 onChange={(e) => setFormData({ ...formData, district: e.target.value as EspooDistrict })}
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
               >
-                {DISTRICTS.map((d) => (
+                {ESPOO_DISTRICTS.map((d) => (
                   <option key={d} value={d}>
                     {d}
                   </option>
@@ -125,10 +113,10 @@ export function ProfileCustomizerModal({
                 onChange={(e) => setFormData({ ...formData, housingType: e.target.value as HousingType })}
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500 capitalize"
               >
-                <option value="kerrostalo">Kerrostalo (Apartment)</option>
-                <option value="rivitalo">Rivitalo (Terraced)</option>
-                <option value="omakotitalo">Omakotitalo (Detached)</option>
-                <option value="paritalo">Paritalo (Semi-detached)</option>
+                <option value="kerrostalo">Apartment</option>
+                <option value="rivitalo">Terraced House</option>
+                <option value="omakotitalo">Detached House</option>
+                <option value="paritalo">Semi-detached House</option>
               </select>
             </div>
 
@@ -189,7 +177,7 @@ export function ProfileCustomizerModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className="font-bold text-slate-700">{isFinnish ? "Saunatyyppi:" : "Sauna Type:"}</label>
               <select
@@ -197,9 +185,9 @@ export function ProfileCustomizerModal({
                 onChange={(e) => setFormData({ ...formData, saunaType: e.target.value as "electric" | "wood" | "none" })}
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
               >
-                <option value="electric">Sähkökiuas (Electric)</option>
-                <option value="wood">Puukiuas (Wood-burning)</option>
-                <option value="none">Ei omaa saunaa (None)</option>
+                <option value="electric">Electric</option>
+                <option value="wood">Wood-burning</option>
+                <option value="none">No sauna</option>
               </select>
             </div>
 
@@ -214,40 +202,100 @@ export function ProfileCustomizerModal({
                 max={7}
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="font-bold text-slate-700">{isFinnish ? "Ensisijainen kulkutapa:" : "Preferred Transport:"}</label>
+              <select
+                value={formData.commuteHabit}
+                onChange={(e) => setFormData({ ...formData, commuteHabit: e.target.value as CommuteHabit })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
+              >
+                {COMMUTE_HABITS.map((cm) => (
+                  <option key={cm} value={cm}>
+                    {cm}
+                  </option>
+                ))}
+              </select>
+            </div>
 
             <div className="space-y-1">
-              <label className="font-bold text-slate-700">{isFinnish ? "Ruokavalio:" : "Diet:"}</label>
+              <label className="font-bold text-slate-700">{isFinnish ? "Jätehuolto:" : "Waste Management:"}</label>
               <select
-                value={formData.dietPreference}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    dietPreference: e.target.value as UserProfile["dietPreference"],
-                  })
-                }
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500 capitalize"
+                value={formData.wasteManagementSystem}
+                onChange={(e) => setFormData({ ...formData, wasteManagementSystem: e.target.value as WasteManagementSystem })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
               >
-                <option value="omnivore">Sekaruoka (Omnivore)</option>
-                <option value="flexitarian">Kasvispainotteinen (Flexitarian)</option>
-                <option value="vegetarian">Kasvisruoka (Vegetarian)</option>
-                <option value="vegan">Vegaani (Vegan)</option>
+                {WASTE_MANAGEMENT_OPTIONS.map((w) => (
+                  <option key={w} value={w}>
+                    {w}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
 
-          <div className="space-y-1">
-            <label className="font-bold text-slate-700">{isFinnish ? "Tyypillinen Työmatkatapa:" : "Commute Mode:"}</label>
-            <select
-              value={formData.commuteHabit}
-              onChange={(e) => setFormData({ ...formData, commuteHabit: e.target.value as CommuteHabit })}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
-            >
-              {COMMUTE_HABITS.map((cm) => (
-                <option key={cm} value={cm}>
-                  {cm}
-                </option>
+          {isDrivingCommute && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-xl bg-amber-50 border border-amber-100">
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700">{isFinnish ? "Auton tyyppi:" : "Car Type:"}</label>
+                <select
+                  value={formData.carType ?? "none"}
+                  onChange={(e) => {
+                    const carType = e.target.value as CarType;
+                    setFormData({
+                      ...formData,
+                      carType,
+                      carCo2GramsPerKm: CAR_TYPE_DEFAULT_CO2_G_PER_KM[carType],
+                    });
+                  }}
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
+                >
+                  {CAR_TYPE_OPTIONS.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700">
+                  {isFinnish ? "Auton CO2-päästöt (g/km):" : "Car CO2 Emissions (g/km):"}
+                </label>
+                <input
+                  type="number"
+                  value={formData.carCo2GramsPerKm ?? 0}
+                  onChange={(e) => setFormData({ ...formData, carCo2GramsPerKm: Number(e.target.value) })}
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
+                  min={0}
+                  max={1000}
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <label className="font-bold text-slate-700 block">
+              {isFinnish ? "Käytössä olevat säästötoimet:" : "Other Energy-Saving Measures:"}
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+              {COMMON_ENERGY_SAVING_MEASURES.map((measure) => (
+                <label
+                  key={measure}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 cursor-pointer hover:bg-slate-100"
+                >
+                  <input
+                    type="checkbox"
+                    checked={formData.energySavingMeasures.includes(measure)}
+                    onChange={() => toggleEnergyMeasure(measure)}
+                    className="accent-emerald-600"
+                  />
+                  <span className="text-slate-700 font-medium">{measure}</span>
+                </label>
               ))}
-            </select>
+            </div>
           </div>
 
           <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">

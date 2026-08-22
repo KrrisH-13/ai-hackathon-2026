@@ -1,93 +1,44 @@
 /**
- * Ported from the "Kipinä Espoo AI" standalone prototype
- * (espoo-climatepulse-ai---finnish-carbon-neutrality-2030-assistant/src/data/espooData.ts).
- * Static/mock data for the ecopilot feature — demo profiles, the Espoo 2030
- * roadmap measures, mock Nord Pool spot prices, seasonal presets, and HSY
- * recycling samples.
+ * Static reference data for the ecopilot feature. The three-persona
+ * DEFAULT_PROFILES demo dataset from the original "Kipinä Espoo AI"
+ * prototype (espoo-climatepulse-ai---finnish-carbon-neutrality-2030-assistant/src/data/espooData.ts)
+ * has been replaced by a real per-account profile — see
+ * lib/ecopilot/queries.ts and supabase/migrations/20260822090000_*.sql.
  */
-import type {
-  UserProfile,
-  EspooRoadmapMeasure,
-  SpotPricePoint,
-  ClimateActionItem,
-  Season,
-} from './types';
+import type { EspooRoadmapMeasure, SpotPricePoint, ClimateActionItem, Season, CarType } from './types';
+import { WASTE_MANAGEMENT_SYSTEMS } from './types';
 
-export const DEFAULT_PROFILES: UserProfile[] = [
-  {
-    id: 'user-tapiola',
-    name: 'Aino Virtanen',
-    district: 'Suur-Tapiola (Tapiola, Otaniemi, Keilaniemi)',
-    housingType: 'kerrostalo',
-    householdSize: 2,
-    livingAreaSqM: 68,
-    heatingSystem: 'Kaukolämpö (District Heating / Fortum Clean Heat)',
-    electricityContract: 'Pörssisähkö (Nord Pool Hourly Spot)',
-    saunaType: 'electric',
-    saunaTimesPerWeek: 2,
-    commuteHabit: 'Pääosin HSL (Metro, Pikaratikka 15, Juna, Bussi)',
-    dietPreference: 'flexitarian',
-    estimatedFootprintTonnes: 4.6,
-    targetFootprintTonnes: 2.2,
-    installedGreenTech: ['Älytermostaatti', 'LTO-ilmanvaihto'],
-    savedCo2Kg: 420,
-    activePledges: [
-      'Saunan ajoitus pörssisähkön halvoille tunneille',
-      'Pikaratikka 15 päivittäiseen työmatkaan',
-      '100% muovin ja biojätteen lajittelu',
-    ],
-  },
-  {
-    id: 'user-leppavaara',
-    name: 'Matti & Elina Korhonen',
-    district: 'Suur-Leppävaara (Leppävaara, Kera, Karakallio)',
-    housingType: 'rivitalo',
-    householdSize: 3,
-    livingAreaSqM: 95,
-    heatingSystem: 'Ilmalämpöpumppu + Suora sähkö (Air Heat Pump + Electric)',
-    electricityContract: 'Pörssisähkö (Nord Pool Hourly Spot)',
-    saunaType: 'electric',
-    saunaTimesPerWeek: 3,
-    commuteHabit: 'Ladattava hybridi (PHEV)',
-    dietPreference: 'omnivore',
-    estimatedFootprintTonnes: 6.2,
-    targetFootprintTonnes: 2.5,
-    installedGreenTech: ['Ilmalämpöpumppu', 'Sähköauton älylaturi'],
-    savedCo2Kg: 780,
-    activePledges: [
-      'Auton lataus vain yötunneilla (klo 01-05)',
-      'Ilmalämpöpumpun lämmityskäyrän optimointi',
-      'Kasvisruokapäivä 3 krt viikossa',
-    ],
-  },
-  {
-    id: 'user-nuuksio',
-    name: 'Jussi Mäkinen',
-    district: 'Pohjois-Espoo (Nuuksio, Kalajärvi, Järvenperä)',
-    housingType: 'omakotitalo',
-    householdSize: 4,
-    livingAreaSqM: 145,
-    heatingSystem: 'Maalämpö (Geothermal Heat Pump)',
-    electricityContract: 'Uusiutuva / EKOenergia (100% Certified Green)',
-    saunaType: 'wood',
-    saunaTimesPerWeek: 2,
-    commuteHabit: 'Sähköauto (Electric Vehicle)',
-    dietPreference: 'flexitarian',
-    estimatedFootprintTonnes: 5.1,
-    targetFootprintTonnes: 2.0,
-    installedGreenTech: [
-      'Maalämpöpumppu',
-      'Aurinkopaneelit (8.4 kWp)',
-      'Varaava takka',
-      'Vesi-ilmalämpöpumppu',
-    ],
-    savedCo2Kg: 1650,
-    activePledges: [
-      'Oman aurinkosähkön maksimointi lämminvesivaraajalla',
-      'Puukiukaan sytytys päältä kuivalla koivulla',
-      'Kotikompostointi (Bokashi / Lämpökompostori)',
-    ],
-  },
+export const CAR_TYPE_OPTIONS: { value: CarType; label: string }[] = [
+  { value: 'petrol', label: 'Petrol' },
+  { value: 'diesel', label: 'Diesel' },
+  { value: 'hybrid', label: 'Hybrid' },
+  { value: 'phev', label: 'Plug-in Hybrid (PHEV)' },
+  { value: 'ev', label: 'Electric Vehicle (EV)' },
+  { value: 'none', label: 'No car' },
+];
+
+/** Rough Finnish-average tailpipe/grid gCO2/km per car type — prefilled, user-editable. */
+export const CAR_TYPE_DEFAULT_CO2_G_PER_KM: Record<CarType, number> = {
+  petrol: 170,
+  diesel: 160,
+  hybrid: 110,
+  phev: 60,
+  ev: 25,
+  none: 0,
+};
+
+/** Re-exported so form components can import options for a field from one place. */
+export const WASTE_MANAGEMENT_OPTIONS = WASTE_MANAGEMENT_SYSTEMS;
+
+export const COMMON_ENERGY_SAVING_MEASURES: string[] = [
+  'Solar panels',
+  'Smart thermostat',
+  'Heat recovery ventilation (LTO)',
+  'Air heat pump',
+  'Smart EV charger',
+  'Water-saving showerhead',
+  'LED lighting',
+  'Home composting',
 ];
 
 export const ESPOO_2030_ROADMAP_MEASURES: EspooRoadmapMeasure[] = [

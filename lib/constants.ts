@@ -38,6 +38,9 @@ export const API_ROUTES = {
   aiOptimizeEnergy: "/api/ai/optimize-energy",
   aiCompareCommute: "/api/ai/compare-commute",
   aiGenerateRoadmapPlan: "/api/ai/generate-roadmap-plan",
+  ecopilotProfile: "/api/ecopilot/profile",
+  ecopilotCo2Logs: "/api/ecopilot/co2-logs",
+  ecopilotCo2Log: (id: string) => `/api/ecopilot/co2-logs/${id}`,
 } as const;
 
 /** Enforced in app/api/upload/route.ts. Empty array = no MIME restriction. */

@@ -1,4 +1,15 @@
 import type { Role, SubmissionStatus } from "@/lib/constants";
+import type {
+  EspooDistrict,
+  HousingType,
+  HeatingSystem,
+  ElectricityContract,
+  CommuteHabit,
+  CarType,
+  WasteManagementSystem,
+  SaunaType,
+  Co2LogCategory,
+} from "@/lib/ecopilot/types";
 
 /**
  * Hand-maintained mirror of the Supabase schema (see
@@ -70,6 +81,62 @@ export type JobInsert = {
 
 export type JobUpdate = Partial<Pick<Job, "status" | "last_error">>;
 
+/**
+ * One row per user (see supabase/migrations/20260822090000_*.sql), auto-created
+ * on signup by the handle_new_user() trigger. Powers the ecopilot feature's
+ * personalized profile — mapped to the camelCase UserProfile shape (see
+ * lib/ecopilot/queries.ts) that the ported UI components already expect.
+ */
+export type EcopilotProfile = {
+  user_id: string;
+  district: EspooDistrict;
+  housing_type: HousingType;
+  living_area_sq_m: number;
+  household_size: number;
+  heating_system: HeatingSystem;
+  electricity_contract: ElectricityContract;
+  sauna_type: SaunaType;
+  sauna_times_per_week: number;
+  commute_habit: CommuteHabit;
+  /** Only meaningful when commute_habit involves driving. */
+  car_type: CarType | null;
+  car_co2_grams_per_km: number | null;
+  waste_management_system: WasteManagementSystem;
+  energy_saving_measures: string[];
+  estimated_footprint_tonnes: number;
+  target_footprint_tonnes: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type EcopilotProfileUpdate = Partial<Omit<EcopilotProfile, "user_id" | "created_at" | "updated_at">>;
+
+export type Co2LogSource = "manual" | "energy-optimizer" | "commute-comparator" | "waste-classifier" | "roadmap-sprint";
+
+/**
+ * Append-only CO2 activity ledger (see lib/ecopilot/queries.ts for the daily
+ * aggregation query). co2_kg is signed: positive = emitted, negative =
+ * saved/avoided.
+ */
+export type Co2Log = {
+  id: string;
+  user_id: string;
+  occurred_on: string;
+  category: Co2LogCategory;
+  description: string;
+  co2_kg: number;
+  source: Co2LogSource;
+  created_at: string;
+};
+
+export type Co2LogInsert = {
+  occurred_on?: string;
+  category: Co2LogCategory;
+  description: string;
+  co2_kg: number;
+  source?: Co2LogSource;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -89,6 +156,18 @@ export type Database = {
         Row: Job;
         Insert: JobInsert;
         Update: JobUpdate;
+        Relationships: [];
+      };
+      ecopilot_profiles: {
+        Row: EcopilotProfile;
+        Insert: Partial<EcopilotProfile> & Pick<EcopilotProfile, "user_id">;
+        Update: EcopilotProfileUpdate;
+        Relationships: [];
+      };
+      ecopilot_co2_logs: {
+        Row: Co2Log;
+        Insert: Co2LogInsert & { user_id: string };
+        Update: Record<string, never>;
         Relationships: [];
       };
     };
