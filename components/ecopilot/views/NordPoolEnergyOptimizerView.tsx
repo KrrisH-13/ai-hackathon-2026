@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Zap, RotateCw, Sparkles, Clock, ShieldCheck } from "lucide-react";
 import type { UserProfile, Season, DailyEnergyPlan, SpotPricePoint } from "@/lib/ecopilot/types";
 import { SEASONAL_PRESETS } from "@/lib/ecopilot/data";
+import { calculateDeterministicHeatingAdjustment } from "@/lib/ecopilot/calculations";
 import { optimizeDailyEnergyAPI } from "@/lib/ecopilot/client";
 import { DataFreshnessBadge } from "@/components/ecopilot/DataFreshnessBadge";
 
@@ -27,8 +28,7 @@ export function NordPoolEnergyOptimizerView({
   isLiveSpotPrices,
   isFinnish,
 }: NordPoolEnergyOptimizerViewProps) {
-  const [selectedSaunaHour, setSelectedSaunaHour] = useState<number>(21);
-  const [saunaTempTarget, setSaunaTempTarget] = useState<number>(75);
+  const [selectedHour, setSelectedHour] = useState<number>(21);
   const [aiEnergyPlan, setAiEnergyPlan] = useState<DailyEnergyPlan | null>(null);
   const [isComputingPlan, setIsComputingPlan] = useState<boolean>(false);
   const [chartMode, setChartMode] = useState<"co2" | "price" | "dual">("co2");
@@ -54,28 +54,12 @@ export function NordPoolEnergyOptimizerView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userProfile.id, currentSeason, outdoorTempCelsius, spotPrices]);
 
-  const chosenHourPoint =
-    spotPrices.find((p) => p.hour === selectedSaunaHour) || spotPrices[21] || spotPrices[0];
-
-  // Sauna energy calculation (assuming 7 kW kiuas, 1.5h session = 10.5 kWh)
-  const kiuasKwh = 10.5;
-  const eveningPeakPoint = spotPrices.find((p) => p.hour === 18);
-  const eveningPeakPrice = eveningPeakPoint?.priceCentsKwh ?? 16.5;
-  const chosenPrice = chosenHourPoint.priceCentsKwh;
-
-  const tempFactor = saunaTempTarget === 70 ? 0.75 : saunaTempTarget === 80 ? 0.85 : 1.0;
-  const actualKwhUsed = kiuasKwh * tempFactor;
-
-  const peakCostEur = (kiuasKwh * eveningPeakPrice) / 100;
-  const optimizedCostEur = (actualKwhUsed * chosenPrice) / 100;
-  const costSavingsEur = Math.max(0, peakCostEur - optimizedCostEur);
-
-  const peakCo2Grams = kiuasKwh * (eveningPeakPoint?.gridCo2IntensityGramsKwh ?? 135);
-  const optimizedCo2Grams = actualKwhUsed * chosenHourPoint.gridCo2IntensityGramsKwh;
-  const co2SavingsKg = Math.max(0, (peakCo2Grams - optimizedCo2Grams) / 1000);
-
+  const chosenHourPoint = spotPrices.find((p) => p.hour === selectedHour) || spotPrices[21] || spotPrices[0];
   const activeHoverPoint = hoveredHour !== null ? spotPrices.find((p) => p.hour === hoveredHour) : null;
   const activePoint = activeHoverPoint || chosenHourPoint;
+
+  // Every 1°C of thermostat reduction, computed deterministically from the profile's living area & season.
+  const heatingAdjustment = calculateDeterministicHeatingAdjustment(userProfile.livingAreaSqM, 1, currentSeason);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 space-y-8 animate-fadeIn">
@@ -287,7 +271,7 @@ export function NordPoolEnergyOptimizerView({
                             const barW = Math.max(4, plotW / 23 - 4);
                             const barY = getYPrice(p.priceCentsKwh);
                             const barH = Math.max(4, padTop + plotH - barY);
-                            const isSelected = selectedSaunaHour === p.hour;
+                            const isSelected = selectedHour === p.hour;
                             const fillColor = p.priceCentsKwh < 5 ? "#10b981" : p.priceCentsKwh < 10 ? "#f59e0b" : "#ef4444";
 
                             return (
@@ -300,7 +284,7 @@ export function NordPoolEnergyOptimizerView({
                                 rx="3"
                                 fill={fillColor}
                                 className="cursor-pointer transition hover:opacity-80"
-                                onClick={() => setSelectedSaunaHour(p.hour)}
+                                onClick={() => setSelectedHour(p.hour)}
                                 onMouseEnter={() => setHoveredHour(p.hour)}
                                 onMouseLeave={() => setHoveredHour(null)}
                                 stroke={isSelected ? "#0f172a" : "none"}
@@ -319,9 +303,9 @@ export function NordPoolEnergyOptimizerView({
                       )}
 
                       <line
-                        x1={getX(selectedSaunaHour)}
+                        x1={getX(selectedHour)}
                         y1={padTop}
-                        x2={getX(selectedSaunaHour)}
+                        x2={getX(selectedHour)}
                         y2={padTop + plotH}
                         stroke="#0f172a"
                         strokeWidth="2"
@@ -331,14 +315,14 @@ export function NordPoolEnergyOptimizerView({
                       {spotPrices.map((p) => {
                         const cx = getX(p.hour);
                         const cy = getYCo2(p.gridCo2IntensityGramsKwh);
-                        const isSelected = selectedSaunaHour === p.hour;
+                        const isSelected = selectedHour === p.hour;
                         const isHovered = hoveredHour === p.hour;
 
                         return (
                           <g
                             key={`point-${p.hour}`}
                             className="cursor-pointer group"
-                            onClick={() => setSelectedSaunaHour(p.hour)}
+                            onClick={() => setSelectedHour(p.hour)}
                             onMouseEnter={() => setHoveredHour(p.hour)}
                             onMouseLeave={() => setHoveredHour(null)}
                           >
@@ -450,7 +434,7 @@ export function NordPoolEnergyOptimizerView({
                   </div>
 
                   <button
-                    onClick={() => setSelectedSaunaHour(cleanestHour.hour)}
+                    onClick={() => setSelectedHour(cleanestHour.hour)}
                     className="px-3 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[11px] transition shadow-xs shrink-0 self-start sm:self-auto"
                   >
                     ⚡ {isFinnish ? "Valitse Puhtain Tunti" : "Snap to Cleanest Hour"}
@@ -483,94 +467,87 @@ export function NordPoolEnergyOptimizerView({
           </div>
         </div>
 
-        {/* Right: Interactive Sauna & Heating Simulator */}
-        <div className="lg:col-span-5 p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-6 flex flex-col justify-between">
+        {/* Right: Today's Recommended Time Windows */}
+        <div className="lg:col-span-5 p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-4 flex flex-col justify-between">
           <div className="space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold">🔥</div>
+                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center">
+                  <Clock className="w-4 h-4" />
+                </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-slate-900">{isFinnish ? "Saunan Älylaskuri" : "Sauna Energy Calculator"}</h3>
+                  <h3 className="text-base font-extrabold text-slate-900">
+                    {isFinnish ? "Päivän Parhaat Ajankohdat" : "Today's Optimal Time Windows"}
+                  </h3>
                   <p className="text-xs text-slate-500">
-                    {userProfile.saunaType === "wood" ? "Puukiuas (Puulämmitys)" : "Sähkökiuas (7 kW teho)"}
+                    {isFinnish ? "Pörssisähkön hinnan ja sään perusteella" : "Based on today's spot price & weather"}
                   </p>
                 </div>
               </div>
-
-              <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold">
-                {userProfile.saunaTimesPerWeek} {isFinnish ? "krt / vko" : "times / wk"}
-              </span>
+              {isComputingPlan && <RotateCw className="w-4 h-4 text-slate-400 animate-spin shrink-0" />}
             </div>
 
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">
-                  {isFinnish ? "Valitse saunomisen alkamisaika:" : "Select Sauna Heating Time:"}
-                </label>
-                <select
-                  value={selectedSaunaHour}
-                  onChange={(e) => setSelectedSaunaHour(Number(e.target.value))}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-amber-500"
-                >
-                  {spotPrices.map((p) => (
-                    <option key={p.hour} value={p.hour}>
-                      {isFinnish ? `klo ${p.timeLabel}` : p.timeLabel} — {p.priceCentsKwh} c/kWh ({p.gridCo2IntensityGramsKwh}g CO2)
-                    </option>
-                  ))}
-                </select>
+            {/* Sauna window */}
+            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200/80 space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-extrabold text-amber-950 flex items-center gap-1.5">
+                  <span>🔥</span>
+                  <span>{isFinnish ? "Sauna" : "Sauna"}</span>
+                </span>
+                <span className="text-sm font-black text-amber-900 text-right">
+                  {aiEnergyPlan?.peakSaunaWindow.recommendedTime || (isFinnish ? "klo 21:00 - 22:00" : "21:00 - 22:00")}
+                </span>
               </div>
-
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">
-                  {isFinnish ? "Tavoitelämpötila (Löylyt):" : "Sauna Temperature Target:"}
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[70, 80, 90].map((t) => (
-                    <button
-                      key={t}
-                      onClick={() => setSaunaTempTarget(t)}
-                      className={`py-2 rounded-xl text-xs font-bold transition border ${
-                        saunaTempTarget === t
-                          ? "bg-amber-500 text-white border-amber-600 shadow-xs"
-                          : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
-                      }`}
-                    >
-                      {t}°C {t === 70 ? "(Eco ✨)" : t === 90 ? "(Hot 🔥)" : ""}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-[10px] text-slate-500 mt-1">
-                  {isFinnish
-                    ? "70-75°C riittää pehmeisiin löylyihin ja säästää jopa 25-30% sähköä 90°C verrattuna."
-                    : "70-75°C provides gentle soft steam while consuming 25-30% less energy than 90°C."}
-                </p>
-              </div>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-50 to-emerald-50 border border-amber-200/80 space-y-3">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-900 block">
-                {isFinnish ? "Säästö verrattuna kello 18:00 iltahuippuun:" : "Savings vs 18:00 Peak Heating:"}
-              </span>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 rounded-xl bg-white border border-amber-200 shadow-2xs text-center">
-                  <div className="text-xl font-black text-emerald-700">+{costSavingsEur.toFixed(2)} €</div>
-                  <div className="text-[10px] text-slate-600 font-bold">{isFinnish ? "Säästö / saunakerta" : "Savings per session"}</div>
-                </div>
-
-                <div className="p-3 rounded-xl bg-white border border-amber-200 shadow-2xs text-center">
-                  <div className="text-xl font-black text-emerald-700">-{co2SavingsKg.toFixed(2)} kg</div>
-                  <div className="text-[10px] text-slate-600 font-bold">{isFinnish ? "CO2-päästövähennys" : "CO2 emissions cut"}</div>
-                </div>
-              </div>
-
-              <p className="text-[11px] text-amber-950 italic leading-relaxed">
-                &quot;
+              <p className="text-[11px] text-amber-900 leading-relaxed">
                 {aiEnergyPlan?.peakSaunaWindow.reason ||
                   (isFinnish
-                    ? "Klo 21:00 jälkeen sähkö on tyypillisesti halvempaa ja puhtaampaa."
-                    : "After 21:00, grid electricity is typically cheaper and cleaner.")}
-                &quot;
+                    ? "Sähkö on tyypillisesti halvempaa ja puhtaampaa illalla klo 21 jälkeen."
+                    : "Electricity is typically cheaper and cleaner after 21:00.")}
+              </p>
+              {aiEnergyPlan?.peakSaunaWindow.savingsEur && (
+                <p className="text-[10px] text-amber-700 font-bold">
+                  {isFinnish ? "Säästö" : "Savings"}: {aiEnergyPlan.peakSaunaWindow.savingsEur}
+                  {aiEnergyPlan.peakSaunaWindow.co2ReductionPercent ? ` · -${aiEnergyPlan.peakSaunaWindow.co2ReductionPercent} CO₂` : ""}
+                </p>
+              )}
+            </div>
+
+            {/* EV charging window */}
+            <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200/80 space-y-1.5">
+              <span className="text-xs font-extrabold text-blue-950 flex items-center gap-1.5">
+                <span>🚗</span>
+                <span>{isFinnish ? "Sähköauton lataus" : "EV Charging"}</span>
+              </span>
+              <p className="text-[11px] text-blue-900 leading-relaxed">
+                {aiEnergyPlan?.evChargingWindow ||
+                  (isFinnish ? "01:00 - 05:00 (halvin yöikkuna)" : "01:00 - 05:00 (cheapest overnight window)")}
+              </p>
+            </div>
+
+            {/* Thermostat optimization — deterministic, not AI-dependent */}
+            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200/80 space-y-2">
+              <span className="text-xs font-extrabold text-emerald-950 flex items-center gap-1.5">
+                <span>🌡️</span>
+                <span>{isFinnish ? "Termostaatin optimointi (-1°C)" : "Thermostat Optimization (-1°C)"}</span>
+              </span>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="p-2 rounded-xl bg-white border border-emerald-200">
+                  <div className="text-sm font-black text-emerald-700">-{heatingAdjustment.heatingKwhSavedPerDay}</div>
+                  <div className="text-[9px] text-slate-500 font-bold">kWh / {isFinnish ? "vrk" : "day"}</div>
+                </div>
+                <div className="p-2 rounded-xl bg-white border border-emerald-200">
+                  <div className="text-sm font-black text-emerald-700">-{heatingAdjustment.co2SavedKgPerDay}</div>
+                  <div className="text-[9px] text-slate-500 font-bold">kg CO₂ / {isFinnish ? "vrk" : "day"}</div>
+                </div>
+                <div className="p-2 rounded-xl bg-white border border-emerald-200">
+                  <div className="text-sm font-black text-emerald-700">+{heatingAdjustment.costSavedEurPerDay}</div>
+                  <div className="text-[9px] text-slate-500 font-bold">€ / {isFinnish ? "vrk" : "day"}</div>
+                </div>
+              </div>
+              <p className="text-[11px] text-emerald-900 leading-relaxed">
+                {isFinnish
+                  ? `Yhden asteen pudotus juuri nyt (${outdoorTempCelsius}°C ulkona, ${seasonInfo.nameFi.toLowerCase()}) säästää tämän verran arjessa.`
+                  : `Dropping the thermostat by 1°C right now (${outdoorTempCelsius}°C outside, ${seasonInfo.nameEn.toLowerCase()}) saves this much in daily use.`}
               </p>
             </div>
           </div>

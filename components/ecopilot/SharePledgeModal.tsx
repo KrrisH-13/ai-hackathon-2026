@@ -17,8 +17,8 @@ export function SharePledgeModal({ isOpen, onClose, userProfile, isFinnish }: Sh
   if (!isOpen) return null;
 
   const shareText = isFinnish
-    ? `🌱 Olen mukana tekemässä Espoosta hiilineutraalia vuoteen 2030 mennessä!\n\n🏡 Asunto: ${userProfile.housingType}, ${userProfile.district.split("(")[0]}\n⚡ Sähkö & Lämpö: ${userProfile.heatingSystem.split("(")[0]}\n🎯 Tavoite: ${userProfile.targetFootprintTonnes} t CO2e/vuosi\n✨ Arjen teot: Saunan ajoitus pörssisähköön, Pikaratikka 15 & HSY-kiertotalous.\n\nTutustu ja laske oma polkusi: Kipinä Espoo AI #HiilineutraaliEspoo2030 #Ilmastovahti`
-    : `🌱 I've pledged to support the Carbon-Neutral Espoo 2030 roadmap!\n\n🏡 Home: ${userProfile.housingType}, ${userProfile.district.split("(")[0]}\n⚡ Heating: ${userProfile.heatingSystem.split("(")[0]}\n🎯 2030 Target: ${userProfile.targetFootprintTonnes} t CO2e/year\n✨ Actions: Nord Pool sauna scheduling, Pikaratikka 15 & HSY circular sorting.\n\nExplore your footprint with Kipinä Espoo AI #CarbonNeutralEspoo2030`;
+    ? `🌱 Olen mukana tekemässä Espoosta hiilineutraalia vuoteen 2030 mennessä!\n\n🏡 Asunto: ${userProfile.housingType}, ${userProfile.district.split("(")[0]}\n⚡ Sähkö & Lämpö: ${userProfile.heatingSystem.split("(")[0]}\n🎯 Tavoite: ${userProfile.targetFootprintTonnes} t CO2e/vuosi\n✨ Arjen teot: Saunan ajoitus pörssisähköön, Pikaratikka 15 & HSY-kiertotalous.\n\nTutustu ja laske oma polkusi: eCopilot #HiilineutraaliEspoo2030 #Ilmastovahti`
+    : `🌱 I've pledged to support the Carbon-Neutral Espoo 2030 roadmap!\n\n🏡 Home: ${userProfile.housingType}, ${userProfile.district.split("(")[0]}\n⚡ Heating: ${userProfile.heatingSystem.split("(")[0]}\n🎯 2030 Target: ${userProfile.targetFootprintTonnes} t CO2e/year\n✨ Actions: Nord Pool sauna scheduling, Pikaratikka 15 & HSY circular sorting.\n\nExplore your footprint with eCopilot #CarbonNeutralEspoo2030`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(shareText);

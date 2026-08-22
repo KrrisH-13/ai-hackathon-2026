@@ -3,7 +3,7 @@ import { getUser, getProfile } from "@/lib/supabase/auth";
 import { ROUTES } from "@/lib/constants";
 
 /**
- * Auth guard only — no shared chrome here. The `[role]` route (eCopilot) is
+ * Auth guard only — no shared chrome here. The `[roleSlug]` route (eCopilot) is
  * a full-page experience with its own header/nav (EcopilotSidebar +
  * EcopilotTopBar), so this layout stays a plain pass-through rather than
  * wrapping it in another Header/Sidebar.

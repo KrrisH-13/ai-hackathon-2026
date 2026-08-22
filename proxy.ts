@@ -19,7 +19,7 @@ export async function proxy(request: NextRequest) {
 // declarative and easy to audit alongside page-level redirects.
 export const config = {
   matcher: [
-    "/citizen/:path*",
+    "/dashboard/:path*",
     "/staff/:path*",
     "/admin/:path*",
     "/api/auth/user",

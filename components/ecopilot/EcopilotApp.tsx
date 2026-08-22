@@ -11,13 +11,10 @@ import { NordPoolEnergyOptimizerView } from "@/components/ecopilot/views/NordPoo
 import { HsyRecyclingScannerView } from "@/components/ecopilot/views/HsyRecyclingScannerView";
 import { HslTransitCommuteView } from "@/components/ecopilot/views/HslTransitCommuteView";
 import { EspooClimateWatch2030View } from "@/components/ecopilot/views/EspooClimateWatch2030View";
-import { PersonalRoadmapSprintView } from "@/components/ecopilot/views/PersonalRoadmapSprintView";
-import { GreenWindowView } from "@/components/ecopilot/views/GreenWindowView";
 import { ActivityLoggerView } from "@/components/ecopilot/views/ActivityLoggerView";
 import { ReceiptScannerView } from "@/components/ecopilot/views/ReceiptScannerView";
 import { WhatIfView } from "@/components/ecopilot/views/WhatIfView";
-import { Co2TrackerView } from "@/components/ecopilot/views/Co2TrackerView";
-import { RewardsView } from "@/components/ecopilot/views/RewardsView";
+import { TrackerRewardsView } from "@/components/ecopilot/views/TrackerRewardsView";
 import { ProfileCustomizerModal } from "@/components/ecopilot/ProfileCustomizerModal";
 import { SharePledgeModal } from "@/components/ecopilot/SharePledgeModal";
 
@@ -133,8 +130,6 @@ export function EcopilotApp({
 
           {currentTab === "roadmap" && <EspooClimateWatch2030View isFinnish={isFinnish} />}
 
-          {currentTab === "greenWindow" && <GreenWindowView isFinnish={isFinnish} />}
-
           {currentTab === "activityLog" && <ActivityLoggerView isFinnish={isFinnish} />}
 
           {currentTab === "receiptScanner" && <ReceiptScannerView isFinnish={isFinnish} />}
@@ -143,18 +138,7 @@ export function EcopilotApp({
             <WhatIfView userProfile={profile} currentSeason={currentSeason} isFinnish={isFinnish} />
           )}
 
-          {currentTab === "tracker" && <Co2TrackerView userProfile={profile} isFinnish={isFinnish} />}
-
-          {currentTab === "rewards" && <RewardsView isFinnish={isFinnish} />}
-
-          {currentTab === "personal" && (
-            <PersonalRoadmapSprintView
-              userProfile={profile}
-              currentSeason={currentSeason}
-              isFinnish={isFinnish}
-              onOpenShareModal={() => setIsShareModalOpen(true)}
-            />
-          )}
+          {currentTab === "trackerRewards" && <TrackerRewardsView userProfile={profile} isFinnish={isFinnish} />}
         </main>
 
         <footer className="border-t border-slate-200 bg-white py-6 px-4 text-xs text-slate-500">
@@ -164,7 +148,7 @@ export function EcopilotApp({
                 E
               </div>
               <span className="font-bold text-slate-900">
-                Kipinä <span className="text-emerald-600">Espoo AI</span>
+                e<span className="text-emerald-600">Copilot</span>
               </span>
               <span>—</span>
               <span>

@@ -37,7 +37,7 @@ export const co2LogInsertSchema = z.object({
   description: z.string().min(1),
   co2Kg: z.number(),
   /** Only sources an API caller may set directly — the rest are reserved for other server-side flows. */
-  source: z.enum(["manual", "activity-logger"]).optional(),
+  source: z.enum(["manual", "activity-logger", "what-if"]).optional(),
 });
 
 export type Co2LogFormData = z.infer<typeof co2LogInsertSchema>;
