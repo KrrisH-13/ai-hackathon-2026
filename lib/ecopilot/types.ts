@@ -214,6 +214,34 @@ export interface Co2LogEntry {
   source: string;
 }
 
+/**
+ * Natural-language activity logger (Gemini function calling extracts these
+ * from free text like "drove to Turku today"). See lib/ecopilot/gemini.ts
+ * and lib/ecopilot/emissionFactors.ts for the country-aware CO2 math.
+ */
+export const ACTIVITY_MODES = ['car', 'ev', 'train', 'bus', 'bike', 'walk', 'plane', 'ferry'] as const;
+export type ActivityMode = (typeof ACTIVITY_MODES)[number];
+
+/** Structured trip Gemini extracted from a single free-text log entry. */
+export interface ActivityExtraction {
+  mode: ActivityMode;
+  distanceKm: number;
+  origin: string | null;
+  destination: string | null;
+  /** Country the trip took place in — drives which grid/emission factor table applies. */
+  country: string;
+  rawText: string;
+}
+
+/** Extraction + the country-aware CO2 estimate computed from it, ready to log or discard. */
+export interface ActivityLogEstimate {
+  extraction: ActivityExtraction;
+  co2Kg: number;
+  emissionFactorGramsPerKm: number;
+  /** Human-readable explanation of which country's factor was used (and why), for the UI. */
+  factorNote: string;
+}
+
 export interface Co2DailyTotal {
   date: string; // YYYY-MM-DD
   netCo2Kg: number;

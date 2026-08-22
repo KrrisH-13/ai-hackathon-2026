@@ -44,7 +44,7 @@ export async function POST(request: Request) {
         category: validated.category,
         description: validated.description,
         co2_kg: validated.co2Kg,
-        source: "manual",
+        source: validated.source ?? "manual",
       },
       supabase
     );

@@ -53,6 +53,15 @@ export const co2LogInsertSchema = z.object({
   category: z.enum(CO2_LOG_CATEGORIES),
   description: z.string().min(3, "Description must be at least 3 characters").max(200),
   co2Kg: z.number().min(-1000).max(1000),
+  /** Only sources an API caller may set directly — the rest are reserved for other server-side flows. */
+  source: z.enum(["manual", "activity-logger"]).optional(),
 });
 
 export type Co2LogFormData = z.infer<typeof co2LogInsertSchema>;
+
+/** Shared between ActivityLoggerView and POST /api/ai/extract-activity. */
+export const activityExtractRequestSchema = z.object({
+  text: z.string().min(3, "Describe the trip in a few words").max(300),
+});
+
+export type ActivityExtractRequestData = z.infer<typeof activityExtractRequestSchema>;

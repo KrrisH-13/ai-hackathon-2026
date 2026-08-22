@@ -15,8 +15,7 @@ const ai = new GoogleGenAI({
     },
   },
 });
-
-const MODEL_NAME = 'gemini-3.7-flash';
+const MODEL_NAME = 'gemini-3.1-flash-lite';
 
 /**
  * 1. AI Assistant Chat tailored for Finland, Espoo 2030, and Finnish daily routines

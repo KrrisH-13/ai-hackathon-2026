@@ -111,7 +111,13 @@ export type EcopilotProfile = {
 
 export type EcopilotProfileUpdate = Partial<Omit<EcopilotProfile, "user_id" | "created_at" | "updated_at">>;
 
-export type Co2LogSource = "manual" | "energy-optimizer" | "commute-comparator" | "waste-classifier" | "roadmap-sprint";
+export type Co2LogSource =
+  | "manual"
+  | "energy-optimizer"
+  | "commute-comparator"
+  | "waste-classifier"
+  | "roadmap-sprint"
+  | "activity-logger";
 
 /**
  * Append-only CO2 activity ledger (see lib/ecopilot/queries.ts for the daily

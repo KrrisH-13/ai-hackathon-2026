@@ -32,7 +32,14 @@ export function fetchCo2LogsAPI(days = 30): Promise<{ entries: Co2LogEntry[]; da
   return request(`${API_ROUTES.ecopilotCo2Logs}?days=${days}`);
 }
 
-export function addCo2LogAPI(entry: { category: Co2LogCategory; description: string; co2Kg: number; occurredOn?: string }) {
+export function addCo2LogAPI(entry: {
+  category: Co2LogCategory;
+  description: string;
+  co2Kg: number;
+  occurredOn?: string;
+  /** Tags the entry for the CO2 tracker chart and any feature (e.g. rewards) that reads it later. Defaults server-side to "manual". */
+  source?: "manual" | "activity-logger";
+}) {
   return request(API_ROUTES.ecopilotCo2Logs, { method: "POST", body: JSON.stringify(entry) });
 }
 

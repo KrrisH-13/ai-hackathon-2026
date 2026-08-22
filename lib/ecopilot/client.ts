@@ -8,7 +8,9 @@ import type {
   DailyEnergyPlan,
   CommuteComparison,
   SpotPricePoint,
+  ActivityLogEstimate,
 } from "./types";
+import { estimateCo2Kg } from "./emissionFactors";
 
 /**
  * Browser-side wrappers around app/api/ai/**. Ported from the "Kipinä Espoo
@@ -47,6 +49,29 @@ export async function chatWithClimateAssistantAPI(
         "Miten lajittelen muovin ja kartongin HSY-sääntöjen mukaan?",
         "Mitä tukia taloyhtiö voi saada energiaremonttiin Espoossa?",
       ],
+    };
+  }
+}
+
+/**
+ * Natural-language activity logger — posts free text to Gemini function
+ * calling (app/api/ai/extract-activity) and gets back a structured trip +
+ * country-aware CO2 estimate. Falls back to a naive on-device guess (car,
+ * Finland factor) if the API call fails, same offline-friendly pattern as
+ * the other AI client wrappers here.
+ */
+export async function extractActivityAPI(text: string): Promise<ActivityLogEstimate> {
+  try {
+    return await postJson(API_ROUTES.aiExtractActivity, { text });
+  } catch (error) {
+    console.error("Extract activity API client error:", error);
+    const extraction = { mode: "car" as const, distanceKm: 10, origin: null, destination: null, country: "Finland", rawText: text };
+    const { co2Kg, gramsPerKm } = estimateCo2Kg(extraction.mode, extraction.distanceKm, extraction.country);
+    return {
+      extraction,
+      co2Kg,
+      emissionFactorGramsPerKm: gramsPerKm,
+      factorNote: "Gemini was unreachable — showing a rough Finland-average car estimate instead.",
     };
   }
 }
