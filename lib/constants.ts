@@ -33,6 +33,7 @@ export const API_ROUTES = {
   aiCompareCommute: "/api/ai/compare-commute",
   aiGenerateRoadmapPlan: "/api/ai/generate-roadmap-plan",
   aiWhatIf: "/api/ai/what-if",
+  aiExtractActivity: "/api/ai/extract-activity",
   ecopilotProfile: "/api/ecopilot/profile",
   ecopilotCo2Logs: "/api/ecopilot/co2-logs",
   ecopilotCo2Log: (id: string) => `/api/ecopilot/co2-logs/${id}`,
