@@ -1,9 +1,12 @@
-# Hackathon App
+# eCopilot
 
-A Next.js + Supabase PWA scaffold, built for a one-day hackathon. Rename
-the project (this README, `package.json` `name`, and `lib/constants.ts`
-`APP_NAME`) once the actual hackathon topic is decided — everything else
-is generic and topic-agnostic by design.
+An AI climate copilot for Espoo residents, built on a Next.js + Supabase PWA
+scaffold. Helps residents act on the Carbon-Neutral Espoo 2030 roadmap —
+Nord Pool-aware energy/sauna scheduling, HSY waste sorting, HSL commute
+comparisons, the Espoo 2030 measure tracker, and a personalized weekly
+action plan. See `lib/ecopilot/` and `components/ecopilot/` for the
+feature; `CODING_GUIDELINES.md` still describes the underlying scaffold
+conventions (auth, RLS, forms, error handling).
 
 ## Demo
 

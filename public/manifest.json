@@ -1,7 +1,7 @@
 {
-  "name": "Hackathon App",
-  "short_name": "Hackathon App",
-  "description": "A community reporting PWA built for a one-day hackathon.",
+  "name": "eCopilot",
+  "short_name": "eCopilot",
+  "description": "AI climate copilot for Espoo residents working toward Carbon-Neutral Espoo 2030.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
