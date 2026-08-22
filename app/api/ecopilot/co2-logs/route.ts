@@ -42,7 +42,10 @@ export async function POST(request: Request) {
     const log = await insertCo2Log(
       user.id,
       {
-        occurred_on: validated.occurredOn,
+        // supabase-js sends an explicit `undefined` field as SQL NULL rather
+        // than omitting it, so the column's `default current_date` never
+        // fires — default it here instead of relying on that DB default.
+        occurred_on: validated.occurredOn ?? new Date().toISOString().slice(0, 10),
         category: validated.category,
         description: validated.description,
         co2_kg: validated.co2Kg,
