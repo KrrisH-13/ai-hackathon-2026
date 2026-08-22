@@ -10,6 +10,18 @@ export const ROLES = ["citizen", "staff", "admin"] as const;
 export type Role = (typeof ROLES)[number];
 
 /**
+ * URL slug each role's dashboard lives at — kept separate from the `Role`
+ * value itself (which is also the Postgres `profiles.role` value and DB
+ * default/check constraint) so the citizen-facing URL can read `/dashboard`
+ * without touching the underlying role model.
+ */
+export const ROLE_ROUTE_SLUGS: Record<Role, string> = {
+  citizen: "dashboard",
+  staff: "staff",
+  admin: "admin",
+};
+
+/**
  * `(auth)` and `(dashboard)` are Next.js route groups — the parentheses
  * don't appear in the URL, so `app/(auth)/login/page.tsx` is served at
  * `/login`, not `/auth/login`.
@@ -20,7 +32,7 @@ export const ROUTES = {
   callback: "/callback",
   unauthorized: "/unauthorized",
   offline: "/offline",
-  dashboard: (role: Role) => `/${role}`,
+  dashboard: (role: Role) => `/${ROLE_ROUTE_SLUGS[role]}`,
 } as const;
 
 export const API_ROUTES = {

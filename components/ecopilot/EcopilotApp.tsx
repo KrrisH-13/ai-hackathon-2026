@@ -161,7 +161,7 @@ export function EcopilotApp({
                 E
               </div>
               <span className="font-bold text-slate-900">
-                Kipinä <span className="text-emerald-600">Espoo AI</span>
+                e<span className="text-emerald-600">Copilot</span>
               </span>
               <span>—</span>
               <span>

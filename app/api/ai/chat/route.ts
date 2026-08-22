@@ -1,7 +1,7 @@
 import { createRouteHandlerClient } from "@/lib/supabase/server";
 import { chatWithClimateAssistant } from "@/lib/ecopilot/gemini";
 
-/** Ecopilot: AI Climate Copilot chat (Kipinä), backed by Gemini. */
+/** Ecopilot: AI Climate Copilot chat (eCopilot), backed by Gemini. */
 export async function POST(request: Request) {
   try {
     const supabase = await createRouteHandlerClient();

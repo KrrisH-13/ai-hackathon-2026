@@ -29,7 +29,7 @@ interface EcopilotSidebarProps {
  * row ever could, without needing a scroll strip.
  */
 const TABS: { id: EcopilotTab; icon: typeof Sparkles; iconClass: string; fi: string; en: string }[] = [
-  { id: "chat", icon: Sparkles, iconClass: "text-emerald-600", fi: "AI-Ilmastoapuri", en: "AI Copilot" },
+  { id: "chat", icon: Sparkles, iconClass: "text-emerald-600", fi: "eCopilot-chatti", en: "eCopilot Chat" },
   { id: "energy", icon: Zap, iconClass: "text-amber-500", fi: "Pörssisähkö & Sauna", en: "Nord Pool & Energy" },
   { id: "recycling", icon: RotateCw, iconClass: "text-teal-600", fi: "HSY-Lajittelu", en: "HSY Recycling" },
   { id: "transit", icon: Compass, iconClass: "text-blue-600", fi: "HSL & Matkat", en: "HSL Transit" },
@@ -46,19 +46,24 @@ const TABS: { id: EcopilotTab; icon: typeof Sparkles; iconClass: string; fi: str
 export function EcopilotSidebar({ currentTab, onSelectTab, isFinnish }: EcopilotSidebarProps) {
   return (
     <aside className="sticky top-0 h-screen shrink-0 w-16 sm:w-64 bg-white border-r border-slate-200 flex flex-col">
-      <div className="flex items-center gap-3 px-2.5 sm:px-5 h-16 border-b border-slate-200 shrink-0">
+      <button
+        type="button"
+        onClick={() => onSelectTab("chat")}
+        title={isFinnish ? "Etusivulle" : "Go to home"}
+        className="flex items-center gap-3 px-2.5 sm:px-5 h-16 border-b border-slate-200 shrink-0 hover:bg-slate-50 transition text-left"
+      >
         <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-600/20 shrink-0">
           <Sparkles className="w-4.5 h-4.5" />
         </div>
         <div className="hidden sm:block min-w-0">
           <h1 className="font-extrabold text-slate-900 text-sm tracking-tight leading-none truncate">
-            Kipinä <span className="text-emerald-600">Espoo AI</span>
+            e<span className="text-emerald-600">Copilot</span>
           </h1>
           <p className="text-[10px] text-slate-500 font-medium truncate">
-            {isFinnish ? "Arjen ilmastoapuri" : "Finnish Living Copilot"}
+            {isFinnish ? "Arjen ilmastoapuri" : "Finnish Living eCopilot"}
           </p>
         </div>
-      </div>
+      </button>
 
       <nav className="flex-1 overflow-y-auto py-3 px-2 sm:px-3 space-y-1">
         {TABS.map(({ id, icon: Icon, iconClass, fi, en }) => (

@@ -23,7 +23,7 @@ export function AiClimateCopilotView({ userProfile, currentSeason, outdoorTempCe
       id: "welcome",
       role: "assistant",
       content: isFinnish
-        ? `Tervehdys, ${userProfile.name}! Olen **Kipinä**, tekoälypohjainen arjen ilmastoapurisi Espoossa.
+        ? `Tervehdys, ${userProfile.name}! Olen **eCopilot**, tekoälypohjainen arjen ilmastoapurisi Espoossa.
 
 Olen räätälöity suomalaiseen asumiseen ja Espoon **Hiilineutraali 2030** -tiekarttaan. Autan sinua optimoimaan:
 - ⚡ **Pörssisähkön ja saunan** ajoituksen edullisimmille ja puhtaimmille tunneille
@@ -33,7 +33,7 @@ Olen räätälöity suomalaiseen asumiseen ja Espoon **Hiilineutraali 2030** -ti
 - 🏢 **Taloyhtiöiden energiaremontit** (ARA-tuet, aurinkovoimalat, poistoilman LTO)
 
 Mitä haluaisit tietää tai ratkaista tänään?`
-        : `Hello, ${userProfile.name}! I am **Kipinä**, your AI assistant for sustainable living in Finland and the **Carbon-Neutral Espoo 2030** roadmap.
+        : `Hello, ${userProfile.name}! I am **eCopilot**, your AI assistant for sustainable living in Finland and the **Carbon-Neutral Espoo 2030** roadmap.
 
 I translate Finnish daily routines into practical, high-impact climate choices for your home in **${userProfile.district.split(" ")[0]}**:
 - ⚡ **Nord Pool Spot Electricity & Sauna scheduling** (6-9 kW kiuas optimization)
@@ -274,7 +274,7 @@ How can I help power your climate choices today?`,
                   }`}
                 >
                   <div className="flex items-center justify-between text-[10px] opacity-70">
-                    <span className="font-bold">{isUser ? userProfile.name : "Kipinä AI (Espoo Copilot)"}</span>
+                    <span className="font-bold">{isUser ? userProfile.name : "eCopilot AI"}</span>
                     <span>{msg.timestamp}</span>
                   </div>
 
@@ -335,8 +335,8 @@ How can I help power your climate choices today?`,
               </div>
               <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-xs">
                 {isFinnish
-                  ? "Kipinä laskee arjen energiansäästöjä ja Espoon ilmastovaikutuksia..."
-                  : "Kipinä is computing daily energy savings and Espoo climate impacts..."}
+                  ? "eCopilot laskee arjen energiansäästöjä ja Espoon ilmastovaikutuksia..."
+                  : "eCopilot is computing daily energy savings and Espoo climate impacts..."}
               </div>
             </div>
           )}
