@@ -8,6 +8,8 @@ import type {
   DailyEnergyPlan,
   CommuteComparison,
   SpotPricePoint,
+  GroceryReceiptResult,
+  TodaysActionResult,
 } from "./types";
 
 /**
@@ -250,6 +252,35 @@ export async function generateRoadmapPlanAPI(userProfile: UserProfile, season: S
         "Taloyhtiössänne kannattaa selvittää poistoilman lämmöntalteenotto (LTO) ja kattoaurinkovoimala, joihin saa ARA-avustusta ja jotka maksavat itsensä takaisin 4-7 vuodessa.",
       communityImpactText:
         "Kun 1 000 espoolaista toteuttaa tämän viikkosuunnitelman, säästämme yhdessä yli 36 tonnia CO2e joka viikko kohti Hiilineutraali Espoo 2030 -tavoitetta.",
+    };
+  }
+}
+
+export async function scanReceiptAPI(imageBase64: string): Promise<GroceryReceiptResult> {
+  try {
+    return await postJson(API_ROUTES.aiScanReceipt, { imageBase64 });
+  } catch (error) {
+    console.error("Scan receipt API client error:", error);
+    return { items: [], swapSuggestions: [] };
+  }
+}
+
+export async function getTodaysActionAPI(
+  userProfile: UserProfile,
+  currentSeason: Season,
+  outdoorTempCelsius: number
+): Promise<TodaysActionResult> {
+  try {
+    return await postJson(API_ROUTES.aiTodaysAction, { userProfile, currentSeason, outdoorTempCelsius });
+  } catch (error) {
+    console.error("Today's action API client error:", error);
+    return {
+      headline: "Check your sauna schedule",
+      reason: "Shifting electric sauna heating to off-peak hours is one of the most reliable everyday savings in Espoo.",
+      category: "energy",
+      estimatedCo2KgSaved: 2,
+      estimatedEurSaved: 1.5,
+      confidence: "LOW",
     };
   }
 }

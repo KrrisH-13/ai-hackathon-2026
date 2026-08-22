@@ -1,5 +1,13 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import type { UserProfile, Season, WasteClassificationResult, DailyEnergyPlan, CommuteComparison } from "./types";
+import type {
+  UserProfile,
+  Season,
+  WasteClassificationResult,
+  DailyEnergyPlan,
+  CommuteComparison,
+  GroceryReceiptResult,
+  TodaysActionResult,
+} from "./types";
 
 /**
  * Server-only Gemini calls backing the ecopilot feature. Ported from the
@@ -357,4 +365,98 @@ Return a rich structured JSON matching the schema.`;
   });
 
   return JSON.parse(response.text || "{}") as RoadmapPlan;
+}
+
+/**
+ * 6. Grocery Receipt CO2 Estimator (Gemini vision) — same inlineData image
+ * pattern classifyWaste() above uses, applied to a photographed receipt.
+ */
+export async function classifyGroceryReceipt(imageBase64: string): Promise<GroceryReceiptResult> {
+  const prompt = `Read this grocery/purchase receipt image and identify each purchased item.
+For each item, estimate:
+- category: a short food/product category (e.g. "Meat", "Dairy", "Produce", "Grains", "Packaged", "Household")
+- estimatedCo2Kg: a rough lifecycle carbon footprint estimate in kg CO2e for the purchased quantity, using well-known Nordic/Finnish food carbon benchmarks (e.g. beef ~28 kg CO2e/kg, chicken ~3.8, plant protein ~0.9, dairy milk ~1.2/L, oat milk ~0.3/L, rice ~2.7/kg, root vegetables ~0.2/kg)
+- estimatedEur: the item's price if visible on the receipt, else a reasonable Finnish grocery price estimate
+
+Also suggest up to 3 concrete lower-carbon swaps for the highest-impact items (e.g. "swap beef for Härkis/Nyhtökaura").
+
+If the image is not a legible receipt, return an empty items array and no suggestions.`;
+
+  const response = await ai.models.generateContent({
+    model: MODEL_NAME,
+    contents: {
+      parts: [
+        { inlineData: { mimeType: "image/jpeg", data: imageBase64.replace(/^data:image\/\w+;base64,/, "") } },
+        { text: prompt },
+      ],
+    },
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          items: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                name: { type: Type.STRING },
+                category: { type: Type.STRING },
+                estimatedCo2Kg: { type: Type.NUMBER },
+                estimatedEur: { type: Type.NUMBER },
+              },
+              required: ["name", "category", "estimatedCo2Kg", "estimatedEur"],
+            },
+          },
+          swapSuggestions: { type: Type.ARRAY, items: { type: Type.STRING } },
+        },
+        required: ["items", "swapSuggestions"],
+      },
+    },
+  });
+
+  return JSON.parse(response.text || '{"items":[],"swapSuggestions":[]}') as GroceryReceiptResult;
+}
+
+/**
+ * 7. Today's Best Action — one concrete, grounded suggestion for right now.
+ * The model picks and explains; it never computes the headline number from
+ * nothing — it's told to keep estimates conservative and grounded in the
+ * facts handed to it, same discipline as the rest of this file's prompts.
+ */
+export async function generateTodaysBestAction(
+  userProfile: UserProfile,
+  currentSeason: Season,
+  outdoorTempCelsius: number,
+  recentLogsSummary: string
+): Promise<TodaysActionResult> {
+  const prompt = `Recommend exactly ONE concrete, practical action this Espoo resident could take TODAY to cut their carbon footprint or save money, grounded strictly in the facts below. Do not invent numbers beyond what a reasonable person could estimate from these facts — keep estimates conservative and round.
+
+Resident: ${userProfile.name}, District: ${userProfile.district}, Housing: ${userProfile.housingType} (${userProfile.livingAreaSqM}m²), Heating: ${userProfile.heatingSystem}, Sauna: ${userProfile.saunaType} (${userProfile.saunaTimesPerWeek}x/wk), Commute: ${describeCommute(userProfile)}, Waste sorting: ${userProfile.wasteManagementSystem}.
+Season: ${currentSeason}, Outdoor temperature: ${outdoorTempCelsius}°C.
+Recent logged activity: ${recentLogsSummary || "No activity logged yet."}
+
+Pick ONE single best action (not a list). Categorize it as one of: heating, transport, waste, energy, food, other.`;
+
+  const response = await ai.models.generateContent({
+    model: MODEL_NAME,
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          headline: { type: Type.STRING },
+          reason: { type: Type.STRING },
+          category: { type: Type.STRING },
+          estimatedCo2KgSaved: { type: Type.NUMBER },
+          estimatedEurSaved: { type: Type.NUMBER },
+          confidence: { type: Type.STRING },
+        },
+        required: ["headline", "reason", "category", "estimatedCo2KgSaved", "estimatedEurSaved", "confidence"],
+      },
+    },
+  });
+
+  return JSON.parse(response.text || "{}") as TodaysActionResult;
 }

@@ -200,7 +200,8 @@ export type EcopilotTab =
   | 'activityLog'
   | 'receiptScanner'
   | 'whatIf'
-  | 'tracker';
+  | 'tracker'
+  | 'rewards';
 
 export const CO2_LOG_CATEGORIES = ['heating', 'transport', 'waste', 'energy', 'food', 'other'] as const;
 export type Co2LogCategory = (typeof CO2_LOG_CATEGORIES)[number];
@@ -217,4 +218,25 @@ export interface Co2LogEntry {
 export interface Co2DailyTotal {
   date: string; // YYYY-MM-DD
   netCo2Kg: number;
+}
+
+export interface GroceryReceiptItem {
+  name: string;
+  category: string;
+  estimatedCo2Kg: number;
+  estimatedEur: number;
+}
+
+export interface GroceryReceiptResult {
+  items: GroceryReceiptItem[];
+  swapSuggestions: string[];
+}
+
+export interface TodaysActionResult {
+  headline: string;
+  reason: string;
+  category: Co2LogCategory;
+  estimatedCo2KgSaved: number;
+  estimatedEurSaved: number;
+  confidence: 'HIGH' | 'MEDIUM' | 'LOW';
 }

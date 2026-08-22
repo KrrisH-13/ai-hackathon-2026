@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Sparkles, Send, Zap, RotateCw, Copy, CheckCircle, Building2, Compass, ArrowRight } from "lucide-react";
-import type { UserProfile, Season, ChatMessage, EcopilotTab } from "@/lib/ecopilot/types";
-import { chatWithClimateAssistantAPI } from "@/lib/ecopilot/client";
+import { Sparkles, Send, Zap, RotateCw, Copy, CheckCircle, Building2, Compass, ArrowRight, Target, Plus } from "lucide-react";
+import type { UserProfile, Season, ChatMessage, EcopilotTab, TodaysActionResult } from "@/lib/ecopilot/types";
+import { CO2_LOG_CATEGORIES } from "@/lib/ecopilot/types";
+import { chatWithClimateAssistantAPI, getTodaysActionAPI } from "@/lib/ecopilot/client";
+import { addCo2LogAPI } from "@/lib/ecopilot/profileClient";
 import { SEASONAL_PRESETS } from "@/lib/ecopilot/data";
 
 interface AiClimateCopilotViewProps {
@@ -63,6 +65,10 @@ How can I help power your climate choices today?`,
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const [todaysAction, setTodaysAction] = useState<TodaysActionResult | null>(null);
+  const [isLoadingAction, setIsLoadingAction] = useState<boolean>(true);
+  const [actionLogged, setActionLogged] = useState<boolean>(false);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -70,6 +76,38 @@ How can I help power your climate choices today?`,
   useEffect(() => {
     scrollToBottom();
   }, [messages, isLoading]);
+
+  const fetchTodaysAction = async () => {
+    setIsLoadingAction(true);
+    setActionLogged(false);
+    try {
+      const result = await getTodaysActionAPI(userProfile, currentSeason, outdoorTempCelsius);
+      setTodaysAction(result);
+    } finally {
+      setIsLoadingAction(false);
+    }
+  };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch on profile/season change
+    fetchTodaysAction();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userProfile.id, currentSeason, outdoorTempCelsius]);
+
+  const handleLogTodaysAction = async () => {
+    if (!todaysAction) return;
+    try {
+      const category = CO2_LOG_CATEGORIES.includes(todaysAction.category) ? todaysAction.category : "other";
+      await addCo2LogAPI({
+        category,
+        description: todaysAction.headline,
+        co2Kg: -Math.abs(todaysAction.estimatedCo2KgSaved),
+      });
+      setActionLogged(true);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const handleSendMessage = async (textToSend?: string) => {
     const messageText = textToSend || inputPrompt;
@@ -163,6 +201,56 @@ How can I help power your climate choices today?`,
             <ArrowRight className="w-3 h-3" />
           </button>
         </div>
+      </div>
+
+      {/* Today's Best Action — one Gemini-grounded suggestion, real profile + weather + recent CO2 history */}
+      <div className="p-5 rounded-3xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-start gap-3 min-w-0">
+          <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center shrink-0 mt-0.5">
+            <Target className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-200">
+              {isFinnish ? "Päivän parhain teko" : "Today's Best Action"}
+            </span>
+            {isLoadingAction ? (
+              <div className="flex items-center gap-1.5 text-xs text-emerald-100 mt-0.5">
+                <RotateCw className="w-3 h-3 animate-spin" />
+                {isFinnish ? "Lasketaan..." : "Thinking..."}
+              </div>
+            ) : todaysAction ? (
+              <>
+                <h4 className="text-sm font-black">{todaysAction.headline}</h4>
+                <p className="text-[11px] text-emerald-100 leading-relaxed mt-0.5">{todaysAction.reason}</p>
+              </>
+            ) : (
+              <p className="text-xs text-emerald-100 mt-0.5">
+                {isFinnish ? "Ei saatavilla juuri nyt." : "Not available right now."}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {todaysAction && !isLoadingAction && (
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="text-right">
+              <div className="text-sm font-black">-{todaysAction.estimatedCo2KgSaved.toFixed(1)} kg CO2</div>
+              <div className="text-[10px] text-emerald-200">+{todaysAction.estimatedEurSaved.toFixed(2)} €</div>
+            </div>
+            <button
+              onClick={handleLogTodaysAction}
+              disabled={actionLogged}
+              className="px-3 py-2 rounded-xl bg-white text-emerald-700 hover:bg-emerald-50 disabled:opacity-60 text-xs font-bold transition flex items-center gap-1.5"
+            >
+              {actionLogged ? (
+                <CheckCircle className="w-3.5 h-3.5" />
+              ) : (
+                <Plus className="w-3.5 h-3.5" />
+              )}
+              <span>{actionLogged ? (isFinnish ? "Kirjattu!" : "Logged!") : isFinnish ? "Kirjaa" : "Log it"}</span>
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="rounded-3xl bg-white border border-slate-200 shadow-sm flex flex-col h-[650px] overflow-hidden">

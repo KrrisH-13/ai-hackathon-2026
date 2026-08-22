@@ -1,5 +1,7 @@
 import { createRouteHandlerClient } from "@/lib/supabase/server";
-import { getRecentCo2Logs, insertCo2Log, aggregateDailyTotals, toCo2LogEntries } from "@/lib/ecopilot/queries";
+import { createServiceRoleClient } from "@/lib/supabase/admin";
+import { getRecentCo2Logs, insertCo2Log, aggregateDailyTotals, toCo2LogEntries, getActivityStreakDays, awardCredits } from "@/lib/ecopilot/queries";
+import { calculateEcoCreditsForImpact } from "@/lib/ecopilot/calculations";
 import { co2LogInsertSchema } from "@/lib/validation";
 
 /** The logged-in user's recent CO2 ledger — raw entries + daily net totals. */
@@ -48,6 +50,21 @@ export async function POST(request: Request) {
       },
       supabase
     );
+
+    // Only savings (negative co2_kg) earn EcoCredits. Self-reported entries
+    // get MEDIUM confidence (not independently verified) in the credit formula.
+    if (validated.co2Kg < 0) {
+      const streakDays = await getActivityStreakDays(user.id, supabase);
+      const credits = calculateEcoCreditsForImpact({
+        actionId: log.id,
+        actionTitle: validated.description,
+        avoidedCo2Kg: -validated.co2Kg,
+        confidence: "MEDIUM",
+        streakDays,
+      });
+      const serviceRole = createServiceRoleClient();
+      await awardCredits(user.id, credits.finalCreditsAwarded, `Logged: ${validated.description}`, log.id, serviceRole);
+    }
 
     return Response.json(log);
   } catch (err) {

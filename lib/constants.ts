@@ -35,6 +35,10 @@ export const API_ROUTES = {
   ecopilotProfile: "/api/ecopilot/profile",
   ecopilotCo2Logs: "/api/ecopilot/co2-logs",
   ecopilotCo2Log: (id: string) => `/api/ecopilot/co2-logs/${id}`,
+  ecopilotRewards: "/api/ecopilot/rewards",
+  ecopilotRewardsRedeem: "/api/ecopilot/rewards/redeem",
+  aiScanReceipt: "/api/ai/scan-receipt",
+  aiTodaysAction: "/api/ai/todays-action",
 } as const;
 
 /** Enforced in app/api/upload/route.ts. Empty array = no MIME restriction. */

@@ -12,6 +12,7 @@ import {
   Receipt,
   Lightbulb,
   Activity,
+  Award,
 } from "lucide-react";
 import type { EcopilotTab } from "@/lib/ecopilot/types";
 
@@ -39,6 +40,7 @@ const TABS: { id: EcopilotTab; icon: typeof Sparkles; iconClass: string; fi: str
   { id: "receiptScanner", icon: Receipt, iconClass: "text-orange-600", fi: "Kuitti-skanneri", en: "Receipt Scanner" },
   { id: "whatIf", icon: Lightbulb, iconClass: "text-cyan-600", fi: "Entä jos...?", en: "What If?" },
   { id: "tracker", icon: Activity, iconClass: "text-rose-600", fi: "Päästöseuranta", en: "CO2 Tracker" },
+  { id: "rewards", icon: Award, iconClass: "text-amber-600", fi: "Palkinnot", en: "Rewards" },
   { id: "personal", icon: Route, iconClass: "text-emerald-600", fi: "Oma Ilmastopolku", en: "My 2030 Plan" },
 ];
 

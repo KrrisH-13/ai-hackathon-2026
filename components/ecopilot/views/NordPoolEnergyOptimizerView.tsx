@@ -2,19 +2,31 @@
 
 import { useState, useEffect } from "react";
 import { Zap, RotateCw, Sparkles, Clock } from "lucide-react";
-import type { UserProfile, Season, DailyEnergyPlan } from "@/lib/ecopilot/types";
-import { MOCK_HOURLY_SPOT_PRICES, SEASONAL_PRESETS } from "@/lib/ecopilot/data";
+import type { UserProfile, Season, DailyEnergyPlan, SpotPricePoint } from "@/lib/ecopilot/types";
+import { SEASONAL_PRESETS } from "@/lib/ecopilot/data";
 import { optimizeDailyEnergyAPI } from "@/lib/ecopilot/client";
+import { DataFreshnessBadge } from "@/components/ecopilot/DataFreshnessBadge";
 
 interface NordPoolEnergyOptimizerViewProps {
   userProfile: UserProfile;
   currentSeason: Season;
   /** Real current outdoor temperature (or a seasonal mock fallback) — see EcopilotApp. */
   outdoorTempCelsius: number;
+  /** Today's 24h spot price curve — live prices (porssisahko.net) merged onto the mock curve where available. */
+  spotPrices: SpotPricePoint[];
+  /** Whether the live spot-price fetch actually succeeded this page load. */
+  isLiveSpotPrices: boolean;
   isFinnish: boolean;
 }
 
-export function NordPoolEnergyOptimizerView({ userProfile, currentSeason, outdoorTempCelsius, isFinnish }: NordPoolEnergyOptimizerViewProps) {
+export function NordPoolEnergyOptimizerView({
+  userProfile,
+  currentSeason,
+  outdoorTempCelsius,
+  spotPrices,
+  isLiveSpotPrices,
+  isFinnish,
+}: NordPoolEnergyOptimizerViewProps) {
   const [selectedSaunaHour, setSelectedSaunaHour] = useState<number>(21);
   const [saunaTempTarget, setSaunaTempTarget] = useState<number>(75);
   const [aiEnergyPlan, setAiEnergyPlan] = useState<DailyEnergyPlan | null>(null);
@@ -25,7 +37,7 @@ export function NordPoolEnergyOptimizerView({ userProfile, currentSeason, outdoo
   const fetchDailyPlan = async () => {
     setIsComputingPlan(true);
     try {
-      const plan = await optimizeDailyEnergyAPI(userProfile, currentSeason, outdoorTempCelsius, MOCK_HOURLY_SPOT_PRICES);
+      const plan = await optimizeDailyEnergyAPI(userProfile, currentSeason, outdoorTempCelsius, spotPrices);
       setAiEnergyPlan(plan);
     } catch (err) {
       console.error(err);
@@ -38,12 +50,12 @@ export function NordPoolEnergyOptimizerView({ userProfile, currentSeason, outdoo
     // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch on profile/season change
     fetchDailyPlan();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userProfile.id, currentSeason, outdoorTempCelsius]);
+  }, [userProfile.id, currentSeason, outdoorTempCelsius, spotPrices]);
 
   // Sauna energy calculation (assuming 7 kW kiuas, 1.5h session = 10.5 kWh)
   const kiuasKwh = 10.5;
   const eveningPeakPrice = 16.5; // c/kWh at 18:00
-  const chosenHourPoint = MOCK_HOURLY_SPOT_PRICES[selectedSaunaHour] || MOCK_HOURLY_SPOT_PRICES[21];
+  const chosenHourPoint = spotPrices[selectedSaunaHour] || spotPrices[21];
   const chosenPrice = chosenHourPoint.priceCentsKwh;
 
   const tempFactor = saunaTempTarget === 75 ? 0.75 : saunaTempTarget === 80 ? 0.85 : 1.0;
@@ -105,6 +117,11 @@ export function NordPoolEnergyOptimizerView({ userProfile, currentSeason, outdoo
               <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
                 <Zap className="w-4 h-4 text-amber-500" />
                 <span>{isFinnish ? "Vuorokauden Pörssisähkökäyrä (snt/kWh)" : "24h Spot Price Curve (c/kWh)"}</span>
+                <DataFreshnessBadge
+                  freshness={isLiveSpotPrices ? "live" : "reference"}
+                  sourceName="porssisahko.net (Finnish day-ahead spot price)"
+                  isFinnish={isFinnish}
+                />
               </h3>
               <p className="text-xs text-slate-500">
                 {isFinnish
@@ -131,7 +148,7 @@ export function NordPoolEnergyOptimizerView({ userProfile, currentSeason, outdoo
 
           <div className="space-y-2">
             <div className="h-44 flex items-end gap-1 sm:gap-1.5 pt-4 pb-2 px-1 border-b border-slate-100">
-              {MOCK_HOURLY_SPOT_PRICES.map((p) => {
+              {spotPrices.map((p) => {
                 const heightPercent = Math.min(100, Math.max(12, (p.priceCentsKwh / 20) * 100));
                 const isSelected = selectedSaunaHour === p.hour;
 
@@ -231,7 +248,7 @@ export function NordPoolEnergyOptimizerView({ userProfile, currentSeason, outdoo
                   onChange={(e) => setSelectedSaunaHour(Number(e.target.value))}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-amber-500"
                 >
-                  {MOCK_HOURLY_SPOT_PRICES.map((p) => (
+                  {spotPrices.map((p) => (
                     <option key={p.hour} value={p.hour}>
                       {isFinnish ? `klo ${p.timeLabel}` : p.timeLabel} — {p.priceCentsKwh} c/kWh ({p.status})
                     </option>

@@ -39,3 +39,17 @@ export function addCo2LogAPI(entry: { category: Co2LogCategory; description: str
 export function deleteCo2LogAPI(id: string): Promise<{ success: true }> {
   return request(API_ROUTES.ecopilotCo2Log(id), { method: "DELETE" });
 }
+
+export interface RewardsSummary {
+  balance: number;
+  transactions: { id: string; amount: number; reason: string; created_at: string }[];
+  redemptions: { id: string; reward_id: string; credits_cost: number; voucher_code: string; redeemed_at: string }[];
+}
+
+export function fetchRewardsAPI(): Promise<RewardsSummary> {
+  return request(API_ROUTES.ecopilotRewards);
+}
+
+export function redeemRewardAPI(rewardId: string) {
+  return request(API_ROUTES.ecopilotRewardsRedeem, { method: "POST", body: JSON.stringify({ rewardId }) });
+}

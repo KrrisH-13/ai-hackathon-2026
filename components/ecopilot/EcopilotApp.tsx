@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { UserProfile, Season, EcopilotTab } from "@/lib/ecopilot/types";
+import type { UserProfile, Season, EcopilotTab, SpotPricePoint } from "@/lib/ecopilot/types";
 import { SEASONAL_PRESETS } from "@/lib/ecopilot/data";
 import { updateEcopilotProfileAPI } from "@/lib/ecopilot/profileClient";
 import { EcopilotSidebar } from "@/components/ecopilot/EcopilotSidebar";
@@ -17,6 +17,7 @@ import { ActivityLoggerView } from "@/components/ecopilot/views/ActivityLoggerVi
 import { ReceiptScannerView } from "@/components/ecopilot/views/ReceiptScannerView";
 import { WhatIfView } from "@/components/ecopilot/views/WhatIfView";
 import { Co2TrackerView } from "@/components/ecopilot/views/Co2TrackerView";
+import { RewardsView } from "@/components/ecopilot/views/RewardsView";
 import { ProfileCustomizerModal } from "@/components/ecopilot/ProfileCustomizerModal";
 import { SharePledgeModal } from "@/components/ecopilot/SharePledgeModal";
 
@@ -31,6 +32,10 @@ interface EcopilotAppProps {
   initialOutdoorTempCelsius: number;
   /** Whether initialOutdoorTempCelsius came from the live weather API vs. the seasonal mock fallback. */
   isLiveWeather: boolean;
+  /** Today's 24h spot price curve — live prices (porssisahko.net) merged onto the mock curve where available. */
+  spotPrices: SpotPricePoint[];
+  /** Whether the live spot-price fetch actually succeeded this page load. */
+  isLiveSpotPrices: boolean;
 }
 
 /**
@@ -42,7 +47,15 @@ interface EcopilotAppProps {
  * (linked to the logged-in account, see supabase/migrations/20260822090000_*.sql)
  * rather than a mock persona switcher.
  */
-export function EcopilotApp({ initialProfile, accountEmail, initialSeason, initialOutdoorTempCelsius, isLiveWeather }: EcopilotAppProps) {
+export function EcopilotApp({
+  initialProfile,
+  accountEmail,
+  initialSeason,
+  initialOutdoorTempCelsius,
+  isLiveWeather,
+  spotPrices,
+  isLiveSpotPrices,
+}: EcopilotAppProps) {
   const [profile, setProfile] = useState<UserProfile>(initialProfile);
   const [currentTab, setCurrentTab] = useState<EcopilotTab>("chat");
   const [currentSeason, setCurrentSeason] = useState<Season>(initialSeason);
@@ -108,6 +121,8 @@ export function EcopilotApp({ initialProfile, accountEmail, initialSeason, initi
               userProfile={profile}
               currentSeason={currentSeason}
               outdoorTempCelsius={outdoorTempCelsius}
+              spotPrices={spotPrices}
+              isLiveSpotPrices={isLiveSpotPrices}
               isFinnish={isFinnish}
             />
           )}
@@ -124,9 +139,13 @@ export function EcopilotApp({ initialProfile, accountEmail, initialSeason, initi
 
           {currentTab === "receiptScanner" && <ReceiptScannerView isFinnish={isFinnish} />}
 
-          {currentTab === "whatIf" && <WhatIfView isFinnish={isFinnish} />}
+          {currentTab === "whatIf" && (
+            <WhatIfView userProfile={profile} currentSeason={currentSeason} spotPrices={spotPrices} isFinnish={isFinnish} />
+          )}
 
           {currentTab === "tracker" && <Co2TrackerView userProfile={profile} isFinnish={isFinnish} />}
+
+          {currentTab === "rewards" && <RewardsView isFinnish={isFinnish} />}
 
           {currentTab === "personal" && (
             <PersonalRoadmapSprintView
