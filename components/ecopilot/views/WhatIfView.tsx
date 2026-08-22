@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Lightbulb, Sparkles, ArrowRight, AlertTriangle, Plus, CheckCircle2, ListChecks } from "lucide-react";
+import { Lightbulb, Sparkles, ArrowRight, AlertTriangle, Plus, CheckCircle2, ListChecks, Activity } from "lucide-react";
 import type { UserProfile, Season, WhatIfProjection } from "@/lib/ecopilot/types";
 import { projectWhatIfScenarioAPI } from "@/lib/ecopilot/client";
+import { addCo2LogAPI } from "@/lib/ecopilot/profileClient";
 
 interface WhatIfViewProps {
   userProfile: UserProfile;
@@ -35,11 +36,35 @@ export function WhatIfView({ userProfile, currentSeason, isFinnish }: WhatIfView
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [projection, setProjection] = useState<WhatIfProjection | null>(null);
   const [planItems, setPlanItems] = useState<WhatIfProjection[]>([]);
+  const [isLogging, setIsLogging] = useState(false);
+  const [loggedKeys, setLoggedKeys] = useState<Set<string>>(new Set());
+  const [logError, setLogError] = useState<string | null>(null);
   const prompts = isFinnish ? EXAMPLE_PROMPTS_FI : EXAMPLE_PROMPTS_EN;
 
   const isCurrentAdded = projection ? planItems.includes(projection) : false;
+  const projectionKey = projection ? projection.question + projection.narrative : null;
+  const isCurrentLogged = projectionKey ? loggedKeys.has(projectionKey) : false;
   const totalCo2SavedKgPerYear = planItems.reduce((sum, p) => sum + p.co2SavedKgPerYear, 0);
   const totalMoneySavedEurPerYear = planItems.reduce((sum, p) => sum + p.moneySavedEurPerYear, 0);
+
+  const handleLogToTracker = async () => {
+    if (!projection || !projectionKey || isCurrentLogged || isLogging) return;
+    setIsLogging(true);
+    setLogError(null);
+    try {
+      await addCo2LogAPI({
+        category: "other",
+        description: `${projection.question} (projected annual change)`,
+        co2Kg: -Math.abs(projection.co2SavedKgPerYear),
+        source: "what-if",
+      });
+      setLoggedKeys((prev) => new Set(prev).add(projectionKey));
+    } catch (err) {
+      setLogError(err instanceof Error ? err.message : "Failed to log this projection");
+    } finally {
+      setIsLogging(false);
+    }
+  };
 
   const handleAsk = async () => {
     const question = draft.trim();
@@ -154,24 +179,62 @@ export function WhatIfView({ userProfile, currentSeason, isFinnish }: WhatIfView
                 <div className="text-[10px] text-cyan-100 font-bold">{isFinnish ? "Säästö" : "Saved"}</div>
               </div>
             </div>
-            <button
-              onClick={() => !isCurrentAdded && setPlanItems((prev) => [...prev, projection])}
-              disabled={isCurrentAdded}
-              className="shrink-0 px-4 py-2.5 rounded-xl bg-white text-emerald-700 font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-sm hover:bg-emerald-50 disabled:bg-white/20 disabled:text-white"
-            >
-              {isCurrentAdded ? (
-                <>
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>{isFinnish ? "Lisätty suunnitelmaan" : "Added to plan"}</span>
-                </>
-              ) : (
-                <>
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>{isFinnish ? "Lisää suunnitelmaan" : "Add to plan"}</span>
-                </>
-              )}
-            </button>
+            <div className="flex flex-col sm:flex-row items-stretch gap-2 shrink-0">
+              <button
+                onClick={() => !isCurrentAdded && setPlanItems((prev) => [...prev, projection])}
+                disabled={isCurrentAdded}
+                className="px-4 py-2.5 rounded-xl bg-white text-emerald-700 font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-sm hover:bg-emerald-50 disabled:bg-white/20 disabled:text-white"
+              >
+                {isCurrentAdded ? (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>{isFinnish ? "Lisätty suunnitelmaan" : "Added to plan"}</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>{isFinnish ? "Lisää suunnitelmaan" : "Add to plan"}</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={handleLogToTracker}
+                disabled={isCurrentLogged || isLogging}
+                title={
+                  isFinnish
+                    ? "Kirjaa tämä toteutuneena tekona Seuranta & Palkinnot -osioon"
+                    : "Log this as a real, completed action in Tracker & Rewards"
+                }
+                className="px-4 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-sm hover:bg-slate-800 disabled:bg-white/20 disabled:text-white"
+              >
+                {isCurrentLogged ? (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>{isFinnish ? "Kirjattu seurantaan" : "Logged to tracker"}</span>
+                  </>
+                ) : (
+                  <>
+                    <Activity className={`w-3.5 h-3.5 ${isLogging ? "animate-pulse" : ""}`} />
+                    <span>{isFinnish ? "Kirjaa toteutuneeksi" : "Log it as done"}</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
+
+          {logError && (
+            <p className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2 flex items-center gap-1.5">
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+              <span>{logError}</span>
+            </p>
+          )}
+
+          <p className="text-[10px] text-slate-400 italic">
+            {isFinnish
+              ? "\"Kirjaa toteutuneeksi\" merkitsee koko vuotuisen projisoidun säästön yhtenä merkintänä Päästö- ja Palkintohistoriaan — käytä vain, kun olet oikeasti tekemässä tämän muutoksen."
+              : "\"Log it as done\" records the full projected annual saving as one entry in the CO2 & Rewards history — only use this once you're actually committing to the change."}
+          </p>
         </div>
       )}
 

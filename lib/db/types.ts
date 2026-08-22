@@ -94,7 +94,8 @@ export type Co2LogSource =
   | "commute-comparator"
   | "waste-classifier"
   | "roadmap-sprint"
-  | "activity-logger";
+  | "activity-logger"
+  | "what-if";
 
 /**
  * Append-only CO2 activity ledger (see lib/ecopilot/queries.ts for the daily

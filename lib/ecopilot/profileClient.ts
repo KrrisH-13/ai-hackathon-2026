@@ -38,7 +38,7 @@ export function addCo2LogAPI(entry: {
   co2Kg: number;
   occurredOn?: string;
   /** Tags the entry for the CO2 tracker chart and any feature (e.g. rewards) that reads it later. Defaults server-side to "manual". */
-  source?: "manual" | "activity-logger";
+  source?: "manual" | "activity-logger" | "what-if";
 }) {
   return request(API_ROUTES.ecopilotCo2Logs, { method: "POST", body: JSON.stringify(entry) });
 }
