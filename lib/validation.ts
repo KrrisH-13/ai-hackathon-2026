@@ -11,7 +11,7 @@ import {
   CO2_LOG_CATEGORIES,
 } from "@/lib/ecopilot/types";
 
-/** PATCH /api/ecopilot/profile body — all fields optional, only known columns validated. */
+/** PATCH /api/ecopilot/profile body â€” all fields optional, only known columns validated. */
 export const ecopilotProfileUpdateSchema = z.object({
   district: z.enum(ESPOO_DISTRICTS).optional(),
   housingType: z.enum(HOUSING_TYPES).optional(),
@@ -30,13 +30,13 @@ export const ecopilotProfileUpdateSchema = z.object({
   targetFootprintTonnes: z.number().min(0).optional(),
 });
 
-/** POST /api/ecopilot/co2-logs body — a single manually-logged CO2 ledger entry. */
+/** POST /api/ecopilot/co2-logs body â€” a single manually-logged CO2 ledger entry. */
 export const co2LogInsertSchema = z.object({
   occurredOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "occurredOn must be YYYY-MM-DD").optional(),
   category: z.enum(CO2_LOG_CATEGORIES),
   description: z.string().min(1),
   co2Kg: z.number(),
-  /** Only sources an API caller may set directly — the rest are reserved for other server-side flows. */
+  /** Only sources an API caller may set directly â€” the rest are reserved for other server-side flows. */
   source: z.enum(["manual", "activity-logger"]).optional(),
 });
 
