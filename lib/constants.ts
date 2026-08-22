@@ -9,9 +9,6 @@ export const APP_DESCRIPTION = "AI climate copilot for Espoo residents working t
 export const ROLES = ["citizen", "staff", "admin"] as const;
 export type Role = (typeof ROLES)[number];
 
-export const SUBMISSION_STATUSES = ["open", "in_progress", "resolved"] as const;
-export type SubmissionStatus = (typeof SUBMISSION_STATUSES)[number];
-
 /**
  * `(auth)` and `(dashboard)` are Next.js route groups — the parentheses
  * don't appear in the URL, so `app/(auth)/login/page.tsx` is served at
@@ -24,12 +21,9 @@ export const ROUTES = {
   unauthorized: "/unauthorized",
   offline: "/offline",
   dashboard: (role: Role) => `/${role}`,
-  submissions: "/submissions",
 } as const;
 
 export const API_ROUTES = {
-  submissions: "/api/submissions",
-  submission: (id: string) => `/api/submissions/${id}`,
   currentUser: "/api/auth/user",
   upload: "/api/upload",
   jobsProcess: "/api/jobs/process",

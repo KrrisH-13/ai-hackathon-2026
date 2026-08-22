@@ -1,6 +1,0 @@
-{
-  "name": "EcoPilot",
-  "description": "Your daily AI companion for smarter Nordic living. Intelligent daily recommendations, structured preference learning, and verified energy & climate optimization.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}

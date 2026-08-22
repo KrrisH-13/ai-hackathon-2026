@@ -22,8 +22,6 @@ export const config = {
     "/citizen/:path*",
     "/staff/:path*",
     "/admin/:path*",
-    "/submissions/:path*",
-    "/api/submissions/:path*",
     "/api/auth/user",
   ],
 };
