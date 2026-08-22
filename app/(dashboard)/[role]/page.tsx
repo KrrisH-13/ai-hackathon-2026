@@ -22,5 +22,5 @@ export default async function RoleDashboardPage({ params }: RoleDashboardPagePro
   // Each user only ever sees their own role's dashboard.
   if (profile.role !== role) redirect(ROUTES.dashboard(profile.role));
 
-  return <EcopilotApp />;
+  return <EcopilotApp accountEmail={user.email} />;
 }
