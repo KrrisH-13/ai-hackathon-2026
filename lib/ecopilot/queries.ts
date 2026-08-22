@@ -1,5 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database, EcopilotProfile, EcopilotProfileUpdate, Co2Log, Co2LogInsert } from "@/lib/db/types";
+import type {
+  Database,
+  EcopilotProfile,
+  EcopilotProfileUpdate,
+  Co2Log,
+  Co2LogInsert,
+  CreditTransaction,
+  RewardRedemption,
+} from "@/lib/db/types";
 import type { UserProfile, Co2LogEntry, Co2DailyTotal } from "./types";
 
 type Client = SupabaseClient<Database>;
@@ -151,4 +159,94 @@ export function mapUserProfileToUpdate(patch: Partial<UserProfile>): EcopilotPro
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
+}
+
+// ============================================================
+// EcoCredits (supabase/migrations/20260823130000_*.sql)
+// ============================================================
+
+/** Consecutive days (counting back from today) with at least one CO2 log entry. */
+export async function getActivityStreakDays(userId: string, client: Client): Promise<number> {
+  const { data, error } = await client
+    .from("ecopilot_co2_logs")
+    .select("occurred_on")
+    .eq("user_id", userId)
+    .order("occurred_on", { ascending: false })
+    .limit(60);
+
+  if (error) throw new Error(`Failed to compute activity streak: ${error.message}`);
+
+  const days = new Set(data.map((row) => row.occurred_on));
+  let streak = 0;
+  const cursor = new Date();
+  while (true) {
+    const dateStr = cursor.toISOString().slice(0, 10);
+    if (!days.has(dateStr)) break;
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}
+
+/** Balance is always sum(amount) computed on read — never stored — same pattern as savedCo2Kg. */
+export async function getCreditsBalance(userId: string, client: Client): Promise<number> {
+  const { data, error } = await client.from("ecopilot_credit_transactions").select("amount").eq("user_id", userId);
+  if (error) throw new Error(`Failed to compute credits balance: ${error.message}`);
+  return data.reduce((sum, row) => sum + row.amount, 0);
+}
+
+export async function getRecentCreditTransactions(userId: string, client: Client, limit = 30): Promise<CreditTransaction[]> {
+  const { data, error } = await client
+    .from("ecopilot_credit_transactions")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw new Error(`Failed to fetch credit transactions: ${error.message}`);
+  return data;
+}
+
+export async function getRedemptions(userId: string, client: Client): Promise<RewardRedemption[]> {
+  const { data, error } = await client
+    .from("ecopilot_reward_redemptions")
+    .select("*")
+    .eq("user_id", userId)
+    .order("redeemed_at", { ascending: false });
+
+  if (error) throw new Error(`Failed to fetch redemptions: ${error.message}`);
+  return data;
+}
+
+/** Service-role only (table grants no authenticated insert) — records an earned-credits transaction. */
+export async function awardCredits(
+  userId: string,
+  amount: number,
+  reason: string,
+  co2LogId: string | null,
+  client: Client
+): Promise<CreditTransaction> {
+  const { data, error } = await client
+    .from("ecopilot_credit_transactions")
+    .insert([{ user_id: userId, amount, reason, co2_log_id: co2LogId }])
+    .select()
+    .single();
+
+  if (error) throw new Error(`Failed to award credits: ${error.message}`);
+  return data;
+}
+
+/** Service-role only — atomic balance-check + deduct + record via the redeem_ecopilot_reward() Postgres function. */
+export async function redeemReward(userId: string, rewardId: string, creditsCost: number, client: Client): Promise<RewardRedemption> {
+  const voucherCode = `ECO-${Math.random().toString(36).slice(2, 6).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
+
+  const { data, error } = await client.rpc("redeem_ecopilot_reward", {
+    p_user_id: userId,
+    p_reward_id: rewardId,
+    p_credits_cost: creditsCost,
+    p_voucher_code: voucherCode,
+  });
+
+  if (error) throw new Error(error.message);
+  return data as RewardRedemption;
 }

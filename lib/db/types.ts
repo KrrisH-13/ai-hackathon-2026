@@ -137,6 +137,37 @@ export type Co2LogInsert = {
   source?: Co2LogSource;
 };
 
+/**
+ * EcoCredits ledger (see supabase/migrations/20260823130000_*.sql). Balance
+ * is sum(amount), computed on read — never stored — same pattern as
+ * ecopilot_profiles.saved_co2_kg. Only service_role can write; all earning
+ * happens via POST /api/ecopilot/co2-logs, all spending via the
+ * redeem_ecopilot_reward() Postgres function.
+ */
+export type CreditTransaction = {
+  id: string;
+  user_id: string;
+  amount: number;
+  reason: string;
+  co2_log_id: string | null;
+  created_at: string;
+};
+
+export type CreditTransactionInsert = {
+  amount: number;
+  reason: string;
+  co2_log_id?: string | null;
+};
+
+export type RewardRedemption = {
+  id: string;
+  user_id: string;
+  reward_id: string;
+  credits_cost: number;
+  voucher_code: string;
+  redeemed_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -170,12 +201,28 @@ export type Database = {
         Update: Record<string, never>;
         Relationships: [];
       };
+      ecopilot_credit_transactions: {
+        Row: CreditTransaction;
+        Insert: CreditTransactionInsert & { user_id: string };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      ecopilot_reward_redemptions: {
+        Row: RewardRedemption;
+        Insert: never;
+        Update: Record<string, never>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
       claim_jobs: {
         Args: { job_limit: number };
         Returns: Job[];
+      };
+      redeem_ecopilot_reward: {
+        Args: { p_user_id: string; p_reward_id: string; p_credits_cost: number; p_voucher_code: string };
+        Returns: RewardRedemption;
       };
     };
     Enums: Record<string, never>;
