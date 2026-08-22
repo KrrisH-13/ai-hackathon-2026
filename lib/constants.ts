@@ -3,8 +3,8 @@
  * Update APP_NAME/APP_DESCRIPTION here and in `app/manifest.ts` +
  * `public/manifest.json`.
  */
-export const APP_NAME = "Hackathon App";
-export const APP_DESCRIPTION = "A community reporting PWA built for a one-day hackathon.";
+export const APP_NAME = "eCopilot";
+export const APP_DESCRIPTION = "AI climate copilot for Espoo residents working toward Carbon-Neutral Espoo 2030.";
 
 export const ROLES = ["citizen", "staff", "admin"] as const;
 export type Role = (typeof ROLES)[number];
@@ -33,6 +33,11 @@ export const API_ROUTES = {
   currentUser: "/api/auth/user",
   upload: "/api/upload",
   jobsProcess: "/api/jobs/process",
+  aiChat: "/api/ai/chat",
+  aiClassifyWaste: "/api/ai/classify-waste",
+  aiOptimizeEnergy: "/api/ai/optimize-energy",
+  aiCompareCommute: "/api/ai/compare-commute",
+  aiGenerateRoadmapPlan: "/api/ai/generate-roadmap-plan",
 } as const;
 
 /** Enforced in app/api/upload/route.ts. Empty array = no MIME restriction. */

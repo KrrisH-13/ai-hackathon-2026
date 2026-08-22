@@ -8,31 +8,32 @@ interface SidebarProps {
 
 const LINKS_BY_ROLE: Record<Role, { href: string; label: string }[]> = {
   citizen: [
-    { href: ROUTES.dashboard("citizen"), label: "Dashboard" },
+    { href: ROUTES.dashboard("citizen"), label: "AI Copilot" },
     { href: ROUTES.submissions, label: "My submissions" },
   ],
   staff: [
-    { href: ROUTES.dashboard("staff"), label: "Dashboard" },
+    { href: ROUTES.dashboard("staff"), label: "AI Copilot" },
     { href: ROUTES.submissions, label: "District submissions" },
   ],
   admin: [
-    { href: ROUTES.dashboard("admin"), label: "Dashboard" },
+    { href: ROUTES.dashboard("admin"), label: "AI Copilot" },
     { href: ROUTES.submissions, label: "All submissions" },
   ],
 };
 
+/** Same slate/emerald pill styling as EcopilotSidebar's tabs, for visual consistency. */
 export function Sidebar({ role }: SidebarProps) {
   const links = LINKS_BY_ROLE[role];
 
   return (
-    <aside className="hidden w-56 shrink-0 border-r px-3 py-4 md:block">
+    <aside className="hidden w-56 shrink-0 border-r border-slate-200 bg-slate-50 px-3 py-4 md:block">
       <nav className="flex flex-col gap-1">
         {links.map((link) => (
           <Link
             key={link.href}
             href={link.href}
             className={cn(
-              "rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              "rounded-xl px-3 py-2 text-sm font-bold text-slate-600 transition hover:bg-white hover:text-emerald-700 hover:shadow-sm"
             )}
           >
             {link.label}

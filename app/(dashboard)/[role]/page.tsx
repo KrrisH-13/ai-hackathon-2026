@@ -1,16 +1,13 @@
 import { redirect } from "next/navigation";
 import { getUser, getProfile } from "@/lib/supabase/auth";
-import { createServerComponentClient } from "@/lib/supabase/server";
-import { getMySubmissions, getDistrictSubmissions, getAllSubmissions } from "@/lib/db/queries";
-import CitizenDashboard from "@/components/dashboard/CitizenDashboard";
-import StaffDashboard from "@/components/dashboard/StaffDashboard";
-import AdminDashboard from "@/components/dashboard/AdminDashboard";
+import { EcopilotApp } from "@/components/ecopilot/EcopilotApp";
 import { ROUTES, ROLES, type Role } from "@/lib/constants";
 
 interface RoleDashboardPageProps {
   params: Promise<{ role: string }>;
 }
 
+/** eCopilot's main page — same for every role, so this route only guards access. */
 export default async function RoleDashboardPage({ params }: RoleDashboardPageProps) {
   const { role } = await params;
 
@@ -25,20 +22,5 @@ export default async function RoleDashboardPage({ params }: RoleDashboardPagePro
   // Each user only ever sees their own role's dashboard.
   if (profile.role !== role) redirect(ROUTES.dashboard(profile.role));
 
-  const supabase = await createServerComponentClient();
-
-  if (profile.role === "citizen") {
-    const submissions = await getMySubmissions(user.id, supabase);
-    return <CitizenDashboard submissions={submissions} />;
-  }
-
-  if (profile.role === "staff") {
-    const submissions = profile.district_id
-      ? await getDistrictSubmissions(profile.district_id, supabase)
-      : [];
-    return <StaffDashboard submissions={submissions} districtId={profile.district_id} />;
-  }
-
-  const submissions = await getAllSubmissions(supabase);
-  return <AdminDashboard submissions={submissions} />;
+  return <EcopilotApp accountEmail={user.email} />;
 }
