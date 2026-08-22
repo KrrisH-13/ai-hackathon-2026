@@ -4,10 +4,9 @@ import { ROUTES } from "@/lib/constants";
 
 /**
  * Auth guard only — no shared chrome here. The `[role]` route (eCopilot) is
- * a full-page experience with its own header/nav (EcopilotSidebar/EcopilotTopBar), so wrapping
- * it in a second Header+Sidebar produced two stacked nav bars in two
- * different visual languages. `submissions/layout.tsx` renders the
- * Header+Sidebar for the one route that still needs them.
+ * a full-page experience with its own header/nav (EcopilotSidebar +
+ * EcopilotTopBar), so this layout stays a plain pass-through rather than
+ * wrapping it in another Header/Sidebar.
  */
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await getUser();
