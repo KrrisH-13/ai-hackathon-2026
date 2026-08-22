@@ -7,6 +7,8 @@ import type {
   CommuteComparison,
   GroceryReceiptResult,
   TodaysActionResult,
+  Co2LogEntry,
+  WhatIfProjection,
 } from "./types";
 
 /**
@@ -19,7 +21,7 @@ import type {
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-const MODEL_NAME = "gemini-3.7-flash";
+const MODEL_NAME = "gemini-3.5-flash-lite";
 
 /** "Car" alone doesn't tell the model much — fold in car type/CO2 when it's set. */
 function describeCommute(userProfile: UserProfile): string {
@@ -227,6 +229,80 @@ Generate the optimal daily energy action plan tailored to Finnish living:
 
   const parsed = JSON.parse(response.text || "{}");
   return { ...parsed, currentSeason, outdoorTempCelsius: outdoorTemp } as DailyEnergyPlan;
+}
+
+/** Collapses the raw ledger into per-category totals — cheaper to feed to the model than every row. */
+function summarizeCo2Logs(logs: Co2LogEntry[]): string {
+  if (logs.length === 0) return "No logged activity yet.";
+
+  const byCategory = new Map<string, { count: number; totalKg: number }>();
+  for (const log of logs) {
+    const cur = byCategory.get(log.category) ?? { count: 0, totalKg: 0 };
+    cur.count += 1;
+    cur.totalKg += log.co2Kg;
+    byCategory.set(log.category, cur);
+  }
+
+  const spanDays =
+    Math.round(
+      (new Date(logs[0].occurredOn).getTime() - new Date(logs[logs.length - 1].occurredOn).getTime()) /
+        (1000 * 60 * 60 * 24)
+    ) + 1;
+
+  const lines = Array.from(byCategory.entries()).map(
+    ([category, { count, totalKg }]) => `- ${category}: ${count} entries, net ${totalKg.toFixed(1)} kg CO2e`
+  );
+
+  return `Over the last ${spanDays} days (${logs.length} logged entries):\n${lines.join("\n")}\n\nRecent entries (newest first):\n${logs
+    .slice(0, 15)
+    .map((l) => `${l.occurredOn} [${l.category}] ${l.description}: ${l.co2Kg > 0 ? "+" : ""}${l.co2Kg} kg CO2e (${l.source})`)
+    .join("\n")}`;
+}
+
+/**
+ * 4b. "What If" Scenario Projector — answers a free-form hypothetical
+ * ("what if I biked instead of driving 3x/week?") by reasoning over the
+ * resident's own logged CO2 ledger + profile instead of generic averages.
+ */
+export async function projectWhatIfScenario(
+  question: string,
+  userProfile: UserProfile,
+  recentLogs: Co2LogEntry[],
+  currentSeason: Season = "winter"
+): Promise<WhatIfProjection> {
+  const prompt = `A resident of Espoo, Finland is asking a hypothetical "what if" question about changing a daily habit. Ground your answer in their actual logged data below — do not just use generic national averages if their own data suggests different numbers. If their logs don't contain enough relevant data to project confidently, say so via a lower confidence and explain the assumption you fell back on.
+
+Resident profile: ${userProfile.name}, District: ${userProfile.district}, Housing: ${userProfile.housingType} (${userProfile.livingAreaSqM}m², ${userProfile.householdSize} persons), Heating: ${userProfile.heatingSystem}, Electricity: ${userProfile.electricityContract}, Commute: ${describeCommute(userProfile)}, Current footprint: ${userProfile.estimatedFootprintTonnes} t CO2e/year (Target: ${userProfile.targetFootprintTonnes} t).
+Current season: ${currentSeason}
+
+Their logged CO2 ledger:
+${summarizeCo2Logs(recentLogs)}
+
+Question: "${question}"
+
+Project the annual impact of this change (CO2 kg saved/year and € saved/year), state the assumption you used to get there (ideally citing the logged data), and rate your confidence given how much relevant logged data was available.`;
+
+  const response = await ai.models.generateContent({
+    model: MODEL_NAME,
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          narrative: { type: Type.STRING },
+          co2SavedKgPerYear: { type: Type.NUMBER },
+          moneySavedEurPerYear: { type: Type.NUMBER },
+          assumption: { type: Type.STRING },
+          confidence: { type: Type.STRING, enum: ["high", "medium", "low"] },
+        },
+        required: ["narrative", "co2SavedKgPerYear", "moneySavedEurPerYear", "assumption", "confidence"],
+      },
+    },
+  });
+
+  const parsed = JSON.parse(response.text || "{}");
+  return { question, ...parsed } as WhatIfProjection;
 }
 
 /**

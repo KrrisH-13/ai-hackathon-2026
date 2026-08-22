@@ -10,6 +10,7 @@ import type {
   SpotPricePoint,
   GroceryReceiptResult,
   TodaysActionResult,
+  WhatIfProjection,
 } from "./types";
 
 /**
@@ -155,6 +156,27 @@ export async function compareCommuteAPI(origin: string, destination: string): Pr
         moneyEur: 1012,
         treesEquivalent: 27,
       },
+    };
+  }
+}
+
+export async function projectWhatIfScenarioAPI(
+  question: string,
+  userProfile: UserProfile,
+  currentSeason: Season = "winter"
+): Promise<WhatIfProjection> {
+  try {
+    return await postJson(API_ROUTES.aiWhatIf, { question, userProfile, currentSeason });
+  } catch (error) {
+    console.error("What-if API client error:", error);
+    return {
+      question,
+      narrative:
+        "We couldn't reach the AI projection service right now, so here's a rough estimate — try again in a moment for a projection grounded in your actual logged data.",
+      co2SavedKgPerYear: 0,
+      moneySavedEurPerYear: 0,
+      assumption: "Fallback response — not based on your logged CO2 ledger.",
+      confidence: "low",
     };
   }
 }

@@ -240,3 +240,13 @@ export interface TodaysActionResult {
   estimatedEurSaved: number;
   confidence: 'HIGH' | 'MEDIUM' | 'LOW';
 }
+
+export interface WhatIfProjection {
+  question: string;
+  narrative: string;
+  co2SavedKgPerYear: number;
+  moneySavedEurPerYear: number;
+  /** What the projection assumed about current habits, e.g. derived from the logged data used. */
+  assumption: string;
+  confidence: 'high' | 'medium' | 'low';
+}

@@ -140,7 +140,7 @@ export function EcopilotApp({
           {currentTab === "receiptScanner" && <ReceiptScannerView isFinnish={isFinnish} />}
 
           {currentTab === "whatIf" && (
-            <WhatIfView userProfile={profile} currentSeason={currentSeason} spotPrices={spotPrices} isFinnish={isFinnish} />
+            <WhatIfView userProfile={profile} currentSeason={currentSeason} isFinnish={isFinnish} />
           )}
 
           {currentTab === "tracker" && <Co2TrackerView userProfile={profile} isFinnish={isFinnish} />}
