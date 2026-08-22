@@ -196,7 +196,6 @@ export type EcopilotTab =
   | 'transit'
   | 'roadmap'
   | 'personal'
-  | 'greenWindow'
   | 'activityLog'
   | 'receiptScanner'
   | 'whatIf'

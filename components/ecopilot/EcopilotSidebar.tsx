@@ -7,7 +7,6 @@ import {
   Compass,
   Building2,
   Route,
-  Gauge,
   NotebookPen,
   Receipt,
   Lightbulb,
@@ -24,7 +23,7 @@ interface EcopilotSidebarProps {
 
 /**
  * Every ecopilot tab, in display order — including the placeholder tabs
- * (greenWindow/activityLog/receiptScanner/whatIf), whose views currently
+ * (activityLog/receiptScanner/whatIf), whose views currently
  * just render layout with sample data; the AI/data wiring for those lands
  * separately. A vertical list scales to far more tabs than a horizontal
  * row ever could, without needing a scroll strip.
@@ -35,7 +34,6 @@ const TABS: { id: EcopilotTab; icon: typeof Sparkles; iconClass: string; fi: str
   { id: "recycling", icon: RotateCw, iconClass: "text-teal-600", fi: "HSY-Lajittelu", en: "HSY Recycling" },
   { id: "transit", icon: Compass, iconClass: "text-blue-600", fi: "HSL & Matkat", en: "HSL Transit" },
   { id: "roadmap", icon: Building2, iconClass: "text-indigo-600", fi: "Ilmastovahti 2030", en: "Espoo 2030 Watch" },
-  { id: "greenWindow", icon: Gauge, iconClass: "text-lime-600", fi: "Vihreä Ikkuna", en: "Green Window" },
   { id: "activityLog", icon: NotebookPen, iconClass: "text-fuchsia-600", fi: "Päiväkirja", en: "Activity Log" },
   { id: "receiptScanner", icon: Receipt, iconClass: "text-orange-600", fi: "Kuitti-skanneri", en: "Receipt Scanner" },
   { id: "whatIf", icon: Lightbulb, iconClass: "text-cyan-600", fi: "Entä jos...?", en: "What If?" },
