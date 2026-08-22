@@ -1,4 +1,5 @@
-import { GoogleGenAI, Type , FunctionCallingConfigMode} from "@google/genai";
+import { GoogleGenAI, Type, FunctionCallingConfigMode } from "@google/genai";
+import type { FunctionDeclaration, FunctionCall } from "@google/genai";
 import type {
   UserProfile,
   Season,
@@ -9,9 +10,8 @@ import type {
   TodaysActionResult,
   Co2LogEntry,
   WhatIfProjection,
+  ActivityExtraction,
 } from "./types";
-import type { FunctionDeclaration, FunctionCall } from "@google/genai";
-import type { UserProfile, Season, WasteClassificationResult, DailyEnergyPlan, CommuteComparison, ActivityExtraction } from "./types";
 import { ACTIVITY_MODES } from "./types";
 import { DEFAULT_COUNTRY } from "./emissionFactors";
 
