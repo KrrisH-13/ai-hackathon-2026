@@ -1,4 +1,5 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, FunctionCallingConfigMode } from "@google/genai";
+import type { FunctionDeclaration, FunctionCall } from "@google/genai";
 import type {
   UserProfile,
   Season,
@@ -9,7 +10,10 @@ import type {
   TodaysActionResult,
   Co2LogEntry,
   WhatIfProjection,
+  ActivityExtraction,
 } from "./types";
+import { ACTIVITY_MODES } from "./types";
+import { DEFAULT_COUNTRY } from "./emissionFactors";
 
 /**
  * Server-only Gemini calls backing the ecopilot feature. Ported from the
@@ -536,3 +540,79 @@ Pick ONE single best action (not a list). Categorize it as one of: heating, tran
 
   return JSON.parse(response.text || "{}") as TodaysActionResult;
 }
+
+/** The single tool Gemini is allowed to call when parsing an activity-log entry. */
+const LOG_ACTIVITY_FUNCTION: FunctionDeclaration = {
+  name: "log_activity",
+  description:
+    "Records the single trip or commute activity described in a resident's free-text diary entry, so its CO2 impact can be estimated.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      mode: {
+        type: Type.STRING,
+        enum: [...ACTIVITY_MODES],
+        description: "Primary mode of transport used for the trip (use 'ev' only if an electric car/vehicle is explicitly implied).",
+      },
+      distanceKm: {
+        type: Type.NUMBER,
+        description:
+          "Best-estimate one-way trip distance in kilometers. If the user didn't state a distance, infer a realistic one from the named places (e.g. Espoo to Helsinki ~18km, Helsinki to Turku ~165km, Espoo to Oslo ~800km).",
+      },
+      origin: { type: Type.STRING, description: "Starting place mentioned in the text, if any." },
+      destination: { type: Type.STRING, description: "Destination place mentioned in the text, if any." },
+      country: {
+        type: Type.STRING,
+        description:
+          "The country the trip took place in, inferred from the place names (e.g. 'Finland', 'Norway', 'Poland'). Default to 'Finland' if there's no other clue.",
+      },
+    },
+    required: ["mode", "distanceKm", "country"],
+  },
+};
+
+interface LogActivityArgs {
+  mode?: string;
+  distanceKm?: number;
+  origin?: string | null;
+  destination?: string | null;
+  country?: string;
+}
+
+/**
+ * 6. Natural-language Activity Logger — Gemini function calling turns
+ * free text ("drove to Turku today", "took the train from Espoo to
+ * Helsinki") into a structured trip. The country it returns is what makes
+ * the emission factor lookup (lib/ecopilot/emissionFactors.ts) Nordic-aware:
+ * the same "ev" mode maps to a very different gCO2/km depending on whether
+ * the grid behind it is Norwegian hydro or a coal-heavier grid elsewhere.
+ */
+export async function extractActivityFromText(text: string): Promise<ActivityExtraction> {
+  const response = await ai.models.generateContent({
+    model: MODEL_NAME,
+    contents: `Parse the trip described in this diary entry and call log_activity with the result: "${text}"`,
+    config: {
+      toolConfig: {
+        functionCallingConfig: {
+          mode: FunctionCallingConfigMode.ANY,
+          allowedFunctionNames: ["log_activity"],
+        },
+      },
+      tools: [{ functionDeclarations: [LOG_ACTIVITY_FUNCTION] }],
+    },
+  });
+
+  const call = response.functionCalls?.find((c: FunctionCall) => c.name === "log_activity");
+  const args = (call?.args ?? {}) as LogActivityArgs;
+  const mode = (ACTIVITY_MODES as readonly string[]).includes(args.mode ?? "") ? (args.mode as ActivityExtraction["mode"]) : "car";
+
+  return {
+    mode,
+    distanceKm: Math.max(0, Number(args.distanceKm) || 0),
+    origin: args.origin?.trim() || null,
+    destination: args.destination?.trim() || null,
+    country: args.country?.trim() || DEFAULT_COUNTRY,
+    rawText: text,
+  };
+}
+
