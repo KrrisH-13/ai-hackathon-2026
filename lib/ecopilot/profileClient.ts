@@ -49,7 +49,8 @@ export function deleteCo2LogAPI(id: string): Promise<{ success: true }> {
 
 export interface RewardsSummary {
   balance: number;
-  transactions: { id: string; amount: number; reason: string; created_at: string }[];
+  /** co2_log_id links a transaction back to the CO2 log entry that earned it — null for redemptions. */
+  transactions: { id: string; amount: number; reason: string; created_at: string; co2_log_id: string | null }[];
   redemptions: { id: string; reward_id: string; credits_cost: number; voucher_code: string; redeemed_at: string }[];
 }
 

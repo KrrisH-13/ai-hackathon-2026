@@ -198,8 +198,7 @@ export type EcopilotTab =
   | 'activityLog'
   | 'receiptScanner'
   | 'whatIf'
-  | 'tracker'
-  | 'rewards';
+  | 'trackerRewards';
 
 export const CO2_LOG_CATEGORIES = ['heating', 'transport', 'waste', 'energy', 'food', 'other'] as const;
 export type Co2LogCategory = (typeof CO2_LOG_CATEGORIES)[number];

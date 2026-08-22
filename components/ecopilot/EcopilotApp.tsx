@@ -14,8 +14,7 @@ import { EspooClimateWatch2030View } from "@/components/ecopilot/views/EspooClim
 import { ActivityLoggerView } from "@/components/ecopilot/views/ActivityLoggerView";
 import { ReceiptScannerView } from "@/components/ecopilot/views/ReceiptScannerView";
 import { WhatIfView } from "@/components/ecopilot/views/WhatIfView";
-import { Co2TrackerView } from "@/components/ecopilot/views/Co2TrackerView";
-import { RewardsView } from "@/components/ecopilot/views/RewardsView";
+import { TrackerRewardsView } from "@/components/ecopilot/views/TrackerRewardsView";
 import { ProfileCustomizerModal } from "@/components/ecopilot/ProfileCustomizerModal";
 import { SharePledgeModal } from "@/components/ecopilot/SharePledgeModal";
 
@@ -139,9 +138,7 @@ export function EcopilotApp({
             <WhatIfView userProfile={profile} currentSeason={currentSeason} isFinnish={isFinnish} />
           )}
 
-          {currentTab === "tracker" && <Co2TrackerView userProfile={profile} isFinnish={isFinnish} />}
-
-          {currentTab === "rewards" && <RewardsView isFinnish={isFinnish} />}
+          {currentTab === "trackerRewards" && <TrackerRewardsView userProfile={profile} isFinnish={isFinnish} />}
         </main>
 
         <footer className="border-t border-slate-200 bg-white py-6 px-4 text-xs text-slate-500">
