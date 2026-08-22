@@ -97,8 +97,9 @@ How can I help power your climate choices today?`,
   const handleLogTodaysAction = async () => {
     if (!todaysAction) return;
     try {
+      const category = CO2_LOG_CATEGORIES.includes(todaysAction.category) ? todaysAction.category : "other";
       await addCo2LogAPI({
-        category: todaysAction.category,
+        category,
         description: todaysAction.headline,
         co2Kg: -Math.abs(todaysAction.estimatedCo2KgSaved),
       });
