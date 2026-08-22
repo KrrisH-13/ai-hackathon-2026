@@ -90,7 +90,7 @@ Either way, open [http://localhost:3000](http://localhost:3000) once running.
 ## What's here
 
 - Auth flow: signup → email confirmation (if enabled) → login → dashboard → logout
-- Role-based dashboards at `/citizen`, `/staff`, `/admin`, enforced by Postgres RLS
+- Role-based dashboards at `/dashboard`, `/staff`, `/admin`, enforced by Postgres RLS
   (see `supabase/migrations/v001_initial_schema.sql`)
 - A `submissions` table + form/API/dashboard wiring as a starting example — replace
   with your hackathon's actual domain model

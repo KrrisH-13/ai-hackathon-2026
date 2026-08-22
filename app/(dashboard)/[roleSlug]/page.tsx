@@ -6,17 +6,18 @@ import { currentSeason, fetchCurrentEspooTemperatureCelsius } from "@/lib/ecopil
 import { fetchTodaySpotPricesCentsPerKwh, applyLivePrices } from "@/lib/ecopilot/gridPrice";
 import { SEASONAL_PRESETS, MOCK_HOURLY_SPOT_PRICES } from "@/lib/ecopilot/data";
 import { EcopilotApp } from "@/components/ecopilot/EcopilotApp";
-import { ROUTES, ROLES, type Role } from "@/lib/constants";
+import { ROUTES, ROLES, ROLE_ROUTE_SLUGS } from "@/lib/constants";
 
 interface RoleDashboardPageProps {
-  params: Promise<{ role: string }>;
+  params: Promise<{ roleSlug: string }>;
 }
 
 /** eCopilot's main page — same for every role, so this route only guards access. */
 export default async function RoleDashboardPage({ params }: RoleDashboardPageProps) {
-  const { role } = await params;
+  const { roleSlug } = await params;
+  const role = ROLES.find((r) => ROLE_ROUTE_SLUGS[r] === roleSlug);
 
-  if (!ROLES.includes(role as Role)) redirect(ROUTES.unauthorized);
+  if (!role) redirect(ROUTES.unauthorized);
 
   const user = await getUser();
   if (!user) redirect(ROUTES.login);

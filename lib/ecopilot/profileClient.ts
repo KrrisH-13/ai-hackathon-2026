@@ -38,7 +38,7 @@ export function addCo2LogAPI(entry: {
   co2Kg: number;
   occurredOn?: string;
   /** Tags the entry for the CO2 tracker chart and any feature (e.g. rewards) that reads it later. Defaults server-side to "manual". */
-  source?: "manual" | "activity-logger";
+  source?: "manual" | "activity-logger" | "what-if";
 }) {
   return request(API_ROUTES.ecopilotCo2Logs, { method: "POST", body: JSON.stringify(entry) });
 }
@@ -49,7 +49,8 @@ export function deleteCo2LogAPI(id: string): Promise<{ success: true }> {
 
 export interface RewardsSummary {
   balance: number;
-  transactions: { id: string; amount: number; reason: string; created_at: string }[];
+  /** co2_log_id links a transaction back to the CO2 log entry that earned it — null for redemptions. */
+  transactions: { id: string; amount: number; reason: string; created_at: string; co2_log_id: string | null }[];
   redemptions: { id: string; reward_id: string; credits_cost: number; voucher_code: string; redeemed_at: string }[];
 }
 
