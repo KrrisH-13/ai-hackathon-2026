@@ -1,4 +1,4 @@
-import type { Role, SubmissionStatus } from "@/lib/constants";
+import type { Role } from "@/lib/constants";
 import type {
   EspooDistrict,
   HousingType,
@@ -28,29 +28,6 @@ export type Profile = {
 };
 
 export type ProfileUpdate = Partial<Omit<Profile, "id" | "created_at" | "updated_at">>;
-
-export type Submission = {
-  id: string;
-  user_id: string;
-  title: string;
-  description: string;
-  latitude: number;
-  longitude: number;
-  district_id: string | null;
-  status: SubmissionStatus;
-  created_at: string;
-  updated_at: string;
-};
-
-export type SubmissionInsert = Pick<
-  Submission,
-  "title" | "description" | "latitude" | "longitude"
-> &
-  Partial<Pick<Submission, "district_id">>;
-
-export type SubmissionUpdate = Partial<
-  Pick<Submission, "title" | "description" | "status" | "district_id">
->;
 
 export type JobStatus = "pending" | "processing" | "completed" | "failed";
 
@@ -144,12 +121,6 @@ export type Database = {
         Row: Profile;
         Insert: Partial<Profile> & Pick<Profile, "id">;
         Update: ProfileUpdate;
-        Relationships: [];
-      };
-      submissions: {
-        Row: Submission;
-        Insert: SubmissionInsert & { user_id: string };
-        Update: SubmissionUpdate;
         Relationships: [];
       };
       jobs: {

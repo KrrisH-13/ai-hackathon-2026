@@ -1,10 +1,8 @@
 "use client";
 
-import Link from "next/link";
-import { Share2, ClipboardList, LogOut } from "lucide-react";
+import { Share2, LogOut } from "lucide-react";
 import type { UserProfile, Season } from "@/lib/ecopilot/types";
 import { SEASONAL_PRESETS } from "@/lib/ecopilot/data";
-import { ROUTES } from "@/lib/constants";
 import { signOut } from "@/app/(auth)/logout/action";
 
 interface EcopilotTopBarProps {
@@ -15,7 +13,7 @@ interface EcopilotTopBarProps {
   isFinnish: boolean;
   onToggleLanguage: () => void;
   onOpenShareModal: () => void;
-  /** Signed-in account's email; renders a submissions link + log out control when present. */
+  /** Signed-in account's email; renders the log out control when present. */
   accountEmail?: string;
   /** Real current outdoor temperature (or a seasonal mock fallback) — see EcopilotApp. */
   outdoorTempCelsius: number;
@@ -122,25 +120,15 @@ export function EcopilotTopBar({
         </button>
 
         {accountEmail && (
-          <>
-            <Link
-              href={ROUTES.submissions}
+          <form action={signOut}>
+            <button
+              type="submit"
               className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
-              title="My submissions"
+              title={`Log out (${accountEmail})`}
             >
-              <ClipboardList className="w-4 h-4" />
-            </Link>
-
-            <form action={signOut}>
-              <button
-                type="submit"
-                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
-                title={`Log out (${accountEmail})`}
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            </form>
-          </>
+              <LogOut className="w-4 h-4" />
+            </button>
+          </form>
         )}
       </div>
     </header>
