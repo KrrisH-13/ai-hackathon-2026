@@ -1,367 +1,141 @@
-import React, { useState, useRef, useEffect } from 'react';
-import {
-  Sparkles,
-  Send,
-  Zap,
-  RotateCw,
-  Copy,
-  CheckCircle,
-  HelpCircle,
-  Flame,
-  Building2,
-  Compass,
-  ArrowRight,
-  Upload,
-} from 'lucide-react';
-import { UserProfile, Season, ChatMessage } from '../types/climate';
-import { chatWithClimateAssistantAPI } from '../services/aiClient';
-import { SEASONAL_PRESETS } from '../data/espooData';
+import React, { useState } from 'react';
+import { Send, Sparkles, Brain, MessageSquare, RefreshCw, Database, ShieldCheck } from 'lucide-react';
+import { EcoPilotUserProfile } from '../types/user';
+import { Season } from '../types/climate';
+import { getCurrentObservationSnapshot } from '../services/ecoPilotService';
+import { askEcoPilotAssistantWithAI } from '../ai/assistant';
+import { CANDIDATE_ACTIONS } from '../data/actions/candidateActions';
 
 interface AiClimateCopilotViewProps {
-  userProfile: UserProfile;
+  userProfile: EcoPilotUserProfile;
   currentSeason: Season;
   isFinnish: boolean;
-  onNavigateTab: (tab: 'energy' | 'recycling' | 'transit' | 'roadmap' | 'personal') => void;
+  onNavigateTab: (tab: any) => void;
 }
 
 export const AiClimateCopilotView: React.FC<AiClimateCopilotViewProps> = ({
   userProfile,
   currentSeason,
   isFinnish,
-  onNavigateTab,
 }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([
+  const [messages, setMessages] = useState<Array<{ sender: 'user' | 'ai'; text: string; time: string }>>([
     {
-      id: 'welcome',
-      role: 'assistant',
-      content: isFinnish
-        ? `Tervehdys, ${userProfile.name}! Olen **Kipinä**, tekoälypohjainen arjen ilmastoapurisi Espoossa.
-
-Olen räätälöity suomalaiseen asumiseen ja Espoon **Hiilineutraali 2030** -tiekarttaan. Autan sinua optimoimaan:
-- ⚡ **Pörssisähkön ja saunan** ajoituksen edullisimmille ja puhtaimmille tunneille
-- ❄️ **Lämmitysratkaisut** (${userProfile.heatingSystem}) kaamospakkasista kesähelteisiin
-- ♻️ **HSY:n lajitteluohjeet** ja Mankkaan/Ämmässuon Sortti-asemien säännöt
-- 🚆 **HSL-joukkoliikenteen** (Pikaratikka 15, Länsimetro) ja pyöräbaanojen päästönsäästöt
-- 🏢 **Taloyhtiöiden energiaremontit** (ARA-tuet, aurinkovoimalat, poistoilman LTO)
-
-Mitä haluaisit tietää tai ratkaista tänään?`
-        : `Hello, ${userProfile.name}! I am **Kipinä**, your AI assistant for sustainable living in Finland and the **Carbon-Neutral Espoo 2030** roadmap.
-
-I translate Finnish daily routines into practical, high-impact climate choices for your home in **${userProfile.district.split(' ')[0]}**:
-- ⚡ **Nord Pool Spot Electricity & Sauna scheduling** (6-9 kW kiuas optimization)
-- ❄️ **Seasonal heating & heat pumps** (${userProfile.heatingSystem})
-- ♻️ **HSY regional recycling rules** and Sortti station material cycles
-- 🚆 **HSL transit (Pikaratikka 15, Länsimetro)** vs private vehicle commute footprint
-- 🏢 **Housing company (taloyhtiö)** solar communities and ARA grants
-
-How can I help power your climate choices today?`,
-      timestamp: 'Nyt',
-      suggestedPrompts: isFinnish
-        ? [
-            'Milloin kannattaa lämmittää sähkösauna tänään?',
-            'Miten lajittelen rasvaiset pizzalaatikot ja maitotölkit?',
-            'Miten Microsoftin datakeskusten hukkalämpö leikkaa Espoon päästöjä?',
-            'Paljonko säästän jos vaihdan auton Pikaratikkaan 15?',
-          ]
-        : [
-            'When is the cheapest time to heat my sauna tonight?',
-            'How do I sort greasy pizza boxes and milk cartons in HSY?',
-            'How does Microsoft data center waste heat decarbonize Espoo?',
-            'How much CO2 & € do I save switching to Pikaratikka 15?',
-          ],
+      sender: 'ai',
+      text: isFinnish
+        ? `Tervehdys ${userProfile.name}! Olen EcoPilot, Espoon arjen ilmastokumppanisi. Voin neuvoa sinua sähkön spot-hinnoissa, saunavuorojen ajoituksessa, HSL-reiteissä ja HSY-lajittelussa. Miten voin auttaa tänään?`
+        : `Hello ${userProfile.name}! I am EcoPilot, your grounded climate and energy companion in Espoo. I can answer questions about Nordic spot rates, sauna schedules, HSL zero-emission transit, and HSY recycling. How can I help you today?`,
+      time: new Date().toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
+  const [inputText, setInputText] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const [inputPrompt, setInputPrompt] = useState<string>('');
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const observation = getCurrentObservationSnapshot(currentSeason, 21);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = inputText.trim();
+    if (!q) return;
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, isLoading]);
-
-  const handleSendMessage = async (textToSend?: string) => {
-    const messageText = textToSend || inputPrompt;
-    if (!messageText.trim() || isLoading) return;
-
-    const userMsg: ChatMessage = {
-      id: `user-${Date.now()}`,
-      role: 'user',
-      content: messageText,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
-
-    setMessages((prev) => [...prev, userMsg]);
-    setInputPrompt('');
+    const time = new Date().toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
+    setMessages((prev) => [...prev, { sender: 'user', text: q, time }]);
+    setInputText('');
     setIsLoading(true);
 
     try {
-      const history = messages.map((m) => ({ role: m.role, content: m.content }));
-      const response = await chatWithClimateAssistantAPI(
-        history,
-        messageText,
+      const res = await askEcoPilotAssistantWithAI({
+        query: q,
         userProfile,
-        currentSeason
-      );
+        observation,
+        candidateActions: CANDIDATE_ACTIONS,
+      });
 
-      const aiMsg: ChatMessage = {
-        id: `ai-${Date.now()}`,
-        role: 'assistant',
-        content: response.reply,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        suggestedPrompts: response.suggestedFollowUps,
-      };
-
-      setMessages((prev) => [...prev, aiMsg]);
-    } catch (err: any) {
-      console.error(err);
-      const errorMsg: ChatMessage = {
-        id: `error-${Date.now()}`,
-        role: 'assistant',
-        content: isFinnish
-          ? 'Pahoittelut, yhteys tekoälypalveluun koki häiriön. Tarkista yhteys ja yritä uudelleen.'
-          : 'Sorry, there was a temporary issue generating a response. Please try again.',
-        timestamp: 'Error',
-      };
-      setMessages((prev) => [...prev, errorMsg]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: 'ai',
+          text: res.answer,
+          time: new Date().toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+    } catch (err) {
+      console.error('Chat error:', err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const seasonInfo = SEASONAL_PRESETS[currentSeason];
-
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 space-y-6 animate-fadeIn">
-      {/* Top Context Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Profile Snapshot Card */}
-        <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-black text-sm shrink-0 border border-emerald-100">
-            🏡
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-4 animate-fadeIn flex flex-col h-[80vh]">
+      {/* Header */}
+      <div className="flex items-center justify-between pb-3 border-b border-white/10">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-pink-500/20 text-pink-300 border border-pink-500/30 flex items-center justify-center font-bold">
+            <MessageSquare className="w-5 h-5" />
           </div>
-          <div className="min-w-0">
-            <div className="text-xs font-bold text-slate-900 truncate">
-              {userProfile.name} • {userProfile.housingType}
-            </div>
-            <p className="text-[11px] text-slate-500 truncate">
-              {userProfile.district.split('(')[0]} • {userProfile.heatingSystem.split('(')[0]}
+          <div>
+            <h3 className="text-base font-extrabold text-white">
+              {isFinnish ? 'EcoPilot Keskustelu' : 'Grounded Climate Copilot'}
+            </h3>
+            <p className="text-xs text-slate-400">
+              {isFinnish ? 'Perustuu Fingridin, Nord Poolin ja HSY:n todennettuun dataan' : 'Grounded in authentic Nordic open data feeds'}
             </p>
           </div>
         </div>
+      </div>
 
-        {/* Season & Weather Card */}
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-50/60 to-teal-50/60 border border-emerald-100 shadow-xs flex items-center justify-between">
-          <div className="space-y-0.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800">
-              {isFinnish ? 'Nykyinen Kausi' : 'Current Season'}
-            </span>
-            <div className="text-xs font-bold text-emerald-950">
-              {isFinnish ? seasonInfo.nameFi : seasonInfo.nameEn}
-            </div>
-          </div>
-          <span className="px-2.5 py-1 rounded-xl bg-white text-xs font-mono font-bold text-emerald-800 border border-emerald-200 shadow-2xs">
-            {seasonInfo.typicalTemp > 0 ? `+${seasonInfo.typicalTemp}°C` : `${seasonInfo.typicalTemp}°C`}
-          </span>
-        </div>
-
-        {/* Espoo 2030 Status */}
-        <div className="p-4 rounded-2xl bg-slate-900 text-white shadow-xs flex items-center justify-between">
-          <div>
-            <div className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">
-              {isFinnish ? 'Espoon 2030 Tiekartta' : 'Espoo 2030 Roadmap'}
-            </div>
-            <div className="text-xs font-bold text-slate-200">
-              {isFinnish ? 'Tavoite: 2.5 t CO2e / asukas' : 'Target: 2.5 t CO2e / resident'}
-            </div>
-          </div>
-          <button
-            onClick={() => onNavigateTab('roadmap')}
-            className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-[11px] font-bold text-white transition flex items-center gap-1"
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto space-y-4 pr-1 text-xs">
+        {messages.map((m, idx) => (
+          <div
+            key={idx}
+            className={`flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in-50 duration-200`}
           >
-            <span>{isFinnish ? 'Ilmastovahti' : 'Climate Watch'}</span>
-            <ArrowRight className="w-3 h-3" />
-          </button>
-        </div>
-      </div>
-
-      {/* Main Chat Container */}
-      <div className="rounded-3xl bg-white border border-slate-200 shadow-sm flex flex-col h-[650px] overflow-hidden">
-        {/* Chat Messages List */}
-        <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 bg-slate-50/50">
-          {messages.map((msg) => {
-            const isUser = msg.role === 'user';
-
-            return (
-              <div
-                key={msg.id}
-                className={`flex gap-3 ${isUser ? 'justify-end' : 'justify-start'}`}
-              >
-                {!isUser && (
-                  <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs shrink-0 mt-0.5">
-                    <Sparkles className="w-4 h-4" />
-                  </div>
-                )}
-
-                <div
-                  className={`max-w-2xl rounded-2xl p-4 space-y-2.5 text-xs shadow-xs ${
-                    isUser
-                      ? 'bg-slate-900 text-white rounded-tr-xs'
-                      : 'bg-white border border-slate-200 text-slate-800 rounded-tl-xs'
-                  }`}
-                >
-                  {/* Message Header */}
-                  <div className="flex items-center justify-between text-[10px] opacity-70">
-                    <span className="font-bold">
-                      {isUser ? userProfile.name : 'Kipinä AI (Espoo Copilot)'}
-                    </span>
-                    <span>{msg.timestamp}</span>
-                  </div>
-
-                  {/* Body Content */}
-                  <div className="leading-relaxed whitespace-pre-line text-xs font-normal">
-                    {msg.content}
-                  </div>
-
-                  {/* Suggested Follow-up Prompts */}
-                  {!isUser && msg.suggestedPrompts && msg.suggestedPrompts.length > 0 && (
-                    <div className="pt-2 border-t border-slate-100 space-y-1.5">
-                      <span className="text-[10px] font-bold text-slate-500 block">
-                        {isFinnish ? 'Jatka keskustelua:' : 'Suggested follow-ups:'}
-                      </span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {msg.suggestedPrompts.map((sp, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => handleSendMessage(sp)}
-                            className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-[11px] font-medium border border-emerald-100 transition text-left"
-                          >
-                            {sp}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Copy Button */}
-                  {!isUser && (
-                    <div className="pt-1 flex justify-end">
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(msg.content);
-                          setCopiedId(msg.id);
-                          setTimeout(() => setCopiedId(null), 2000);
-                        }}
-                        className="text-[10px] font-bold text-slate-400 hover:text-slate-600 flex items-center gap-1"
-                      >
-                        {copiedId === msg.id ? (
-                          <>
-                            <CheckCircle className="w-3 h-3 text-emerald-600" />
-                            <span>{isFinnish ? 'Kopioitu!' : 'Copied!'}</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3 h-3" />
-                            <span>{isFinnish ? 'Kopioi vastaus' : 'Copy response'}</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  )}
-                </div>
+            <div
+              className={`p-4 rounded-2xl max-w-[85%] space-y-1.5 ${
+                m.sender === 'user'
+                  ? 'bg-emerald-500/20 text-emerald-100 border border-emerald-500/30 font-medium'
+                  : 'bg-slate-900/90 text-slate-200 border border-slate-800'
+              }`}
+            >
+              <div className="flex items-center justify-between text-[10px] text-slate-400 gap-4">
+                <span className="font-bold flex items-center gap-1">
+                  {m.sender === 'user' ? userProfile.name : '⚡ EcoPilot AI'}
+                </span>
+                <span>{m.time}</span>
               </div>
-            );
-          })}
-
-          {isLoading && (
-            <div className="flex gap-3 justify-start items-center text-xs text-slate-500 animate-pulse">
-              <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs shrink-0">
-                <RotateCw className="w-4 h-4 animate-spin" />
-              </div>
-              <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-xs">
-                {isFinnish
-                  ? 'Kipinä laskee arjen energiansäästöjä ja Espoon ilmastovaikutuksia...'
-                  : 'Kipinä is computing daily energy savings and Espoo climate impacts...'}
-              </div>
+              <p className="text-xs leading-relaxed whitespace-pre-wrap">{m.text}</p>
             </div>
-          )}
-
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Bottom Input Area */}
-        <div className="p-4 bg-white border-t border-slate-200 space-y-3">
-          {/* Quick Action Category Shortcuts */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
-            <span className="text-[10px] font-bold uppercase text-slate-400 shrink-0">
-              {isFinnish ? 'Pikavalinnat:' : 'Shortcuts:'}
-            </span>
-            <button
-              onClick={() => onNavigateTab('energy')}
-              className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-[11px] whitespace-nowrap flex items-center gap-1 transition"
-            >
-              <Zap className="w-3 h-3 text-amber-500" />
-              <span>{isFinnish ? 'Saunan pörssisähkö' : 'Sauna Optimizer'}</span>
-            </button>
-            <button
-              onClick={() => onNavigateTab('recycling')}
-              className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-[11px] whitespace-nowrap flex items-center gap-1 transition"
-            >
-              <RotateCw className="w-3 h-3 text-teal-600" />
-              <span>{isFinnish ? 'HSY Jätehaku' : 'HSY Waste Guide'}</span>
-            </button>
-            <button
-              onClick={() => onNavigateTab('transit')}
-              className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-[11px] whitespace-nowrap flex items-center gap-1 transition"
-            >
-              <Compass className="w-3 h-3 text-blue-600" />
-              <span>{isFinnish ? 'Pikaratikka 15 vs Auto' : 'Pikaratikka vs Car'}</span>
-            </button>
-            <button
-              onClick={() => onNavigateTab('roadmap')}
-              className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-[11px] whitespace-nowrap flex items-center gap-1 transition"
-            >
-              <Building2 className="w-3 h-3 text-indigo-600" />
-              <span>{isFinnish ? 'Espoo 2030 Tiekartta' : 'Espoo 2030 Sinks'}</span>
-            </button>
           </div>
+        ))}
 
-          {/* Prompt Input Form */}
-          <div className="flex items-center gap-2">
-            <textarea
-              value={inputPrompt}
-              onChange={(e) => setInputPrompt(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSendMessage();
-                }
-              }}
-              placeholder={
-                isFinnish
-                  ? 'Kysy saunan ajoituksesta, lajittelusta, HSL-matkoista tai taloyhtiön energiaremonteista...'
-                  : 'Ask about sauna electricity windows, HSY waste rules, HSL transit savings, or housing grants...'
-              }
-              rows={1}
-              className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500 resize-none shadow-xs"
-            />
-
-            <button
-              onClick={() => handleSendMessage()}
-              disabled={isLoading || !inputPrompt.trim()}
-              className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-sm shadow-emerald-600/20 shrink-0"
-            >
-              <span>{isFinnish ? 'Lähetä' : 'Send'}</span>
-              <Send className="w-3.5 h-3.5" />
-            </button>
+        {isLoading && (
+          <div className="flex justify-start">
+            <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 flex items-center gap-2 text-slate-400 text-xs">
+              <RefreshCw className="w-4 h-4 animate-spin text-pink-400" />
+              <span>{isFinnish ? 'Tekoäly hakee tietoja...' : 'EcoPilot querying Nordic telemetry & calculations...'}</span>
+            </div>
           </div>
-        </div>
+        )}
       </div>
+
+      {/* Input */}
+      <form onSubmit={handleSend} className="flex items-center gap-2 pt-2 border-t border-white/10">
+        <input
+          type="text"
+          value={inputText}
+          onChange={(e) => setInputText(e.target.value)}
+          placeholder={isFinnish ? 'Kysy energiasta, saunasta tai liikenteestä...' : 'Ask about spot rates, sauna schedule, or transit...'}
+          className="flex-1 px-4 py-3 rounded-2xl bg-slate-900 border border-slate-700 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-pink-400"
+        />
+        <button
+          type="submit"
+          disabled={isLoading || !inputText.trim()}
+          className="px-5 py-3 rounded-2xl bg-pink-500 hover:bg-pink-400 disabled:opacity-40 text-slate-950 font-black text-xs transition flex items-center gap-1.5 shadow-lg shadow-pink-500/20"
+        >
+          <Send className="w-4 h-4" />
+        </button>
+      </form>
     </div>
   );
 };

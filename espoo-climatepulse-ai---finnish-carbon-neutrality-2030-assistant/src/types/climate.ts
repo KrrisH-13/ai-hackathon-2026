@@ -29,7 +29,7 @@ export type CommuteHabit =
   | 'Sähköauto (Electric Vehicle)'
   | 'Ladattava hybridi (PHEV)'
   | 'Polttomoottoriauto (Bensiini / Diesel)'
-  | 'Etätyö / Hybridityö (Remote First)';
+  | 'Etä- / Hybridityö (Remote First)';
 
 export interface UserProfile {
   id: string;
@@ -44,18 +44,18 @@ export interface UserProfile {
   saunaTimesPerWeek: number;
   commuteHabit: CommuteHabit;
   dietPreference: 'omnivore' | 'flexitarian' | 'vegetarian' | 'vegan';
-  estimatedFootprintTonnes: number; // e.g., 4.8 t CO2e/year
-  targetFootprintTonnes: number; // e.g., 2.5 t CO2e/year by 2030
-  installedGreenTech: string[]; // e.g., ['Aurinkopaneelit', 'Ilmalämpöpumppu', 'Älytermostaatti', 'LTO-ilmanvaihto']
+  estimatedFootprintTonnes: number;
+  targetFootprintTonnes: number;
+  installedGreenTech: string[];
   savedCo2Kg: number;
   activePledges: string[];
 }
 
 export interface SpotPricePoint {
-  hour: number; // 0-23
-  timeLabel: string; // e.g. "14:00 - 15:00"
-  priceCentsKwh: number; // e.g. 5.4 c/kWh
-  gridCo2IntensityGramsKwh: number; // e.g. 45 g CO2/kWh
+  hour: number;
+  timeLabel: string;
+  priceCentsKwh: number;
+  gridCo2IntensityGramsKwh: number;
   status: 'optimal' | 'moderate' | 'expensive' | 'peak';
   recommendation: string;
 }

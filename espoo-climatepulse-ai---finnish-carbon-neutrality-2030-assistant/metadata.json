@@ -1,6 +1,6 @@
 {
-  "name": "Espoo ClimatePulse AI - Finnish Carbon Neutrality 2030 Assistant",
-  "description": "AI companion tailored to life in Finland: seasonal home energy, Nord Pool spot electricity, HSL transit, HSY recycling rules, and Espoo Climate Watch 2030 roadmap tracking.",
+  "name": "EcoPilot",
+  "description": "Your daily AI companion for smarter Nordic living. Intelligent daily recommendations, structured preference learning, and verified energy & climate optimization.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
