@@ -163,4 +163,14 @@ export interface ChatMessage {
   actionLinks?: { label: string; action: string }[];
 }
 
-export type EcopilotTab = 'chat' | 'energy' | 'recycling' | 'transit' | 'roadmap' | 'personal';
+export type EcopilotTab =
+  | 'chat'
+  | 'energy'
+  | 'recycling'
+  | 'transit'
+  | 'roadmap'
+  | 'personal'
+  | 'greenWindow'
+  | 'activityLog'
+  | 'receiptScanner'
+  | 'whatIf';
