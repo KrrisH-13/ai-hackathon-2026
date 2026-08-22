@@ -6,7 +6,6 @@ import {
   RotateCw,
   Compass,
   Building2,
-  Route,
   NotebookPen,
   Receipt,
   Lightbulb,
@@ -39,7 +38,6 @@ const TABS: { id: EcopilotTab; icon: typeof Sparkles; iconClass: string; fi: str
   { id: "whatIf", icon: Lightbulb, iconClass: "text-cyan-600", fi: "Entä jos...?", en: "What If?" },
   { id: "tracker", icon: Activity, iconClass: "text-rose-600", fi: "Päästöseuranta", en: "CO2 Tracker" },
   { id: "rewards", icon: Award, iconClass: "text-amber-600", fi: "Palkinnot", en: "Rewards" },
-  { id: "personal", icon: Route, iconClass: "text-emerald-600", fi: "Oma Ilmastopolku", en: "My 2030 Plan" },
 ];
 
 /** Vertical left nav — icon rail on mobile, icon+label from `sm:` up. */

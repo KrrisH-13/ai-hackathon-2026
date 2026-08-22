@@ -11,7 +11,6 @@ import { NordPoolEnergyOptimizerView } from "@/components/ecopilot/views/NordPoo
 import { HsyRecyclingScannerView } from "@/components/ecopilot/views/HsyRecyclingScannerView";
 import { HslTransitCommuteView } from "@/components/ecopilot/views/HslTransitCommuteView";
 import { EspooClimateWatch2030View } from "@/components/ecopilot/views/EspooClimateWatch2030View";
-import { PersonalRoadmapSprintView } from "@/components/ecopilot/views/PersonalRoadmapSprintView";
 import { ActivityLoggerView } from "@/components/ecopilot/views/ActivityLoggerView";
 import { ReceiptScannerView } from "@/components/ecopilot/views/ReceiptScannerView";
 import { WhatIfView } from "@/components/ecopilot/views/WhatIfView";
@@ -143,15 +142,6 @@ export function EcopilotApp({
           {currentTab === "tracker" && <Co2TrackerView userProfile={profile} isFinnish={isFinnish} />}
 
           {currentTab === "rewards" && <RewardsView isFinnish={isFinnish} />}
-
-          {currentTab === "personal" && (
-            <PersonalRoadmapSprintView
-              userProfile={profile}
-              currentSeason={currentSeason}
-              isFinnish={isFinnish}
-              onOpenShareModal={() => setIsShareModalOpen(true)}
-            />
-          )}
         </main>
 
         <footer className="border-t border-slate-200 bg-white py-6 px-4 text-xs text-slate-500">

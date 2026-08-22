@@ -43,7 +43,6 @@ export const API_ROUTES = {
   aiClassifyWaste: "/api/ai/classify-waste",
   aiOptimizeEnergy: "/api/ai/optimize-energy",
   aiCompareCommute: "/api/ai/compare-commute",
-  aiGenerateRoadmapPlan: "/api/ai/generate-roadmap-plan",
   aiWhatIf: "/api/ai/what-if",
   aiExtractActivity: "/api/ai/extract-activity",
   ecopilotProfile: "/api/ecopilot/profile",

@@ -195,7 +195,6 @@ export type EcopilotTab =
   | 'recycling'
   | 'transit'
   | 'roadmap'
-  | 'personal'
   | 'activityLog'
   | 'receiptScanner'
   | 'whatIf'
