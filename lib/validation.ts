@@ -1,11 +1,39 @@
 import { z } from "zod";
+import {
+  HOUSING_TYPES,
+  ESPOO_DISTRICTS,
+  HEATING_SYSTEMS,
+  ELECTRICITY_CONTRACTS,
+  COMMUTE_HABITS,
+  CAR_TYPES,
+  WASTE_MANAGEMENT_SYSTEMS,
+  SAUNA_TYPES,
+  CO2_LOG_CATEGORIES,
+} from "@/lib/ecopilot/types";
 
-/** Shared between SubmissionForm and the /api/submissions route handler. */
-export const submissionSchema = z.object({
-  title: z.string().min(3, "Title must be at least 3 characters"),
-  description: z.string().min(10, "Description must be at least 10 characters"),
-  latitude: z.number().min(-90).max(90),
-  longitude: z.number().min(-180).max(180),
+/** PATCH /api/ecopilot/profile body — all fields optional, only known columns validated. */
+export const ecopilotProfileUpdateSchema = z.object({
+  district: z.enum(ESPOO_DISTRICTS).optional(),
+  housingType: z.enum(HOUSING_TYPES).optional(),
+  householdSize: z.number().int().min(1).max(12).optional(),
+  livingAreaSqM: z.number().min(15).max(500).optional(),
+  heatingSystem: z.enum(HEATING_SYSTEMS).optional(),
+  electricityContract: z.enum(ELECTRICITY_CONTRACTS).optional(),
+  saunaType: z.enum(SAUNA_TYPES).optional(),
+  saunaTimesPerWeek: z.number().int().min(0).max(7).optional(),
+  commuteHabit: z.enum(COMMUTE_HABITS).optional(),
+  carType: z.enum(CAR_TYPES).nullable().optional(),
+  carCo2GramsPerKm: z.number().min(0).max(1000).nullable().optional(),
+  wasteManagementSystem: z.enum(WASTE_MANAGEMENT_SYSTEMS).optional(),
+  energySavingMeasures: z.array(z.string()).optional(),
+  estimatedFootprintTonnes: z.number().min(0).optional(),
+  targetFootprintTonnes: z.number().min(0).optional(),
 });
 
-export type SubmissionFormData = z.infer<typeof submissionSchema>;
+/** POST /api/ecopilot/co2-logs body — a single manually-logged CO2 ledger entry. */
+export const co2LogInsertSchema = z.object({
+  occurredOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "occurredOn must be YYYY-MM-DD").optional(),
+  category: z.enum(CO2_LOG_CATEGORIES),
+  description: z.string().min(1),
+  co2Kg: z.number(),
+});

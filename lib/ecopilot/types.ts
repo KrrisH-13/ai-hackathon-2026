@@ -8,38 +8,59 @@
 
 export type Season = 'winter' | 'spring' | 'summer' | 'autumn';
 
-export type HousingType = 'kerrostalo' | 'rivitalo' | 'omakotitalo' | 'paritalo';
+/**
+ * Each list below is the single source of truth for its field — the type is
+ * derived from it, and lib/validation.ts + ProfileCustomizerModal reuse the
+ * same array instead of re-listing the options a third time.
+ */
+export const HOUSING_TYPES = ['kerrostalo', 'rivitalo', 'omakotitalo', 'paritalo'] as const;
+export type HousingType = (typeof HOUSING_TYPES)[number];
 
-export type EspooDistrict =
-  | 'Suur-Tapiola (Tapiola, Otaniemi, Keilaniemi)'
-  | 'Suur-Leppävaara (Leppävaara, Kera, Karakallio)'
-  | 'Suur-Matinkylä (Matinkylä, Olari, Henttaa)'
-  | 'Suur-Espoonlahti (Espoonlahti, Kivenlahti, Soukka)'
-  | 'Vanha-Espoo (Espoon keskus, Tuomarila, Kauklahti)'
-  | 'Pohjois-Espoo (Nuuksio, Kalajärvi, Järvenperä)';
+export const ESPOO_DISTRICTS = [
+  'Suur-Tapiola (Tapiola, Otaniemi, Keilaniemi)',
+  'Suur-Leppävaara (Leppävaara, Kera, Karakallio)',
+  'Suur-Matinkylä (Matinkylä, Olari, Henttaa)',
+  'Suur-Espoonlahti (Espoonlahti, Kivenlahti, Soukka)',
+  'Vanha-Espoo (Espoon keskus, Tuomarila, Kauklahti)',
+  'Pohjois-Espoo (Nuuksio, Kalajärvi, Järvenperä)',
+] as const;
+export type EspooDistrict = (typeof ESPOO_DISTRICTS)[number];
 
-export type HeatingSystem =
-  | 'Kaukolämpö (District Heating / Fortum Clean Heat)'
-  | 'Maalämpö (Geothermal Heat Pump)'
-  | 'Ilmalämpöpumppu + Suora sähkö (Air Heat Pump + Electric)'
-  | 'Suora sähkölämmitys (Direct Electric)'
-  | 'Puulämmitys / Varaava takka (Wood / Masonry Heater)'
-  | 'Öljylämmitys / Poistuva (Oil / Transitioning)';
+export const HEATING_SYSTEMS = [
+  'District Heating (Fortum Clean Heat)',
+  'Geothermal Heat Pump',
+  'Air Heat Pump + Electric',
+  'Direct Electric Heating',
+  'Wood / Masonry Heater',
+  'Oil Heating (Transitioning Away)',
+] as const;
+export type HeatingSystem = (typeof HEATING_SYSTEMS)[number];
 
-export type ElectricityContract =
-  | 'Pörssisähkö (Nord Pool Hourly Spot)'
-  | 'Kiinteähintainen (Fixed-Price Contract)'
-  | 'Uusiutuva / EKOenergia (100% Certified Green)';
+export const ELECTRICITY_CONTRACTS = [
+  'Nord Pool Hourly Spot Price',
+  'Fixed-Price Contract',
+  'Renewable / Certified Green (100%)',
+] as const;
+export type ElectricityContract = (typeof ELECTRICITY_CONTRACTS)[number];
 
-export type CommuteHabit =
-  | 'Pääosin HSL (Metro, Pikaratikka 15, Juna, Bussi)'
-  | 'Kävellen ja Pyörällä (Cycling & Walking / Baana)'
-  | 'Sähköauto (Electric Vehicle)'
-  | 'Ladattava hybridi (PHEV)'
-  | 'Polttomoottoriauto (Bensiini / Diesel)'
-  | 'Etätyö / Hybridityö (Remote First)';
+export const COMMUTE_HABITS = ['Car', 'Public Transport', 'Bike / Walk'] as const;
+export type CommuteHabit = (typeof COMMUTE_HABITS)[number];
+
+export const CAR_TYPES = ['petrol', 'diesel', 'hybrid', 'phev', 'ev', 'none'] as const;
+export type CarType = (typeof CAR_TYPES)[number];
+
+export const WASTE_MANAGEMENT_SYSTEMS = [
+  'Full Sorting (Sorts everything per HSY guide)',
+  'Partial Sorting (Some categories sorted)',
+  'No Sorting (Mixed waste only)',
+] as const;
+export type WasteManagementSystem = (typeof WASTE_MANAGEMENT_SYSTEMS)[number];
+
+export const SAUNA_TYPES = ['electric', 'wood', 'none'] as const;
+export type SaunaType = (typeof SAUNA_TYPES)[number];
 
 export interface UserProfile {
+  /** The Supabase auth user id this profile belongs to. */
   id: string;
   name: string;
   district: EspooDistrict;
@@ -48,15 +69,20 @@ export interface UserProfile {
   livingAreaSqM: number;
   heatingSystem: HeatingSystem;
   electricityContract: ElectricityContract;
-  saunaType: 'electric' | 'wood' | 'none';
+  saunaType: SaunaType;
   saunaTimesPerWeek: number;
+  /** Preferred/primary transport mode. */
   commuteHabit: CommuteHabit;
-  dietPreference: 'omnivore' | 'flexitarian' | 'vegetarian' | 'vegan';
+  /** Only meaningful when commuteHabit involves driving. */
+  carType: CarType | null;
+  carCo2GramsPerKm: number | null;
+  wasteManagementSystem: WasteManagementSystem;
+  /** Other measures already in place (solar panels, smart thermostat, etc). */
+  energySavingMeasures: string[];
   estimatedFootprintTonnes: number; // e.g., 4.8 t CO2e/year
   targetFootprintTonnes: number; // e.g., 2.5 t CO2e/year by 2030
-  installedGreenTech: string[]; // e.g., ['Aurinkopaneelit', 'Ilmalämpöpumppu', 'Älytermostaatti', 'LTO-ilmanvaihto']
+  /** Derived from the CO2 ledger (lib/ecopilot/queries.ts), not stored directly. */
   savedCo2Kg: number;
-  activePledges: string[];
 }
 
 export interface SpotPricePoint {
@@ -173,4 +199,54 @@ export type EcopilotTab =
   | 'greenWindow'
   | 'activityLog'
   | 'receiptScanner'
-  | 'whatIf';
+  | 'whatIf'
+  | 'tracker'
+  | 'rewards';
+
+export const CO2_LOG_CATEGORIES = ['heating', 'transport', 'waste', 'energy', 'food', 'other'] as const;
+export type Co2LogCategory = (typeof CO2_LOG_CATEGORIES)[number];
+
+export interface Co2LogEntry {
+  id: string;
+  occurredOn: string; // YYYY-MM-DD
+  category: Co2LogCategory;
+  description: string;
+  co2Kg: number; // positive = emitted, negative = saved/avoided
+  source: string;
+}
+
+export interface Co2DailyTotal {
+  date: string; // YYYY-MM-DD
+  netCo2Kg: number;
+}
+
+export interface GroceryReceiptItem {
+  name: string;
+  category: string;
+  estimatedCo2Kg: number;
+  estimatedEur: number;
+}
+
+export interface GroceryReceiptResult {
+  items: GroceryReceiptItem[];
+  swapSuggestions: string[];
+}
+
+export interface TodaysActionResult {
+  headline: string;
+  reason: string;
+  category: Co2LogCategory;
+  estimatedCo2KgSaved: number;
+  estimatedEurSaved: number;
+  confidence: 'HIGH' | 'MEDIUM' | 'LOW';
+}
+
+export interface WhatIfProjection {
+  question: string;
+  narrative: string;
+  co2SavedKgPerYear: number;
+  moneySavedEurPerYear: number;
+  /** What the projection assumed about current habits, e.g. derived from the logged data used. */
+  assumption: string;
+  confidence: 'high' | 'medium' | 'low';
+}

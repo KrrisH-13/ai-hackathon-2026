@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import type { UserProfile, Season, EcopilotTab } from "@/lib/ecopilot/types";
-import { DEFAULT_PROFILES } from "@/lib/ecopilot/data";
+import type { UserProfile, Season, EcopilotTab, SpotPricePoint } from "@/lib/ecopilot/types";
+import { SEASONAL_PRESETS } from "@/lib/ecopilot/data";
+import { updateEcopilotProfileAPI } from "@/lib/ecopilot/profileClient";
 import { EcopilotSidebar } from "@/components/ecopilot/EcopilotSidebar";
 import { EcopilotTopBar } from "@/components/ecopilot/EcopilotTopBar";
 import { AiClimateCopilotView } from "@/components/ecopilot/views/AiClimateCopilotView";
@@ -15,36 +16,69 @@ import { GreenWindowView } from "@/components/ecopilot/views/GreenWindowView";
 import { ActivityLoggerView } from "@/components/ecopilot/views/ActivityLoggerView";
 import { ReceiptScannerView } from "@/components/ecopilot/views/ReceiptScannerView";
 import { WhatIfView } from "@/components/ecopilot/views/WhatIfView";
+import { Co2TrackerView } from "@/components/ecopilot/views/Co2TrackerView";
+import { RewardsView } from "@/components/ecopilot/views/RewardsView";
 import { ProfileCustomizerModal } from "@/components/ecopilot/ProfileCustomizerModal";
 import { SharePledgeModal } from "@/components/ecopilot/SharePledgeModal";
 
 interface EcopilotAppProps {
+  /** The logged-in user's real, persisted climate profile (app/api/ecopilot/profile). */
+  initialProfile: UserProfile;
   /** Signed-in account's email, for the logout control in EcopilotTopBar. */
   accountEmail?: string;
+  /** Today's real Northern-hemisphere season, computed server-side (lib/ecopilot/weather.ts). */
+  initialSeason: Season;
+  /** Live outdoor temperature for Espoo (Open-Meteo), or a seasonal mock fallback if the fetch failed. */
+  initialOutdoorTempCelsius: number;
+  /** Whether initialOutdoorTempCelsius came from the live weather API vs. the seasonal mock fallback. */
+  isLiveWeather: boolean;
+  /** Today's 24h spot price curve — live prices (porssisahko.net) merged onto the mock curve where available. */
+  spotPrices: SpotPricePoint[];
+  /** Whether the live spot-price fetch actually succeeded this page load. */
+  isLiveSpotPrices: boolean;
 }
 
 /**
  * "Kipinä Espoo AI" — the ecopilot feature, ported from the standalone
- * espoo-climatepulse-ai---finnish-carbon-neutrality-2030-assistant prototype
- * into this app's [role] route. It's a full-page experience with its own
- * left nav (EcopilotSidebar) + top bar (EcopilotTopBar) rather than the
- * scaffold's generic Header/Sidebar — see app/(dashboard)/layout.tsx for
- * why those aren't layered on top.
+ * espoo-climatepulse-ai---finnish-carbon-neutrality-2030-assistant prototype.
+ * Full-page experience with its own left nav (EcopilotSidebar) + top bar
+ * (EcopilotTopBar) — see app/(dashboard)/layout.tsx for why the scaffold's
+ * generic Header/Sidebar aren't layered on top. The climate profile is real
+ * (linked to the logged-in account, see supabase/migrations/20260822090000_*.sql)
+ * rather than a mock persona switcher.
  */
-export function EcopilotApp({ accountEmail }: EcopilotAppProps) {
-  const [profiles, setProfiles] = useState<UserProfile[]>(DEFAULT_PROFILES);
-  const [selectedProfileId, setSelectedProfileId] = useState<string>(DEFAULT_PROFILES[0].id);
+export function EcopilotApp({
+  initialProfile,
+  accountEmail,
+  initialSeason,
+  initialOutdoorTempCelsius,
+  isLiveWeather,
+  spotPrices,
+  isLiveSpotPrices,
+}: EcopilotAppProps) {
+  const [profile, setProfile] = useState<UserProfile>(initialProfile);
   const [currentTab, setCurrentTab] = useState<EcopilotTab>("chat");
-  const [currentSeason, setCurrentSeason] = useState<Season>("winter");
+  const [currentSeason, setCurrentSeason] = useState<Season>(initialSeason);
   const [isFinnish, setIsFinnish] = useState<boolean>(false);
 
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
-  const currentProfile = profiles.find((p) => p.id === selectedProfileId) || profiles[0];
+  // Real weather only applies to today's actual season — flipping the season
+  // switcher to explore a different one falls back to that season's typical
+  // mock temperature, same as before live weather existed.
+  const isShowingLiveWeather = isLiveWeather && currentSeason === initialSeason;
+  const outdoorTempCelsius = isShowingLiveWeather ? initialOutdoorTempCelsius : SEASONAL_PRESETS[currentSeason].typicalTemp;
 
-  const handleSaveProfile = (updated: UserProfile) => {
-    setProfiles((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+  const handleSaveProfile = async (updated: UserProfile) => {
+    setSaveError(null);
+    try {
+      const saved = await updateEcopilotProfileAPI(updated);
+      setProfile(saved);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Failed to save profile");
+    }
   };
 
   return (
@@ -53,9 +87,7 @@ export function EcopilotApp({ accountEmail }: EcopilotAppProps) {
 
       <div className="flex-1 min-w-0 flex flex-col">
         <EcopilotTopBar
-          userProfile={currentProfile}
-          allProfiles={profiles}
-          onSelectProfile={setSelectedProfileId}
+          userProfile={profile}
           onOpenProfileModal={() => setIsProfileModalOpen(true)}
           currentSeason={currentSeason}
           onSelectSeason={setCurrentSeason}
@@ -63,20 +95,36 @@ export function EcopilotApp({ accountEmail }: EcopilotAppProps) {
           onToggleLanguage={() => setIsFinnish((prev) => !prev)}
           onOpenShareModal={() => setIsShareModalOpen(true)}
           accountEmail={accountEmail}
+          outdoorTempCelsius={outdoorTempCelsius}
+          isLiveWeather={isShowingLiveWeather}
         />
+
+        {saveError && (
+          <div className="px-4 sm:px-8 py-2 bg-rose-50 border-b border-rose-200 text-xs text-rose-700 font-medium">
+            {saveError}
+          </div>
+        )}
 
         <main className="flex-1 pb-16">
           {currentTab === "chat" && (
             <AiClimateCopilotView
-              userProfile={currentProfile}
+              userProfile={profile}
               currentSeason={currentSeason}
+              outdoorTempCelsius={outdoorTempCelsius}
               isFinnish={isFinnish}
               onNavigateTab={setCurrentTab}
             />
           )}
 
           {currentTab === "energy" && (
-            <NordPoolEnergyOptimizerView userProfile={currentProfile} currentSeason={currentSeason} isFinnish={isFinnish} />
+            <NordPoolEnergyOptimizerView
+              userProfile={profile}
+              currentSeason={currentSeason}
+              outdoorTempCelsius={outdoorTempCelsius}
+              spotPrices={spotPrices}
+              isLiveSpotPrices={isLiveSpotPrices}
+              isFinnish={isFinnish}
+            />
           )}
 
           {currentTab === "recycling" && <HsyRecyclingScannerView isFinnish={isFinnish} />}
@@ -91,11 +139,17 @@ export function EcopilotApp({ accountEmail }: EcopilotAppProps) {
 
           {currentTab === "receiptScanner" && <ReceiptScannerView isFinnish={isFinnish} />}
 
-          {currentTab === "whatIf" && <WhatIfView isFinnish={isFinnish} />}
+          {currentTab === "whatIf" && (
+            <WhatIfView userProfile={profile} currentSeason={currentSeason} isFinnish={isFinnish} />
+          )}
+
+          {currentTab === "tracker" && <Co2TrackerView userProfile={profile} isFinnish={isFinnish} />}
+
+          {currentTab === "rewards" && <RewardsView isFinnish={isFinnish} />}
 
           {currentTab === "personal" && (
             <PersonalRoadmapSprintView
-              userProfile={currentProfile}
+              userProfile={profile}
               currentSeason={currentSeason}
               isFinnish={isFinnish}
               onOpenShareModal={() => setIsShareModalOpen(true)}
@@ -140,7 +194,7 @@ export function EcopilotApp({ accountEmail }: EcopilotAppProps) {
       <ProfileCustomizerModal
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
-        userProfile={currentProfile}
+        userProfile={profile}
         onSaveProfile={handleSaveProfile}
         isFinnish={isFinnish}
       />
@@ -148,7 +202,7 @@ export function EcopilotApp({ accountEmail }: EcopilotAppProps) {
       <SharePledgeModal
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
-        userProfile={currentProfile}
+        userProfile={profile}
         isFinnish={isFinnish}
       />
     </div>

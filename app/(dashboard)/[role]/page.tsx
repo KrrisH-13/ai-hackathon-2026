@@ -1,5 +1,10 @@
 import { redirect } from "next/navigation";
 import { getUser, getProfile } from "@/lib/supabase/auth";
+import { createServerComponentClient } from "@/lib/supabase/server";
+import { getEcopilotProfile, getTotalCo2SavedKg, mapProfileRowToUserProfile, displayNameFromUser } from "@/lib/ecopilot/queries";
+import { currentSeason, fetchCurrentEspooTemperatureCelsius } from "@/lib/ecopilot/weather";
+import { fetchTodaySpotPricesCentsPerKwh, applyLivePrices } from "@/lib/ecopilot/gridPrice";
+import { SEASONAL_PRESETS, MOCK_HOURLY_SPOT_PRICES } from "@/lib/ecopilot/data";
 import { EcopilotApp } from "@/components/ecopilot/EcopilotApp";
 import { ROUTES, ROLES, type Role } from "@/lib/constants";
 
@@ -22,5 +27,30 @@ export default async function RoleDashboardPage({ params }: RoleDashboardPagePro
   // Each user only ever sees their own role's dashboard.
   if (profile.role !== role) redirect(ROUTES.dashboard(profile.role));
 
-  return <EcopilotApp accountEmail={user.email} />;
+  const supabase = await createServerComponentClient();
+  const ecopilotProfileRow = await getEcopilotProfile(user.id, supabase);
+  if (!ecopilotProfileRow) redirect(ROUTES.unauthorized);
+
+  const [savedCo2Kg, liveTemperatureCelsius, liveSpotPrices] = await Promise.all([
+    getTotalCo2SavedKg(user.id, supabase),
+    fetchCurrentEspooTemperatureCelsius(),
+    fetchTodaySpotPricesCentsPerKwh(),
+  ]);
+  const ecopilotProfile = mapProfileRowToUserProfile(ecopilotProfileRow, displayNameFromUser(user), savedCo2Kg);
+
+  const initialSeason = currentSeason(new Date());
+  const initialOutdoorTempCelsius = liveTemperatureCelsius ?? SEASONAL_PRESETS[initialSeason].typicalTemp;
+  const spotPrices = applyLivePrices(MOCK_HOURLY_SPOT_PRICES, liveSpotPrices);
+
+  return (
+    <EcopilotApp
+      initialProfile={ecopilotProfile}
+      accountEmail={user.email}
+      initialSeason={initialSeason}
+      initialOutdoorTempCelsius={initialOutdoorTempCelsius}
+      isLiveWeather={liveTemperatureCelsius !== null}
+      spotPrices={spotPrices}
+      isLiveSpotPrices={liveSpotPrices !== null}
+    />
+  );
 }

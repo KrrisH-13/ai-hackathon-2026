@@ -1,31 +1,29 @@
 "use client";
 
-import Link from "next/link";
-import { Share2, ClipboardList, LogOut } from "lucide-react";
+import { Share2, LogOut } from "lucide-react";
 import type { UserProfile, Season } from "@/lib/ecopilot/types";
 import { SEASONAL_PRESETS } from "@/lib/ecopilot/data";
-import { ROUTES } from "@/lib/constants";
 import { signOut } from "@/app/(auth)/logout/action";
 
 interface EcopilotTopBarProps {
   userProfile: UserProfile;
-  allProfiles: UserProfile[];
-  onSelectProfile: (id: string) => void;
   onOpenProfileModal: () => void;
   currentSeason: Season;
   onSelectSeason: (s: Season) => void;
   isFinnish: boolean;
   onToggleLanguage: () => void;
   onOpenShareModal: () => void;
-  /** Signed-in account's email; renders a submissions link + log out control when present. */
+  /** Signed-in account's email; renders the log out control when present. */
   accountEmail?: string;
+  /** Real current outdoor temperature (or a seasonal mock fallback) — see EcopilotApp. */
+  outdoorTempCelsius: number;
+  /** Whether outdoorTempCelsius reflects live weather right now (vs. a mock for an explored season). */
+  isLiveWeather: boolean;
 }
 
-/** Municipal status banner + season/profile/language/account controls. Tabs live in EcopilotSidebar. */
+/** Municipal status banner + profile/language/account controls. Tabs live in EcopilotSidebar. */
 export function EcopilotTopBar({
   userProfile,
-  allProfiles,
-  onSelectProfile,
   onOpenProfileModal,
   currentSeason,
   onSelectSeason,
@@ -33,6 +31,8 @@ export function EcopilotTopBar({
   onToggleLanguage,
   onOpenShareModal,
   accountEmail,
+  outdoorTempCelsius,
+  isLiveWeather,
 }: EcopilotTopBarProps) {
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
@@ -51,6 +51,15 @@ export function EcopilotTopBar({
         </div>
 
         <div className="flex items-center gap-3">
+          <span
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-800 text-slate-200 border border-slate-700 font-bold"
+            title={isLiveWeather ? (isFinnish ? "Elävä sää Espoossa" : "Live weather in Espoo") : (isFinnish ? "Kausikohtainen arvio" : "Seasonal estimate")}
+          >
+            {isLiveWeather && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />}
+            🌡️ {outdoorTempCelsius > 0 ? `+${outdoorTempCelsius}` : outdoorTempCelsius}°C
+            {isLiveWeather ? (isFinnish ? " Espoossa nyt" : " in Espoo now") : ""}
+          </span>
+
           <div className="flex items-center gap-1 bg-slate-800 rounded-lg p-0.5 border border-slate-700">
             {(["winter", "spring", "summer", "autumn"] as Season[]).map((s) => (
               <button
@@ -91,27 +100,16 @@ export function EcopilotTopBar({
 
       {/* Profile selector + account controls */}
       <div className="px-4 sm:px-8 py-3 flex items-center justify-end gap-2">
-        <div className="hidden sm:flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl p-1.5">
-          <select
-            value={userProfile.id}
-            onChange={(e) => onSelectProfile(e.target.value)}
-            className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
-          >
-            {allProfiles.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name} ({p.district.split(" ")[0]})
-              </option>
-            ))}
-          </select>
-
-          <button
-            onClick={onOpenProfileModal}
-            className="p-1 rounded-lg text-slate-400 hover:text-emerald-700 hover:bg-slate-200 transition"
-            title="Edit Finnish home profile"
-          >
-            ⚙️
-          </button>
-        </div>
+        <button
+          onClick={onOpenProfileModal}
+          className="hidden sm:flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 hover:bg-slate-100 transition"
+          title={isFinnish ? "Muokkaa profiilia" : "Edit profile"}
+        >
+          <span className="text-xs font-bold text-slate-800">
+            {userProfile.name} ({userProfile.district.split(" ")[0]})
+          </span>
+          <span className="text-slate-400">⚙️</span>
+        </button>
 
         <button
           onClick={onOpenShareModal}
@@ -122,25 +120,15 @@ export function EcopilotTopBar({
         </button>
 
         {accountEmail && (
-          <>
-            <Link
-              href={ROUTES.submissions}
+          <form action={signOut}>
+            <button
+              type="submit"
               className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
-              title="My submissions"
+              title={`Log out (${accountEmail})`}
             >
-              <ClipboardList className="w-4 h-4" />
-            </Link>
-
-            <form action={signOut}>
-              <button
-                type="submit"
-                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
-                title={`Log out (${accountEmail})`}
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            </form>
-          </>
+              <LogOut className="w-4 h-4" />
+            </button>
+          </form>
         )}
       </div>
     </header>
