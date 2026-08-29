@@ -5,6 +5,7 @@ import { Receipt, Upload, RotateCw, Plus, Sparkles } from "lucide-react";
 import type { GroceryReceiptItem } from "@/lib/ecopilot/types";
 import { scanReceiptAPI } from "@/lib/ecopilot/client";
 import { addCo2LogAPI } from "@/lib/ecopilot/profileClient";
+import { InfoHint } from "@/components/ecopilot/InfoHint";
 
 interface ReceiptScannerViewProps {
   isFinnish: boolean;
@@ -74,6 +75,23 @@ export function ReceiptScannerView({ isFinnish }: ReceiptScannerViewProps) {
       </div>
 
       <div className="rounded-3xl bg-white border border-slate-200 p-6 sm:p-8 shadow-sm">
+        <div className="mb-3 text-xs font-bold text-slate-700 flex items-center gap-1.5">
+          {isFinnish ? "Lataa kuittikuva:" : "Upload a receipt image:"}
+          <InfoHint
+            isFinnish={isFinnish}
+            label={isFinnish ? "Kuittikuva" : "Receipt image"}
+            instruction={
+              isFinnish
+                ? "Lataa selkeä valokuva tai kuvakaappaus ruokakuitista. Suorista kuitti, vältä heijastuksia ja varmista että rivit ovat luettavissa. Vain kuvatiedostot."
+                : "Upload a clear photo or screenshot of a grocery receipt. Straighten it, avoid glare, and keep the item lines legible. Image files only."
+            }
+            example={
+              isFinnish
+                ? "Puhelimella otettu kuva S-marketin tai K-Marketin kuitista"
+                : "A phone photo of an S-market or K-Market receipt"
+            }
+          />
+        </div>
         <input
           ref={fileInputRef}
           type="file"

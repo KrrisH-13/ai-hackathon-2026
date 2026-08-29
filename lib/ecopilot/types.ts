@@ -191,6 +191,7 @@ export interface ChatMessage {
 
 export type EcopilotTab =
   | 'chat'
+  | 'guide'
   | 'energy'
   | 'recycling'
   | 'transit'

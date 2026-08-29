@@ -7,6 +7,7 @@ import { SEASONAL_PRESETS } from "@/lib/ecopilot/data";
 import { calculateDeterministicHeatingAdjustment } from "@/lib/ecopilot/calculations";
 import { optimizeDailyEnergyAPI } from "@/lib/ecopilot/client";
 import { DataFreshnessBadge } from "@/components/ecopilot/DataFreshnessBadge";
+import { InfoHint } from "@/components/ecopilot/InfoHint";
 
 interface NordPoolEnergyOptimizerViewProps {
   userProfile: UserProfile;
@@ -111,6 +112,20 @@ export function NordPoolEnergyOptimizerView({
               <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
                 <Zap className="w-4 h-4 text-amber-500" />
                 <span>{isFinnish ? "24h Sähkön Hinta & Päästökäyrä" : "24h Spot Price & CO₂ Curve"}</span>
+                <InfoHint
+                  isFinnish={isFinnish}
+                  label={isFinnish ? "Tunnin valinta" : "Hour selector"}
+                  instruction={
+                    isFinnish
+                      ? "Klikkaa mitä tahansa tunnin palkkia valitaksesi sen laskuriin. Vihreä = puhdas ja edullinen tunti isoille kuormille (sauna, pyykki, auton lataus), punainen = huippukuorma."
+                      : "Click any hour bar to select it for the calculator. Green = a clean, cheap hour for heavy loads (sauna, laundry, EV charging); red = peak load."
+                  }
+                  example={
+                    isFinnish
+                      ? "Valitse klo 02:00 nähdäksesi yösähkön hinnan ja päästöt"
+                      : "Pick 02:00 to see overnight price and emissions"
+                  }
+                />
                 <DataFreshnessBadge
                   freshness={isLiveSpotPrices ? "live" : "reference"}
                   sourceName="porssisahko.net (Finnish day-ahead spot price)"

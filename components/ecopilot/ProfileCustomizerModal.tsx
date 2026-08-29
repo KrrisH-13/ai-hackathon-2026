@@ -5,6 +5,7 @@ import { X, Save } from "lucide-react";
 import type { UserProfile, HousingType, EspooDistrict, HeatingSystem, ElectricityContract, CommuteHabit, CarType, WasteManagementSystem } from "@/lib/ecopilot/types";
 import { ESPOO_DISTRICTS, HEATING_SYSTEMS, ELECTRICITY_CONTRACTS, COMMUTE_HABITS } from "@/lib/ecopilot/types";
 import { CAR_TYPE_OPTIONS, CAR_TYPE_DEFAULT_CO2_G_PER_KM, WASTE_MANAGEMENT_OPTIONS, COMMON_ENERGY_SAVING_MEASURES } from "@/lib/ecopilot/data";
+import { InfoHint } from "@/components/ecopilot/InfoHint";
 
 interface ProfileCustomizerModalProps {
   isOpen: boolean;
@@ -90,7 +91,24 @@ export function ProfileCustomizerModal({
             </div>
 
             <div className="space-y-1">
-              <label className="font-bold text-slate-700">{isFinnish ? "Espoon Suuralue:" : "Espoo District:"}</label>
+              <label className="font-bold text-slate-700 flex items-center gap-1.5">
+                {isFinnish ? "Espoon Suuralue:" : "Espoo District:"}
+                <InfoHint
+                  isFinnish={isFinnish}
+                  align="right"
+                  label={isFinnish ? "Espoon Suuralue" : "Espoo District"}
+                  instruction={
+                    isFinnish
+                      ? "Espoon suuralue, jolla asut. Käytetään paikallisiin sähköverkko-, joukkoliikenne- ja Sortti-asemavinkkeihin."
+                      : "The Espoo major district (suuralue) you live in. Used for local grid, transit, and Sortti-station tips."
+                  }
+                  example={
+                    isFinnish
+                      ? "Suur-Matinkylä (Matinkylä, Olari, Henttaa)"
+                      : "Suur-Matinkylä (Matinkylä, Olari, Henttaa)"
+                  }
+                />
+              </label>
               <select
                 value={formData.district}
                 onChange={(e) => setFormData({ ...formData, district: e.target.value as EspooDistrict })}
@@ -121,7 +139,19 @@ export function ProfileCustomizerModal({
             </div>
 
             <div className="space-y-1">
-              <label className="font-bold text-slate-700">{isFinnish ? "Pinta-ala (m²):" : "Area (m²):"}</label>
+              <label className="font-bold text-slate-700 flex items-center gap-1.5">
+                {isFinnish ? "Pinta-ala (m²):" : "Area (m²):"}
+                <InfoHint
+                  isFinnish={isFinnish}
+                  label={isFinnish ? "Pinta-ala" : "Area"}
+                  instruction={
+                    isFinnish
+                      ? "Kodin lämmitetty asuinpinta-ala neliömetreinä. Löytyy vuokrasopimuksesta tai asunnon myynti-ilmoituksesta."
+                      : "Your home's heated living area in square metres. Check your rental contract or apartment listing if unsure."
+                  }
+                  example={isFinnish ? "72" : "72"}
+                />
+              </label>
               <input
                 type="number"
                 value={formData.livingAreaSqM}
@@ -147,7 +177,23 @@ export function ProfileCustomizerModal({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="font-bold text-slate-700">{isFinnish ? "Pääasiallinen Lämmitys:" : "Heating System:"}</label>
+              <label className="font-bold text-slate-700 flex items-center gap-1.5">
+                {isFinnish ? "Pääasiallinen Lämmitys:" : "Heating System:"}
+                <InfoHint
+                  isFinnish={isFinnish}
+                  label={isFinnish ? "Lämmitys" : "Heating System"}
+                  instruction={
+                    isFinnish
+                      ? "Kodin pääasiallinen lämmitystapa. Espoon kerrostaloissa kaukolämpö on yleisin."
+                      : "The main way your home is heated. District heating is the norm in Espoo apartments."
+                  }
+                  example={
+                    isFinnish
+                      ? "District Heating (Fortum Clean Heat)"
+                      : "District Heating (Fortum Clean Heat)"
+                  }
+                />
+              </label>
               <select
                 value={formData.heatingSystem}
                 onChange={(e) => setFormData({ ...formData, heatingSystem: e.target.value as HeatingSystem })}
@@ -162,7 +208,22 @@ export function ProfileCustomizerModal({
             </div>
 
             <div className="space-y-1">
-              <label className="font-bold text-slate-700">{isFinnish ? "Sähkösopimus:" : "Electricity Contract:"}</label>
+              <label className="font-bold text-slate-700 flex items-center gap-1.5">
+                {isFinnish ? "Sähkösopimus:" : "Electricity Contract:"}
+                <InfoHint
+                  isFinnish={isFinnish}
+                  align="right"
+                  label={isFinnish ? "Sähkösopimus" : "Electricity Contract"}
+                  instruction={
+                    isFinnish
+                      ? "Sähkön hinnoittelutapasi. ”Nord Pool -tuntihinta” tarkoittaa, että hinta muuttuu joka tunti — silloin ajoituksesta on eniten hyötyä."
+                      : "How your electricity is priced. 'Nord Pool Hourly Spot' means your price changes every hour — that's when timing loads pays off most."
+                  }
+                  example={
+                    isFinnish ? "Nord Pool Hourly Spot Price" : "Nord Pool Hourly Spot Price"
+                  }
+                />
+              </label>
               <select
                 value={formData.electricityContract}
                 onChange={(e) => setFormData({ ...formData, electricityContract: e.target.value as ElectricityContract })}
@@ -192,7 +253,20 @@ export function ProfileCustomizerModal({
             </div>
 
             <div className="space-y-1">
-              <label className="font-bold text-slate-700">{isFinnish ? "Saunakerrat / vko:" : "Saunas / week:"}</label>
+              <label className="font-bold text-slate-700 flex items-center gap-1.5">
+                {isFinnish ? "Saunakerrat / vko:" : "Saunas / week:"}
+                <InfoHint
+                  isFinnish={isFinnish}
+                  align="right"
+                  label={isFinnish ? "Saunakerrat" : "Saunas per week"}
+                  instruction={
+                    isFinnish
+                      ? "Kuinka monta kertaa viikossa sauna lämmitetään koko taloudessa yhteensä. Laita 0, jos saunaa ei ole."
+                      : "How many times a week the sauna is heated across the whole household. Enter 0 if you have none."
+                  }
+                  example={isFinnish ? "2" : "2"}
+                />
+              </label>
               <input
                 type="number"
                 value={formData.saunaTimesPerWeek}
@@ -261,8 +335,19 @@ export function ProfileCustomizerModal({
               </div>
 
               <div className="space-y-1">
-                <label className="font-bold text-slate-700">
+                <label className="font-bold text-slate-700 flex items-center gap-1.5">
                   {isFinnish ? "Auton CO2-päästöt (g/km):" : "Car CO2 Emissions (g/km):"}
+                  <InfoHint
+                    isFinnish={isFinnish}
+                    align="right"
+                    label={isFinnish ? "Auton CO2-päästöt" : "Car CO2 emissions"}
+                    instruction={
+                      isFinnish
+                        ? "Auton pakokaasujen CO2 rekisteriotteesta tai valmistajan tiedoista. Jätä automaattinen arvio, jos et tiedä tarkkaa lukua."
+                        : "Tailpipe CO2 from your car's registration papers or the maker's spec. Leave the auto-filled estimate if you don't know."
+                    }
+                    example={isFinnish ? "118" : "118"}
+                  />
                 </label>
                 <input
                   type="number"
