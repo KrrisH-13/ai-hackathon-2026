@@ -5,6 +5,7 @@ import { NotebookPen, Car, Train, Bike, Bus, Plane, Ship, Footprints, Zap, Globe
 import type { ActivityMode, ActivityLogEstimate, Co2LogEntry } from "@/lib/ecopilot/types";
 import { extractActivityAPI } from "@/lib/ecopilot/client";
 import { fetchCo2LogsAPI, addCo2LogAPI } from "@/lib/ecopilot/profileClient";
+import { InfoHint } from "@/components/ecopilot/InfoHint";
 
 interface ActivityLoggerViewProps {
   isFinnish: boolean;
@@ -118,6 +119,20 @@ export function ActivityLoggerView({ isFinnish }: ActivityLoggerViewProps) {
         <label className="text-xs font-bold text-slate-700 flex items-center gap-2">
           <NotebookPen className="w-4 h-4 text-fuchsia-600" />
           {isFinnish ? "Kirjaa tämänpäiväinen matka tai toiminto:" : "Log today's trip or activity:"}
+          <InfoHint
+            isFinnish={isFinnish}
+            label={isFinnish ? "Matka" : "Trip"}
+            instruction={
+              isFinnish
+                ? "Kirjoita yksi matka tavallisena lauseena: kulkutapa, suunnilleen matka tai paikannimet, ja maa jos et ollut Suomessa. Tekoäly täydentää loput."
+                : "Write one trip as a normal sentence — how you travelled, a rough distance or place names, and the country if it wasn't Finland. AI fills in the rest."
+            }
+            example={
+              isFinnish
+                ? "Otin junan Helsingistä Tampereelle ja takaisin"
+                : "Took the train from Helsinki to Tampere and back"
+            }
+          />
         </label>
         <div className="flex flex-col sm:flex-row gap-3">
           <input

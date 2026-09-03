@@ -5,6 +5,7 @@ import { RotateCw, Search, Sparkles, MapPin, CheckCircle, AlertTriangle, ShieldC
 import type { WasteClassificationResult } from "@/lib/ecopilot/types";
 import { HSY_RECYCLING_GUIDE_QUICK_SAMPLES } from "@/lib/ecopilot/data";
 import { classifyWasteAPI } from "@/lib/ecopilot/client";
+import { InfoHint } from "@/components/ecopilot/InfoHint";
 
 interface HsyRecyclingScannerViewProps {
   isFinnish: boolean;
@@ -99,6 +100,20 @@ export function HsyRecyclingScannerView({ isFinnish }: HsyRecyclingScannerViewPr
         <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-teal-600" />
           <span>{isFinnish ? "Tunnista ja lajittele mikä tahansa kodin esine:" : "Identify & Classify Any Household Item:"}</span>
+          <InfoHint
+            isFinnish={isFinnish}
+            label={isFinnish ? "Esine" : "Item"}
+            instruction={
+              isFinnish
+                ? "Kuvaile yksi esine kerrallaan: materiaali sekä mahdolliset eri osat (korkit, ikkunat, ruokajäämät). Mitä tarkempi kuvaus, sitä täsmällisempi lajitteluastia."
+                : "Describe one item at a time — its material plus any mixed parts (lids, windows, food residue). The more detail, the more precise the bin."
+            }
+            example={
+              isFinnish
+                ? "Rasvainen pahvinen pizzalaatikko leivinpaperin kanssa"
+                : "Greasy cardboard pizza box with baking paper inside"
+            }
+          />
         </h3>
 
         <div className="flex flex-col sm:flex-row items-center gap-3">
