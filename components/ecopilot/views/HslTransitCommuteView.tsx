@@ -132,7 +132,7 @@ export function HslTransitCommuteView({ isFinnish }: HslTransitCommuteViewProps)
 
         <div className="p-4 rounded-2xl bg-blue-900 text-white text-center shadow-xs shrink-0">
           <div className="text-xl font-black text-blue-300">-70 000 t</div>
-          <div className="text-[10px] font-bold text-slate-300">
+          <div className="text-[12px] font-bold text-slate-300">
             {isFinnish ? "Espoon liikenteen CO2-leikkaus 2030" : "Espoo Transport CO2 Cut Target"}
           </div>
         </div>
@@ -229,7 +229,7 @@ export function HslTransitCommuteView({ isFinnish }: HslTransitCommuteViewProps)
         </div>
 
         <div className="space-y-1.5">
-          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
             {isFinnish ? "Suosittuja esimerkkireittejä:" : "Popular Espoo commuter routes:"}
           </span>
           <div className="flex flex-wrap gap-2">
@@ -266,17 +266,17 @@ export function HslTransitCommuteView({ isFinnish }: HslTransitCommuteViewProps)
             <div className="flex items-center gap-4 shrink-0">
               <div className="p-3.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-center min-w-[110px]">
                 <div className="text-2xl font-black text-emerald-300">-{comparison.yearlySavingIfSwitchingToTransit.co2Kg} kg</div>
-                <div className="text-[10px] text-slate-200 font-bold">CO2e / vuosi</div>
+                <div className="text-[12px] text-slate-200 font-bold">CO2e / vuosi</div>
               </div>
 
               <div className="p-3.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-center min-w-[110px]">
                 <div className="text-2xl font-black text-amber-300">+{comparison.yearlySavingIfSwitchingToTransit.moneyEur} €</div>
-                <div className="text-[10px] text-slate-200 font-bold">{isFinnish ? "Rahasäästö" : "Money Saved"}</div>
+                <div className="text-[12px] text-slate-200 font-bold">{isFinnish ? "Rahasäästö" : "Money Saved"}</div>
               </div>
 
               <div className="p-3.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-center min-w-[110px] hidden sm:block">
                 <div className="text-2xl font-black text-white">🌲 {comparison.yearlySavingIfSwitchingToTransit.treesEquivalent}</div>
-                <div className="text-[10px] text-slate-200 font-bold">{isFinnish ? "Puuta vastaava" : "Trees equivalent"}</div>
+                <div className="text-[12px] text-slate-200 font-bold">{isFinnish ? "Puuta vastaava" : "Trees equivalent"}</div>
               </div>
             </div>
           </div>
@@ -304,16 +304,16 @@ export function HslTransitCommuteView({ isFinnish }: HslTransitCommuteViewProps)
                         </div>
                         <div>
                           <h4 className="font-extrabold text-slate-900 text-xs">{m.name}</h4>
-                          <span className="text-[10px] text-slate-500">{m.durationMins} min</span>
+                          <span className="text-[12px] text-slate-500">{m.durationMins} min</span>
                         </div>
                       </div>
 
                       {isZeroEmission && (
-                        <span className="px-2 py-0.5 rounded-md bg-emerald-600 text-white text-[9px] font-bold">100% Puhdas</span>
+                        <span className="px-2 py-0.5 rounded-md bg-emerald-600 text-white text-[12px] font-bold">100% Puhdas</span>
                       )}
                     </div>
 
-                    <p className="text-[11px] text-slate-600 leading-relaxed">{m.routeDetails}</p>
+                    <p className="text-xs text-slate-600 leading-relaxed">{m.routeDetails}</p>
                   </div>
 
                   <div className="pt-3 border-t border-slate-100 space-y-2 text-xs">
@@ -352,21 +352,21 @@ export function HslTransitCommuteView({ isFinnish }: HslTransitCommuteViewProps)
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
             <span className="font-bold text-slate-900 block">🚲 Nastarenkaat (Studded Tires)</span>
-            <p className="text-slate-600 text-[11px] leading-relaxed">
+            <p className="text-slate-600 text-xs leading-relaxed">
               Nastarenkaat (esim. Suomi Tyres tai Schwalbe) mahdollistavat turvallisen ja liukastumattoman työmatkapyöräilyn peilijäälläkin läpi marras-maaliskuun.
             </p>
           </div>
 
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
             <span className="font-bold text-slate-900 block">🛣️ Harjasuolatut Pääreitit</span>
-            <p className="text-slate-600 text-[11px] leading-relaxed">
+            <p className="text-slate-600 text-xs leading-relaxed">
               Espoo harjasuolaa Länsiväylän rinnakkaisbaanaa ja Tapiola-Otaniemi-Leppävaara -pääyhteyksiä talvisin pitäen ne lumettomina ja sulina.
             </p>
           </div>
 
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
             <span className="font-bold text-slate-900 block">💡 Valot & Heijastimet</span>
-            <p className="text-slate-600 text-[11px] leading-relaxed">
+            <p className="text-slate-600 text-xs leading-relaxed">
               Kaamoksessa valkoinen etuvalo, punainen takavalo ja heijastinliivi tekevät pyöräilijästä näkyvän autoilijoille jopa 300 metrin päästä.
             </p>
           </div>

@@ -155,7 +155,7 @@ export function HsyRecyclingScannerView({ isFinnish }: HsyRecyclingScannerViewPr
         </div>
 
         <div className="space-y-1.5">
-          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
             {isFinnish ? "Yleisiä kysyttyjä esineitä:" : "Common query examples:"}
           </span>
           <div className="flex flex-wrap gap-2">
@@ -179,7 +179,7 @@ export function HsyRecyclingScannerView({ isFinnish }: HsyRecyclingScannerViewPr
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-teal-100">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-teal-600 text-white shadow-2xs">
+                  <span className="px-2.5 py-0.5 rounded-full text-[12px] font-bold bg-teal-600 text-white shadow-2xs">
                     {classificationResult.category}
                   </span>
                   <span className="text-xs text-slate-500 font-medium">Astia: {classificationResult.binColor}</span>
@@ -189,7 +189,7 @@ export function HsyRecyclingScannerView({ isFinnish }: HsyRecyclingScannerViewPr
 
               <div className="p-3 rounded-xl bg-white border border-teal-200 text-center shadow-2xs">
                 <div className="text-lg font-black text-teal-700">+{classificationResult.co2SavingsEstimateGrams} g</div>
-                <div className="text-[10px] text-slate-500 font-bold">
+                <div className="text-[12px] text-slate-500 font-bold">
                   {isFinnish ? "CO2-säästö vs poltto" : "CO2 saved vs incineration"}
                 </div>
               </div>
@@ -201,7 +201,7 @@ export function HsyRecyclingScannerView({ isFinnish }: HsyRecyclingScannerViewPr
                   <CheckCircle className="w-4 h-4 text-teal-600" />
                   <span>{isFinnish ? "Lajitteluohje & Valmistelu:" : "Sorting Instructions:"}</span>
                 </div>
-                <p className="text-slate-700 leading-relaxed text-[11px]">{classificationResult.sortingInstructions}</p>
+                <p className="text-slate-700 leading-relaxed text-xs">{classificationResult.sortingInstructions}</p>
               </div>
 
               <div className="p-4 rounded-xl bg-white border border-teal-100 space-y-1.5 shadow-2xs">
@@ -209,7 +209,7 @@ export function HsyRecyclingScannerView({ isFinnish }: HsyRecyclingScannerViewPr
                   <MapPin className="w-4 h-4 text-teal-600" />
                   <span>{isFinnish ? "Lähin Keräyspiste Espoossa:" : "Nearest Espoo Drop-off:"}</span>
                 </div>
-                <p className="text-slate-700 leading-relaxed text-[11px]">{classificationResult.nearestEspooFacility}</p>
+                <p className="text-slate-700 leading-relaxed text-xs">{classificationResult.nearestEspooFacility}</p>
               </div>
             </div>
 
@@ -218,10 +218,10 @@ export function HsyRecyclingScannerView({ isFinnish }: HsyRecyclingScannerViewPr
                 <Sparkles className="w-4 h-4 text-emerald-600" />
                 <span>{isFinnish ? "Kiertotalouspolku & Sisäpiirivinkki:" : "Circular Journey & Pro Tip:"}</span>
               </div>
-              <p className="text-emerald-900 text-[11px] leading-relaxed">
+              <p className="text-emerald-900 text-xs leading-relaxed">
                 <strong>{isFinnish ? "Minne materiaali päätyy?" : "Where does it go?"}</strong> {classificationResult.whyItMatters}
               </p>
-              <p className="text-emerald-800 text-[11px] italic">
+              <p className="text-emerald-800 text-xs italic">
                 💡 <strong>Vinkki:</strong> {classificationResult.proTip}
               </p>
             </div>
@@ -275,7 +275,7 @@ export function HsyRecyclingScannerView({ isFinnish }: HsyRecyclingScannerViewPr
                     {f.address}
                   </p>
                 </div>
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-white text-slate-700 border border-slate-200">
+                <span className="px-2 py-0.5 rounded text-[12px] font-bold bg-white text-slate-700 border border-slate-200">
                   {f.district}
                 </span>
               </div>
@@ -286,7 +286,7 @@ export function HsyRecyclingScannerView({ isFinnish }: HsyRecyclingScannerViewPr
                 </div>
                 <div className="flex flex-wrap gap-1 pt-1">
                   {f.accepts.map((acc, i) => (
-                    <span key={i} className="px-2 py-0.5 rounded bg-white text-slate-700 text-[10px] font-medium border border-slate-200 shadow-2xs">
+                    <span key={i} className="px-2 py-0.5 rounded bg-white text-slate-700 text-[12px] font-medium border border-slate-200 shadow-2xs">
                       {acc}
                     </span>
                   ))}
@@ -306,7 +306,7 @@ export function HsyRecyclingScannerView({ isFinnish }: HsyRecyclingScannerViewPr
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
           <div className="p-4 rounded-2xl bg-slate-800 border border-slate-700 space-y-1.5">
             <span className="font-bold text-amber-400 block">{isFinnish ? "🍕 Rasvainen Pizzalaatikko" : "🍕 Greasy Pizza Boxes"}</span>
-            <p className="text-slate-300 text-[11px] leading-relaxed">
+            <p className="text-slate-300 text-xs leading-relaxed">
               {isFinnish
                 ? "Täysin öljystä ja juustosta tahriintunut pahvilaatikko kuuluu sekajätteeseen tai silputtuna biojätteeseen, ei kartonkiin."
                 : "Heavily grease-soaked pizza boxes belong in mixed waste (sekajäte) or shredded in bio-waste, not in cardboard recycling."}
@@ -315,7 +315,7 @@ export function HsyRecyclingScannerView({ isFinnish }: HsyRecyclingScannerViewPr
 
           <div className="p-4 rounded-2xl bg-slate-800 border border-slate-700 space-y-1.5">
             <span className="font-bold text-amber-400 block">{isFinnish ? "🥛 Maitotölkin Huuhtelu" : "🥛 Rinsing Milk Cartons"}</span>
-            <p className="text-slate-300 text-[11px] leading-relaxed">
+            <p className="text-slate-300 text-xs leading-relaxed">
               {isFinnish
                 ? "Käytä vain tilkka kylmää vettä tai pyyhkäisy. Älä tuhlaa kuumaa vettä, jotta pesun energiankulutus ei ylitä kierrätyshyötyä."
                 : "Rinse with just a splash of cold water and flatten. Never use hot water, as heating the water consumes more energy than recycling saves."}
@@ -324,7 +324,7 @@ export function HsyRecyclingScannerView({ isFinnish }: HsyRecyclingScannerViewPr
 
           <div className="p-4 rounded-2xl bg-slate-800 border border-slate-700 space-y-1.5">
             <span className="font-bold text-amber-400 block">{isFinnish ? "☕ Kahvinporot & Suodatin" : "☕ Coffee Grounds & Paper Filter"}</span>
-            <p className="text-slate-300 text-[11px] leading-relaxed">
+            <p className="text-slate-300 text-xs leading-relaxed">
               {isFinnish
                 ? "Kahvinporot ja suodatinpussi kuuluvat aina biojätteeseen. Ne tuottavat arvokasta biokaasua HSY:n Ämmässuon laitoksella."
                 : "Coffee grounds and unbleached filters always go into bio-waste (biojäte). They produce renewable biogas at HSY Ämmässuo!"}

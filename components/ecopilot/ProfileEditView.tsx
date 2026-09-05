@@ -94,7 +94,7 @@ export function ProfileEditView({ userProfile, initialIsFinnish, backHref }: Pro
         <button
           type="button"
           onClick={() => setIsFinnish((prev) => !prev)}
-          className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-white transition shrink-0"
+          className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[12px] font-bold text-white transition shrink-0"
         >
           {isFinnish ? "FI / EN" : "EN / FI"}
         </button>

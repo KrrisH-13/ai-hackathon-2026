@@ -161,7 +161,7 @@ export function EcopilotSidebar({
             <h1 className="font-extrabold text-slate-900 text-sm tracking-tight leading-none truncate">
               e<span className="text-emerald-600">Copilot</span>
             </h1>
-            <p className="text-[10px] text-slate-500 font-medium truncate">
+            <p className="text-[12px] text-slate-500 font-medium truncate">
               {isFinnish ? "Arjen ilmastoapuri" : "Finnish Living eCopilot"}
             </p>
           </div>
@@ -186,7 +186,7 @@ export function EcopilotSidebar({
             className={sectionIdx > 0 ? "mt-3 pt-3 border-t border-slate-100 space-y-1" : "space-y-1"}
           >
             {section.titleEn && (
-              <p className={`hidden ${expanded ? "sm:block" : ""} px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400`}>
+              <p className={`hidden ${expanded ? "sm:block" : ""} px-3 pb-1 text-[12px] font-bold uppercase tracking-wider text-slate-400`}>
                 {isFinnish ? section.titleFi : section.titleEn}
               </p>
             )}
@@ -253,7 +253,7 @@ export function EcopilotSidebar({
             </span>
             <span className="min-w-0">
               <span className="block text-xs font-bold text-slate-900 truncate leading-tight">{userProfile.name}</span>
-              <span className="block text-[10px] text-slate-500 truncate leading-tight">{userProfile.district}</span>
+              <span className="block text-[12px] text-slate-500 truncate leading-tight">{userProfile.district}</span>
             </span>
           </Link>
 

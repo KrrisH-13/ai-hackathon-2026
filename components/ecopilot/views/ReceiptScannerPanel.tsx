@@ -135,7 +135,7 @@ export function ReceiptScannerPanel({ isFinnish, source, onLogged }: ReceiptScan
               {items.map((item, idx) => (
                 <div key={`${item.name}-${idx}`} className="flex items-center justify-between gap-4 p-3.5 rounded-xl bg-slate-50 border border-slate-200">
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className="shrink-0 px-2 py-0.5 rounded-md text-[10px] font-bold border bg-slate-100 text-slate-700 border-slate-200">
+                    <span className="shrink-0 px-2 py-0.5 rounded-md text-[12px] font-bold border bg-slate-100 text-slate-700 border-slate-200">
                       {item.category}
                     </span>
                     <span className="text-xs font-bold text-slate-900 truncate">{item.name}</span>
@@ -183,7 +183,7 @@ export function ReceiptScannerPanel({ isFinnish, source, onLogged }: ReceiptScan
             </div>
             <div className="p-3.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-center min-w-[110px] shrink-0">
               <div className="text-2xl font-black">{total.toFixed(1)} kg</div>
-              <div className="text-[10px] text-orange-100 font-bold">CO2e</div>
+              <div className="text-[12px] text-orange-100 font-bold">CO2e</div>
             </div>
           </div>
         </>
