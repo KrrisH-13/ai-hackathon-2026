@@ -1,11 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { NotebookPen, Car, Train, Bike, Bus, Plane, Ship, Footprints, Zap, Globe2, Sparkles, X, RotateCw as Spinner } from "lucide-react";
+import { NotebookPen, Receipt, Car, Train, Bike, Bus, Plane, Ship, Footprints, Zap, Globe2, Sparkles, X, RotateCw as Spinner } from "lucide-react";
 import type { ActivityMode, ActivityLogEstimate, Co2LogEntry } from "@/lib/ecopilot/types";
 import { extractActivityAPI } from "@/lib/ecopilot/client";
 import { fetchCo2LogsAPI, addCo2LogAPI } from "@/lib/ecopilot/profileClient";
 import { InfoHint } from "@/components/ecopilot/InfoHint";
+import { ReceiptScannerPanel } from "@/components/ecopilot/views/ReceiptScannerPanel";
+
+/** Which input mode the page is showing — a free-text trip, or a scanned grocery receipt. */
+type InputMode = "trip" | "receipt";
 
 interface ActivityLoggerViewProps {
   isFinnish: boolean;
@@ -35,6 +39,7 @@ function buildLogDescription(estimate: ActivityLogEstimate): string {
 }
 
 export function ActivityLoggerView({ isFinnish }: ActivityLoggerViewProps) {
+  const [inputMode, setInputMode] = useState<InputMode>("trip");
   const [draft, setDraft] = useState("");
   const [isExtracting, setIsExtracting] = useState(false);
   const [estimate, setEstimate] = useState<ActivityLogEstimate | null>(null);
@@ -102,19 +107,57 @@ export function ActivityLoggerView({ isFinnish }: ActivityLoggerViewProps) {
       <div className="rounded-3xl bg-gradient-to-r from-fuchsia-50/80 via-white to-emerald-50/60 border border-fuchsia-200/80 p-6 sm:p-8 space-y-2 shadow-xs">
         <div className="flex items-center gap-2">
           <span className="px-3 py-1 rounded-full text-xs font-bold bg-fuchsia-100 text-fuchsia-900 border border-fuchsia-200">
-            📝 {isFinnish ? "Luonnollisen kielen päiväkirja" : "Natural-language Activity Log"}
+            {inputMode === "trip"
+              ? `📝 ${isFinnish ? "Luonnollisen kielen päiväkirja" : "Natural-language Activity Log"}`
+              : `🧾 ${isFinnish ? "Kuitin hiilijalanjälkiarvio" : "Receipt Carbon Estimator"}`}
           </span>
         </div>
         <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-          {isFinnish ? "Kirjoita mitä teit — me hoidamme laskennan" : "Just type what you did — we'll do the math"}
+          {inputMode === "trip"
+            ? isFinnish
+              ? "Kirjoita mitä teit — me hoidamme laskennan"
+              : "Just type what you did — we'll do the math"
+            : isFinnish
+              ? "Kuvaa kuitti, saat karkean päästöarvion"
+              : "Snap a receipt, get a rough footprint estimate"}
         </h2>
         <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
-          {isFinnish
-            ? '"Ajoin Turkuun tänään" tai "otin junan Espoosta Helsinkiin" — päästökertoimet ovat maakohtaisia (esim. sähköauto Norjassa ≈ lähes päästötön vesivoiman ansiosta, sama auto Puolassa on hyvin erilainen).'
-            : '"Drove to Turku today" or "took the train from Espoo to Helsinki" — emission factors are country-aware (an EV in Norway ≈ near-zero thanks to hydro; the same EV in Poland is very different).'}
+          {inputMode === "trip"
+            ? isFinnish
+              ? '"Ajoin Turkuun tänään" tai "otin junan Espoosta Helsinkiin" — päästökertoimet ovat maakohtaisia (esim. sähköauto Norjassa ≈ lähes päästötön vesivoiman ansiosta, sama auto Puolassa on hyvin erilainen).'
+              : '"Drove to Turku today" or "took the train from Espoo to Helsinki" — emission factors are country-aware (an EV in Norway ≈ near-zero thanks to hydro; the same EV in Poland is very different).'
+            : isFinnish
+              ? "Gemini Vision lukee ostoskuitin rivit ja arvioi hiilijalanjäljen tuotteittain. Lisää haluamasi rivit samaan päiväkirjaan."
+              : "Gemini Vision reads the grocery receipt's line items and estimates a rough footprint per item. Add the ones you want to the same activity log."}
         </p>
       </div>
 
+      <div className="flex gap-1 p-1 rounded-2xl bg-slate-100 border border-slate-200 w-full sm:w-fit">
+        <button
+          onClick={() => setInputMode("trip")}
+          className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition ${
+            inputMode === "trip" ? "bg-white text-fuchsia-700 shadow-xs" : "text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          <NotebookPen className="w-3.5 h-3.5" />
+          <span>{isFinnish ? "Kirjaa matka" : "Log a trip"}</span>
+        </button>
+        <button
+          onClick={() => setInputMode("receipt")}
+          className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition ${
+            inputMode === "receipt" ? "bg-white text-orange-700 shadow-xs" : "text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          <Receipt className="w-3.5 h-3.5" />
+          <span>{isFinnish ? "Skannaa kuitti" : "Scan a receipt"}</span>
+        </button>
+      </div>
+
+      {inputMode === "receipt" && (
+        <ReceiptScannerPanel isFinnish={isFinnish} source={ACTIVITY_LOGGER_SOURCE} onLogged={loadEntries} />
+      )}
+
+      {inputMode === "trip" && (
       <div className="rounded-3xl bg-white border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4">
         <label className="text-xs font-bold text-slate-700 flex items-center gap-2">
           <NotebookPen className="w-4 h-4 text-fuchsia-600" />
@@ -198,6 +241,7 @@ export function ActivityLoggerView({ isFinnish }: ActivityLoggerViewProps) {
           </div>
         )}
       </div>
+      )}
 
       <div className="rounded-3xl bg-white border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4">
         <h3 className="text-base font-extrabold text-slate-900">{isFinnish ? "Viimeisimmät merkinnät" : "Recent entries"}</h3>
@@ -209,7 +253,9 @@ export function ActivityLoggerView({ isFinnish }: ActivityLoggerViewProps) {
           </div>
         ) : entries.length === 0 ? (
           <p className="text-xs text-slate-400">
-            {isFinnish ? "Ei kirjauksia vielä — kirjoita ensimmäinen matka yllä." : "No entries yet — log your first trip above."}
+            {isFinnish
+              ? "Ei kirjauksia vielä — kirjaa ensimmäinen matka tai skannaa kuitti yllä."
+              : "No entries yet — log your first trip or scan a receipt above."}
           </p>
         ) : (
           <div className="space-y-3">

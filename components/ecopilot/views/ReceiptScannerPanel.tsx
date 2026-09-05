@@ -7,8 +7,12 @@ import { scanReceiptAPI } from "@/lib/ecopilot/client";
 import { addCo2LogAPI } from "@/lib/ecopilot/profileClient";
 import { InfoHint } from "@/components/ecopilot/InfoHint";
 
-interface ReceiptScannerViewProps {
+interface ReceiptScannerPanelProps {
   isFinnish: boolean;
+  /** Source tag written to the shared CO2 ledger — matches the Activity Log so both input modes land in the same list. */
+  source: "manual" | "activity-logger" | "what-if";
+  /** Called after an item is logged so the parent can refresh its recent-entries list. */
+  onLogged?: () => void;
 }
 
 function fileToBase64(file: File): Promise<string> {
@@ -20,8 +24,12 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
-/** Real Gemini vision call (lib/ecopilot/gemini.ts classifyGroceryReceipt) — no sample data. */
-export function ReceiptScannerView({ isFinnish }: ReceiptScannerViewProps) {
+/**
+ * Grocery-receipt input mode for the Activity Log page. Real Gemini vision call
+ * (lib/ecopilot/gemini.ts classifyGroceryReceipt) — no sample data. Rendered
+ * inside ActivityLoggerView, so it has no page shell or header of its own.
+ */
+export function ReceiptScannerPanel({ isFinnish, source, onLogged }: ReceiptScannerPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
@@ -49,8 +57,9 @@ export function ReceiptScannerView({ isFinnish }: ReceiptScannerViewProps) {
 
   const handleLogItem = async (item: GroceryReceiptItem) => {
     try {
-      await addCo2LogAPI({ category: "food", description: item.name, co2Kg: item.estimatedCo2Kg });
+      await addCo2LogAPI({ category: "food", description: item.name, co2Kg: item.estimatedCo2Kg, source });
       setLoggedNames((prev) => new Set(prev).add(item.name));
+      onLogged?.();
     } catch (err) {
       console.error(err);
     }
@@ -59,21 +68,7 @@ export function ReceiptScannerView({ isFinnish }: ReceiptScannerViewProps) {
   const total = items.reduce((sum, item) => sum + item.estimatedCo2Kg, 0);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 space-y-8 animate-fadeIn">
-      <div className="rounded-3xl bg-gradient-to-r from-orange-50/80 via-white to-emerald-50/60 border border-orange-200/80 p-6 sm:p-8 space-y-2 shadow-xs">
-        <span className="px-3 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-900 border border-orange-200">
-          🧾 {isFinnish ? "Kuitin hiilijalanjälkiarvio" : "Receipt Carbon Estimator"}
-        </span>
-        <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-          {isFinnish ? "Kuvaa kuitti, saat karkean päästöarvion" : "Snap a receipt, get a rough footprint estimate"}
-        </h2>
-        <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
-          {isFinnish
-            ? "Gemini Vision lukee ostoskuitin rivit ja arvioi hiilijalanjäljen tuotteittain."
-            : "Gemini Vision reads the grocery receipt's line items and estimates a rough footprint per item."}
-        </p>
-      </div>
-
+    <div className="space-y-8">
       <div className="rounded-3xl bg-white border border-slate-200 p-6 sm:p-8 shadow-sm">
         <div className="mb-3 text-xs font-bold text-slate-700 flex items-center gap-1.5">
           {isFinnish ? "Lataa kuittikuva:" : "Upload a receipt image:"}

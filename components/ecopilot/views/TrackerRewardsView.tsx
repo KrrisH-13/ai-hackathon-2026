@@ -167,8 +167,8 @@ export function TrackerRewardsView({ userProfile, isFinnish }: TrackerRewardsVie
           </h2>
           <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
             {isFinnish
-              ? "Sovelluksen muut työkalut (Kuittiskanneri, Entä jos..., AI-Ilmastoapuri) kirjaavat tapahtumat tähän automaattisesti."
-              : "Other tools in the app (Receipt Scanner, What If?, AI Copilot) log entries here automatically."}
+              ? "Sovelluksen muut työkalut (Päiväkirja & Kuitit, Entä jos..., AI-Ilmastoapuri) kirjaavat tapahtumat tähän automaattisesti."
+              : "Other tools in the app (Activity Log & Receipts, What If?, AI Copilot) log entries here automatically."}
           </p>
         </div>
 
