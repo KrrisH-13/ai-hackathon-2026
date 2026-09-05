@@ -11,7 +11,7 @@ export async function POST(request: Request) {
 
     if (!user) return Response.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
-    const { userProfile, currentSeason, outdoorTemp, spotPrices } = await request.json();
+    const { userProfile, outdoorTemp, spotPrices } = await request.json();
 
     if (!userProfile || typeof outdoorTemp !== "number" || !Array.isArray(spotPrices)) {
       return Response.json(
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const data = await optimizeDailyEnergy(userProfile, currentSeason, outdoorTemp, spotPrices);
+    const data = await optimizeDailyEnergy(userProfile, outdoorTemp, spotPrices);
 
     return Response.json({ success: true, data });
   } catch (err) {

@@ -2,14 +2,13 @@
 
 import { useState } from "react";
 import { Lightbulb, Sparkles, ArrowRight, AlertTriangle, Plus, CheckCircle2, ListChecks, Activity } from "lucide-react";
-import type { UserProfile, Season, WhatIfProjection } from "@/lib/ecopilot/types";
+import type { UserProfile, WhatIfProjection } from "@/lib/ecopilot/types";
 import { projectWhatIfScenarioAPI } from "@/lib/ecopilot/client";
 import { addCo2LogAPI } from "@/lib/ecopilot/profileClient";
 import { InfoHint } from "@/components/ecopilot/InfoHint";
 
 interface WhatIfViewProps {
   userProfile: UserProfile;
-  currentSeason: Season;
   isFinnish: boolean;
 }
 
@@ -31,7 +30,7 @@ const CONFIDENCE_LABEL: Record<WhatIfProjection["confidence"], { en: string; fi:
   low: { en: "Low confidence", fi: "Matala luotettavuus", className: "bg-slate-100 text-slate-700 border-slate-200" },
 };
 
-export function WhatIfView({ userProfile, currentSeason, isFinnish }: WhatIfViewProps) {
+export function WhatIfView({ userProfile, isFinnish }: WhatIfViewProps) {
   const [draft, setDraft] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -74,7 +73,7 @@ export function WhatIfView({ userProfile, currentSeason, isFinnish }: WhatIfView
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      const result = await projectWhatIfScenarioAPI(question, userProfile, currentSeason);
+      const result = await projectWhatIfScenarioAPI(question, userProfile);
       setProjection(result);
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Failed to generate a projection");

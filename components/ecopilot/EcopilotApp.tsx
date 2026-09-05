@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import type { UserProfile, Season, EcopilotTab, SpotPricePoint } from "@/lib/ecopilot/types";
-import { SEASONAL_PRESETS } from "@/lib/ecopilot/data";
+import type { UserProfile, EcopilotTab, SpotPricePoint } from "@/lib/ecopilot/types";
 import { EcopilotSidebar } from "@/components/ecopilot/EcopilotSidebar";
 import { EcopilotTopBar } from "@/components/ecopilot/EcopilotTopBar";
 import { AiClimateCopilotView } from "@/components/ecopilot/views/AiClimateCopilotView";
@@ -23,12 +22,8 @@ interface EcopilotAppProps {
   initialProfile: UserProfile;
   /** Signed-in account's email, for the logout control in EcopilotTopBar. */
   accountEmail?: string;
-  /** Today's real Northern-hemisphere season, computed server-side (lib/ecopilot/weather.ts). */
-  initialSeason: Season;
-  /** Live outdoor temperature for Espoo (Open-Meteo), or a seasonal mock fallback if the fetch failed. */
+  /** Live outdoor temperature for Espoo (Open-Meteo), or a fallback if the fetch failed. */
   initialOutdoorTempCelsius: number;
-  /** Whether initialOutdoorTempCelsius came from the live weather API vs. the seasonal mock fallback. */
-  isLiveWeather: boolean;
   /** Today's 24h spot price curve — live prices (porssisahko.net) merged onto the mock curve where available. */
   spotPrices: SpotPricePoint[];
   /** Whether the live spot-price fetch actually succeeded this page load. */
@@ -47,15 +42,12 @@ interface EcopilotAppProps {
 export function EcopilotApp({
   initialProfile,
   accountEmail,
-  initialSeason,
   initialOutdoorTempCelsius,
-  isLiveWeather,
   spotPrices,
   isLiveSpotPrices,
 }: EcopilotAppProps) {
   const [profile] = useState<UserProfile>(initialProfile);
   const [currentTab, setCurrentTab] = useState<EcopilotTab>("chat");
-  const [currentSeason, setCurrentSeason] = useState<Season>(initialSeason);
   const [isFinnish, setIsFinnish] = useState<boolean>(false);
 
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
@@ -73,12 +65,6 @@ export function EcopilotApp({
   // since it's otherwise only kept in this component's local state.
   const profileHref = `${pathname}/profile?lang=${isFinnish ? "fi" : "en"}`;
 
-  // Real weather only applies to today's actual season — flipping the season
-  // switcher to explore a different one falls back to that season's typical
-  // mock temperature, same as before live weather existed.
-  const isShowingLiveWeather = isLiveWeather && currentSeason === initialSeason;
-  const outdoorTempCelsius = isShowingLiveWeather ? initialOutdoorTempCelsius : SEASONAL_PRESETS[currentSeason].typicalTemp;
-
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50 text-slate-800">
       <EcopilotSidebar currentTab={currentTab} onSelectTab={setCurrentTab} isFinnish={isFinnish} />
@@ -88,22 +74,17 @@ export function EcopilotApp({
           userProfile={profile}
           profileHref={profileHref}
           onOpenRoadmap={() => setCurrentTab("roadmap")}
-          currentSeason={currentSeason}
-          onSelectSeason={setCurrentSeason}
           isFinnish={isFinnish}
           onToggleLanguage={() => setIsFinnish((prev) => !prev)}
           onOpenShareModal={() => setIsShareModalOpen(true)}
           accountEmail={accountEmail}
-          outdoorTempCelsius={outdoorTempCelsius}
-          isLiveWeather={isShowingLiveWeather}
         />
 
         <main className="flex-1 min-h-0 overflow-y-auto">
           {currentTab === "chat" && (
             <AiClimateCopilotView
               userProfile={profile}
-              currentSeason={currentSeason}
-              outdoorTempCelsius={outdoorTempCelsius}
+              outdoorTempCelsius={initialOutdoorTempCelsius}
               isFinnish={isFinnish}
               onNavigateTab={setCurrentTab}
             />
@@ -114,8 +95,7 @@ export function EcopilotApp({
           {currentTab === "energy" && (
             <NordPoolEnergyOptimizerView
               userProfile={profile}
-              currentSeason={currentSeason}
-              outdoorTempCelsius={outdoorTempCelsius}
+              outdoorTempCelsius={initialOutdoorTempCelsius}
               spotPrices={spotPrices}
               isLiveSpotPrices={isLiveSpotPrices}
               isFinnish={isFinnish}
@@ -132,9 +112,7 @@ export function EcopilotApp({
 
           {currentTab === "receiptScanner" && <ReceiptScannerView isFinnish={isFinnish} />}
 
-          {currentTab === "whatIf" && (
-            <WhatIfView userProfile={profile} currentSeason={currentSeason} isFinnish={isFinnish} />
-          )}
+          {currentTab === "whatIf" && <WhatIfView userProfile={profile} isFinnish={isFinnish} />}
 
           {currentTab === "trackerRewards" && <TrackerRewardsView userProfile={profile} isFinnish={isFinnish} />}
         </main>

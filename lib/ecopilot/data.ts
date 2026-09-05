@@ -5,7 +5,7 @@
  * has been replaced by a real per-account profile — see
  * lib/ecopilot/queries.ts and supabase/migrations/20260822090000_*.sql.
  */
-import type { EspooRoadmapMeasure, SpotPricePoint, ClimateActionItem, Season, CarType } from './types';
+import type { EspooRoadmapMeasure, SpotPricePoint, ClimateActionItem, CarType } from './types';
 import { WASTE_MANAGEMENT_SYSTEMS } from './types';
 
 export const CAR_TYPE_OPTIONS: { value: CarType; label: string }[] = [
@@ -129,88 +129,6 @@ export const MOCK_HOURLY_SPOT_PRICES: SpotPricePoint[] = [
   { hour: 22, timeLabel: '22:00 - 23:00', priceCentsKwh: 3.1, gridCo2IntensityGramsKwh: 38, status: 'optimal', recommendation: 'Great for night sauna & heating boost.' },
   { hour: 23, timeLabel: '23:00 - 24:00', priceCentsKwh: 2.2, gridCo2IntensityGramsKwh: 32, status: 'optimal', recommendation: 'Night rate starts. Set EV timer.' },
 ];
-
-export const SEASONAL_PRESETS: Record<
-  Season,
-  {
-    nameFi: string;
-    nameEn: string;
-    typicalTemp: number;
-    description: string;
-    keyTips: string[];
-    saunaAdvice: string;
-    heatPumpSetting: string;
-  }
-> = {
-  winter: {
-    nameFi: 'Talvi & Kaamos (-12°C)',
-    nameEn: 'Winter & Polar Night (-12°C)',
-    typicalTemp: -12,
-    description:
-      'Sub-zero freeze, high heating demand, and peak spot electricity price volatility. Maximize heat retention and time electrical loads.',
-    keyTips: [
-      'Lower room thermostat by 1°C (21°C -> 20°C, bedrooms to 18°C) to save 5% on annual heating bill.',
-      'Check window seals (tiivisteet) with a paper slip test to eliminate freezing drafts.',
-      'Use engine block heater (lohkolämmitin) for max 1-2 hours with timer; avoid all-night warming.',
-      'Ventilation heat recovery (LTO-laite): ensure winter bypass is closed and filters are clean.',
-    ],
-    saunaAdvice:
-      'Electric kiuas uses 6-9 kWh. Heat sauna to 70-75°C instead of 90°C to save 25% energy. Schedule heating for after 21:00.',
-    heatPumpSetting:
-      'Keep ilmalämpöpumppu on continuous HEAT mode (never AUTO) at +21°C with fixed fan speed 3-4 to distribute warmth deeply.',
-  },
-  spring: {
-    nameFi: 'Kevät & Sulaminen (+5°C)',
-    nameEn: 'Spring Meltdown (+5°C)',
-    typicalTemp: 5,
-    description:
-      'Sunny days, chilly nights, melting snow, and opening of the HSL cycling & city bike season.',
-    keyTips: [
-      'Switch from car to HSL Pikaratikka 15 or city bikes (kaupunkipyörät) for local trips.',
-      'Rooftop solar season begins: clean panels from pollen and verify inverter performance.',
-      'Adjust heating curve (lämmityskäyrä) downward as solar passive heat warms apartments through south windows.',
-      'Sort yard waste and spring-cleaning textiles for HSY Sortti-asema free drop-off weeks.',
-    ],
-    saunaAdvice:
-      'Take advantage of afternoon solar PV peaks (12:00-15:00) on weekends to heat sauna with your own solar power.',
-    heatPumpSetting:
-      'Lower baseline heating output. Utilize daytime solar gain before running heating cycles.',
-  },
-  summer: {
-    nameFi: 'Kesä & Mökki (+23°C)',
-    nameEn: 'Summer & Cottage Season (+23°C)',
-    typicalTemp: 23,
-    description:
-      'Long light hours, low heating demand, peak solar generation, and mökki cottage living.',
-    keyTips: [
-      'Use passive shading (kaihtimet, verhot, markiisit) during midday to avoid running AC cooling excessively.',
-      'If using heat pump cooling, set it to +24-25°C in DRY/COOL mode with doors closed—never over-cool below +22°C.',
-      'At summer cottage (kesämökki): burn only bone-dry birch (kuiva koivuklapi), light wood stove from the top (sytytys päältä) to reduce fine particulate emissions by 50%.',
-      'Forage local seasonal Finnish berries (mustikka, puolukka) and mushrooms for zero-carbon superfoods.',
-    ],
-    saunaAdvice:
-      'In wood-burning saunas, ensure primary air damper is closed once embers form to retain heat without wasting wood.',
-    heatPumpSetting:
-      'Use "Cool" or "Dehumidify" mode set to +24°C. Avoid running it while balcony doors or windows are open.',
-  },
-  autumn: {
-    nameFi: 'Syksy & Ruska (+8°C)',
-    nameEn: 'Autumn & Foliage (+8°C)',
-    typicalTemp: 8,
-    description:
-      'Damp weather, dropping temperatures, wind power production increases, heating systems startup.',
-    keyTips: [
-      'Bleed radiators (patterien ilmaus) and check heating system pressure before the first sub-zero freeze.',
-      'Fit winter studded tires (nastarenkaat) or friction tires (kitkarenkaat) on bikes to maintain year-round zero-emission commuting.',
-      'Collect and compost autumn leaves locally instead of bagging them into mixed waste.',
-      'Prepare warm wool socks (villasukat) and cozy layered indoor clothing to avoid cranking up room thermostats early.',
-    ],
-    saunaAdvice:
-      'Autumn wind storms often produce negative or near-zero spot electricity prices in Finland—ideal for stress-free sauna evenings.',
-    heatPumpSetting:
-      'Switch heat pump from off/fan to HEAT mode before indoor temperature drops below +19°C to prevent moisture buildup.',
-  },
-};
 
 export const COMMON_CLIMATE_ACTIONS: ClimateActionItem[] = [
   {

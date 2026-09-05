@@ -130,7 +130,6 @@ export interface EspooRoadmapMeasure {
 }
 
 export interface DailyEnergyPlan {
-  currentSeason: Season;
   outdoorTempCelsius: number;
   peakSaunaWindow: {
     recommendedTime: string;

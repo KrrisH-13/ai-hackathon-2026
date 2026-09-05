@@ -2,23 +2,21 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Sparkles, Send, Zap, RotateCw, Copy, CheckCircle, Building2, Compass, ArrowRight, Target, Plus } from "lucide-react";
-import type { UserProfile, Season, ChatMessage, EcopilotTab, TodaysActionResult } from "@/lib/ecopilot/types";
+import type { UserProfile, ChatMessage, EcopilotTab, TodaysActionResult } from "@/lib/ecopilot/types";
 import { CO2_LOG_CATEGORIES } from "@/lib/ecopilot/types";
 import { chatWithClimateAssistantAPI, getTodaysActionAPI } from "@/lib/ecopilot/client";
 import { addCo2LogAPI } from "@/lib/ecopilot/profileClient";
-import { SEASONAL_PRESETS } from "@/lib/ecopilot/data";
 import { InfoHint } from "@/components/ecopilot/InfoHint";
 
 interface AiClimateCopilotViewProps {
   userProfile: UserProfile;
-  currentSeason: Season;
-  /** Real current outdoor temperature (or a seasonal mock fallback) — see EcopilotApp. */
+  /** Real current outdoor temperature (or a fallback) — see EcopilotApp. */
   outdoorTempCelsius: number;
   isFinnish: boolean;
   onNavigateTab: (tab: EcopilotTab) => void;
 }
 
-export function AiClimateCopilotView({ userProfile, currentSeason, outdoorTempCelsius, isFinnish, onNavigateTab }: AiClimateCopilotViewProps) {
+export function AiClimateCopilotView({ userProfile, outdoorTempCelsius, isFinnish, onNavigateTab }: AiClimateCopilotViewProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "welcome",
@@ -87,7 +85,7 @@ How can I help power your climate choices today?`,
     setIsLoadingAction(true);
     setActionLogged(false);
     try {
-      const result = await getTodaysActionAPI(userProfile, currentSeason, outdoorTempCelsius);
+      const result = await getTodaysActionAPI(userProfile, outdoorTempCelsius);
       setTodaysAction(result);
     } finally {
       setIsLoadingAction(false);
@@ -95,10 +93,10 @@ How can I help power your climate choices today?`,
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch on profile/season change
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch on profile/weather change
     fetchTodaysAction();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userProfile.id, currentSeason, outdoorTempCelsius]);
+  }, [userProfile.id, outdoorTempCelsius]);
 
   const handleLogTodaysAction = async () => {
     if (!todaysAction) return;
@@ -132,7 +130,7 @@ How can I help power your climate choices today?`,
 
     try {
       const history = messages.map((m) => ({ role: m.role, content: m.content }));
-      const response = await chatWithClimateAssistantAPI(history, messageText, userProfile, currentSeason);
+      const response = await chatWithClimateAssistantAPI(history, messageText, userProfile);
 
       const aiMsg: ChatMessage = {
         id: `ai-${messages.length}`,
@@ -159,8 +157,6 @@ How can I help power your climate choices today?`,
     }
   };
 
-  const seasonInfo = SEASONAL_PRESETS[currentSeason];
-
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 w-full lg:h-full lg:overflow-hidden flex flex-col animate-fadeIn">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start lg:flex-1 lg:min-h-0 lg:items-stretch">
@@ -181,12 +177,9 @@ How can I help power your climate choices today?`,
           </div>
 
           <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-50/60 to-teal-50/60 border border-emerald-100 shadow-xs flex items-center justify-between">
-            <div className="space-y-0.5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800">
-                {isFinnish ? "Nykyinen Kausi" : "Current Season"}
-              </span>
-              <div className="text-xs font-bold text-emerald-950">{isFinnish ? seasonInfo.nameFi : seasonInfo.nameEn}</div>
-            </div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800">
+              {isFinnish ? "Ulkolämpötila" : "Outdoor Temperature"}
+            </span>
             <span className="px-2.5 py-1 rounded-xl bg-white text-xs font-mono font-bold text-emerald-800 border border-emerald-200 shadow-2xs">
               {outdoorTempCelsius > 0 ? `+${outdoorTempCelsius}°C` : `${outdoorTempCelsius}°C`}
             </span>

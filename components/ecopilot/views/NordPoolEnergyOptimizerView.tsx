@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Zap, RotateCw, Sparkles, Clock, ShieldCheck } from "lucide-react";
-import type { UserProfile, Season, DailyEnergyPlan, SpotPricePoint } from "@/lib/ecopilot/types";
-import { SEASONAL_PRESETS } from "@/lib/ecopilot/data";
+import type { UserProfile, DailyEnergyPlan, SpotPricePoint } from "@/lib/ecopilot/types";
 import { calculateDeterministicHeatingAdjustment } from "@/lib/ecopilot/calculations";
 import { optimizeDailyEnergyAPI } from "@/lib/ecopilot/client";
 import { DataFreshnessBadge } from "@/components/ecopilot/DataFreshnessBadge";
@@ -11,8 +10,7 @@ import { InfoHint } from "@/components/ecopilot/InfoHint";
 
 interface NordPoolEnergyOptimizerViewProps {
   userProfile: UserProfile;
-  currentSeason: Season;
-  /** Real current outdoor temperature (or a seasonal mock fallback) — see EcopilotApp. */
+  /** Real current outdoor temperature (or a fallback) — see EcopilotApp. */
   outdoorTempCelsius: number;
   /** Today's 24h spot price curve — live prices (porssisahko.net) merged onto the mock curve where available. */
   spotPrices: SpotPricePoint[];
@@ -23,7 +21,6 @@ interface NordPoolEnergyOptimizerViewProps {
 
 export function NordPoolEnergyOptimizerView({
   userProfile,
-  currentSeason,
   outdoorTempCelsius,
   spotPrices,
   isLiveSpotPrices,
@@ -35,12 +32,10 @@ export function NordPoolEnergyOptimizerView({
   const [chartMode, setChartMode] = useState<"co2" | "price" | "dual">("co2");
   const [hoveredHour, setHoveredHour] = useState<number | null>(null);
 
-  const seasonInfo = SEASONAL_PRESETS[currentSeason];
-
   const fetchDailyPlan = async () => {
     setIsComputingPlan(true);
     try {
-      const plan = await optimizeDailyEnergyAPI(userProfile, currentSeason, outdoorTempCelsius, spotPrices);
+      const plan = await optimizeDailyEnergyAPI(userProfile, outdoorTempCelsius, spotPrices);
       setAiEnergyPlan(plan);
     } catch (err) {
       console.error(err);
@@ -50,17 +45,17 @@ export function NordPoolEnergyOptimizerView({
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch on profile/season change
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch on profile/weather change
     fetchDailyPlan();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userProfile.id, currentSeason, outdoorTempCelsius, spotPrices]);
+  }, [userProfile.id, outdoorTempCelsius, spotPrices]);
 
   const chosenHourPoint = spotPrices.find((p) => p.hour === selectedHour) || spotPrices[21] || spotPrices[0];
   const activeHoverPoint = hoveredHour !== null ? spotPrices.find((p) => p.hour === hoveredHour) : null;
   const activePoint = activeHoverPoint || chosenHourPoint;
 
-  // Every 1°C of thermostat reduction, computed deterministically from the profile's living area & season.
-  const heatingAdjustment = calculateDeterministicHeatingAdjustment(userProfile.livingAreaSqM, 1, currentSeason);
+  // Every 1°C of thermostat reduction, computed deterministically from the profile's living area & current outdoor temperature.
+  const heatingAdjustment = calculateDeterministicHeatingAdjustment(userProfile.livingAreaSqM, 1, outdoorTempCelsius);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 space-y-8 animate-fadeIn">
@@ -72,7 +67,7 @@ export function NordPoolEnergyOptimizerView({
               ⚡ {isFinnish ? "Nord Pool Pörssisähkö & Lämpö" : "Nord Pool Spot Electricity & Heat"}
             </span>
             <span className="text-xs text-slate-500 font-medium">
-              {isFinnish ? `Espoo: ${seasonInfo.nameFi}` : `Espoo: ${seasonInfo.nameEn}`}
+              {isFinnish ? `Espoo: ${outdoorTempCelsius}°C ulkona` : `Espoo: ${outdoorTempCelsius}°C outside`}
             </span>
           </div>
           <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
@@ -561,8 +556,8 @@ export function NordPoolEnergyOptimizerView({
               </div>
               <p className="text-[11px] text-emerald-900 leading-relaxed">
                 {isFinnish
-                  ? `Yhden asteen pudotus juuri nyt (${outdoorTempCelsius}°C ulkona, ${seasonInfo.nameFi.toLowerCase()}) säästää tämän verran arjessa.`
-                  : `Dropping the thermostat by 1°C right now (${outdoorTempCelsius}°C outside, ${seasonInfo.nameEn.toLowerCase()}) saves this much in daily use.`}
+                  ? `Yhden asteen pudotus juuri nyt (${outdoorTempCelsius}°C ulkona) säästää tämän verran arjessa.`
+                  : `Dropping the thermostat by 1°C right now (${outdoorTempCelsius}°C outside) saves this much in daily use.`}
               </p>
             </div>
           </div>
@@ -572,7 +567,10 @@ export function NordPoolEnergyOptimizerView({
               <Sparkles className="w-3.5 h-3.5" />
               <span>{isFinnish ? "Lämmityksen AI-Vinkki:" : "Heating System AI Advice:"}</span>
             </div>
-            <p className="text-slate-300 text-[11px] leading-relaxed">{aiEnergyPlan?.heatPumpTip || seasonInfo.heatPumpSetting}</p>
+            <p className="text-slate-300 text-[11px] leading-relaxed">
+              {aiEnergyPlan?.heatPumpTip ||
+                "Keep ilmalämpöpumppu on continuous HEAT mode (never AUTO) with a fixed fan speed to distribute warmth deeply."}
+            </p>
           </div>
         </div>
       </div>
