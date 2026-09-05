@@ -12,7 +12,7 @@ export async function POST(request: Request) {
 
     if (!user) return Response.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
-    const { question, userProfile, currentSeason } = await request.json();
+    const { question, userProfile } = await request.json();
 
     if (typeof question !== "string" || !question.trim()) {
       return Response.json({ success: false, error: "question is required" }, { status: 400 });
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
 
     // 90 days gives the model enough of a pattern to reason over without an unbounded prompt.
     const logs = await getRecentCo2Logs(user.id, supabase, 90);
-    const data = await projectWhatIfScenario(question, userProfile, toCo2LogEntries(logs), currentSeason);
+    const data = await projectWhatIfScenario(question, userProfile, toCo2LogEntries(logs));
 
     return Response.json({ success: true, data });
   } catch (err) {

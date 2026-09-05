@@ -12,7 +12,7 @@ export async function POST(request: Request) {
 
     if (!user) return Response.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
-    const { userProfile, currentSeason, outdoorTempCelsius } = await request.json();
+    const { userProfile, outdoorTempCelsius } = await request.json();
 
     if (!userProfile || typeof outdoorTempCelsius !== "number") {
       return Response.json({ success: false, error: "userProfile and outdoorTempCelsius are required" }, { status: 400 });
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
         ? ""
         : `Last 7 days: ${recentLogs.length} logged entries, net ${dailyTotals.reduce((s, d) => s + d.netCo2Kg, 0).toFixed(1)} kg CO2 (negative = saved).`;
 
-    const data = await generateTodaysBestAction(userProfile, currentSeason, outdoorTempCelsius, recentLogsSummary);
+    const data = await generateTodaysBestAction(userProfile, outdoorTempCelsius, recentLogsSummary);
 
     return Response.json({ success: true, data });
   } catch (err) {

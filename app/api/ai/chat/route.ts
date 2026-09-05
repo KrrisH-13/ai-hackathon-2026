@@ -11,13 +11,13 @@ export async function POST(request: Request) {
 
     if (!user) return Response.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
-    const { chatHistory, userMessage, userProfile, currentSeason } = await request.json();
+    const { chatHistory, userMessage, userProfile } = await request.json();
 
     if (typeof userMessage !== "string" || !userMessage.trim()) {
       return Response.json({ success: false, error: "userMessage is required" }, { status: 400 });
     }
 
-    const data = await chatWithClimateAssistant(chatHistory ?? [], userMessage, userProfile, currentSeason);
+    const data = await chatWithClimateAssistant(chatHistory ?? [], userMessage, userProfile);
 
     return Response.json({ success: true, data });
   } catch (err) {

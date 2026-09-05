@@ -1,5 +1,3 @@
-import type { Season } from "./types";
-
 /**
  * Deterministic CO2/cost/EcoCredits math, ported from the expanded
  * "Kipinä Espoo AI" prototype's climate/calculations.ts +
@@ -378,7 +376,6 @@ export function calculateDeterministicSaunaImpact(
   return { kwhUsed, shiftComparison, gridFlexibilityBonus: spotPriceCentsKwh < 5 ? 25 : 10 };
 }
 
-const HEATING_SEASON_MULTIPLIER: Record<Season, number> = { winter: 1.0, autumn: 0.6, spring: 0.4, summer: 0.05 };
 const HEATING_DAYS_PER_YEAR = 210;
 
 export interface HeatingAdjustmentResult {
@@ -389,14 +386,22 @@ export interface HeatingAdjustmentResult {
   annualCostSavedEur: number;
 }
 
+/** How much a home is actively heating right now, as a fraction of peak (cold-day) demand. */
+function heatingDemandMultiplierForTemp(outdoorTempCelsius: number): number {
+  if (outdoorTempCelsius <= 2) return 1.0;
+  if (outdoorTempCelsius <= 10) return 0.6;
+  if (outdoorTempCelsius <= 16) return 0.4;
+  return 0.05;
+}
+
 /** Every 1°C of thermostat reduction saves ~5% of the day's heating energy. */
 export function calculateDeterministicHeatingAdjustment(
   livingAreaSqM: number,
   degreesReduced = 1,
-  season: Season = "winter"
+  outdoorTempCelsius = 0
 ): HeatingAdjustmentResult {
   const area = clampRange(livingAreaSqM, 20, 500, 60);
-  const baseDailyHeatingKwh = area * 0.48 * HEATING_SEASON_MULTIPLIER[season];
+  const baseDailyHeatingKwh = area * 0.48 * heatingDemandMultiplierForTemp(outdoorTempCelsius);
   const heatingKwhSavedPerDay = round(baseDailyHeatingKwh * degreesReduced * 0.05, 2);
   const co2SavedKgPerDay = round((heatingKwhSavedPerDay * NORDIC_EMISSION_FACTORS.DISTRICT_HEAT_ESPOO_2026) / 1000, 2);
   const costSavedEurPerDay = round(heatingKwhSavedPerDay * 0.095, 2);
