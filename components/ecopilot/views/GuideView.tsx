@@ -344,7 +344,7 @@ export function GuideView({ isFinnish, onNavigateTab }: GuideViewProps) {
                   <h4 className="text-sm font-bold text-slate-900">
                     {isFinnish ? step.titleFi : step.titleEn}
                   </h4>
-                  <p className="text-[11px] text-slate-600 leading-relaxed mt-1">
+                  <p className="text-xs text-slate-600 leading-relaxed mt-1">
                     {isFinnish ? step.bodyFi : step.bodyEn}
                   </p>
                 </div>
@@ -383,7 +383,7 @@ export function GuideView({ isFinnish, onNavigateTab }: GuideViewProps) {
                     <h4 className="text-sm font-bold text-slate-900">
                       {isFinnish ? f.titleFi : f.titleEn}
                     </h4>
-                    <p className="text-[11px] text-slate-600 leading-relaxed mt-1">
+                    <p className="text-xs text-slate-600 leading-relaxed mt-1">
                       {isFinnish ? f.blurbFi : f.blurbEn}
                     </p>
                   </div>
@@ -391,7 +391,7 @@ export function GuideView({ isFinnish, onNavigateTab }: GuideViewProps) {
 
                 <ul className="mt-3 space-y-1.5 flex-1">
                   {(isFinnish ? f.pointsFi : f.pointsEn).map((point, i) => (
-                    <li key={i} className="flex gap-2 text-[11px] text-slate-600 leading-relaxed">
+                    <li key={i} className="flex gap-2 text-xs text-slate-600 leading-relaxed">
                       <span className="mt-1.5 w-1 h-1 rounded-full bg-emerald-500 shrink-0" />
                       <span>{point}</span>
                     </li>
@@ -400,7 +400,7 @@ export function GuideView({ isFinnish, onNavigateTab }: GuideViewProps) {
 
                 <button
                   onClick={() => onNavigateTab(f.tab)}
-                  className="mt-4 self-start px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold transition flex items-center gap-1.5"
+                  className="mt-4 self-start px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-1.5"
                 >
                   <span>{isFinnish ? "Avaa" : "Open"}</span>
                   <ArrowRight className="w-3 h-3" />
@@ -434,7 +434,7 @@ export function GuideView({ isFinnish, onNavigateTab }: GuideViewProps) {
                 <h4 className="text-xs font-bold text-slate-900">
                   {isFinnish ? tip.labelFi : tip.labelEn}
                 </h4>
-                <p className="text-[11px] text-slate-600 leading-relaxed">
+                <p className="text-xs text-slate-600 leading-relaxed">
                   {isFinnish ? tip.bodyFi : tip.bodyEn}
                 </p>
               </div>

@@ -81,12 +81,12 @@ export function EspooClimateWatch2030View({ isFinnish }: EspooClimateWatch2030Vi
           <div className="grid grid-cols-2 gap-3 shrink-0">
             <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700 text-center">
               <div className="text-2xl font-black text-emerald-400">-68%</div>
-              <div className="text-[10px] text-slate-400 font-bold">{isFinnish ? "Päästöt nyt vs 1990" : "Emissions vs 1990"}</div>
+              <div className="text-[12px] text-slate-400 font-bold">{isFinnish ? "Päästöt nyt vs 1990" : "Emissions vs 1990"}</div>
             </div>
 
             <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700 text-center">
               <div className="text-2xl font-black text-blue-400">2.5 t</div>
-              <div className="text-[10px] text-slate-400 font-bold">{isFinnish ? "Tavoite / asukas 2030" : "2030 Target / Resident"}</div>
+              <div className="text-[12px] text-slate-400 font-bold">{isFinnish ? "Tavoite / asukas 2030" : "2030 Target / Resident"}</div>
             </div>
           </div>
         </div>
@@ -144,12 +144,12 @@ export function EspooClimateWatch2030View({ isFinnish }: EspooClimateWatch2030Vi
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="space-y-0.5">
-                      <span className="text-[10px] font-bold uppercase text-emerald-800">{m.sector}</span>
+                      <span className="text-[12px] font-bold uppercase text-emerald-800">{m.sector}</span>
                       <h4 className="text-xs font-extrabold text-slate-900 leading-snug">{m.title}</h4>
                     </div>
 
                     <span
-                      className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase shrink-0 ${
+                      className={`px-2 py-0.5 rounded text-[12px] font-bold uppercase shrink-0 ${
                         m.status === "accelerated" ? "bg-emerald-600 text-white" : m.status === "achieved" ? "bg-blue-600 text-white" : "bg-amber-100 text-amber-900"
                       }`}
                     >
@@ -157,7 +157,7 @@ export function EspooClimateWatch2030View({ isFinnish }: EspooClimateWatch2030Vi
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between text-[11px] text-slate-600 pt-1">
+                  <div className="flex items-center justify-between text-xs text-slate-600 pt-1">
                     <span>Kumppani: {m.leadPartner.split("&")[0]}</span>
                     <span className="font-bold text-slate-900">
                       -{m.currentEmissionsReductionKtons}k / {m.targetEmissionsReductionKtons}k t CO2
@@ -174,7 +174,7 @@ export function EspooClimateWatch2030View({ isFinnish }: EspooClimateWatch2030Vi
             <div className="space-y-5">
               <div className="space-y-2 pb-4 border-b border-slate-100">
                 <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-200">
+                  <span className="px-2.5 py-0.5 rounded-full text-[12px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-200">
                     {activeMeasure.sector}
                   </span>
                   <span className="text-xs text-slate-500 font-bold">
@@ -187,7 +187,7 @@ export function EspooClimateWatch2030View({ isFinnish }: EspooClimateWatch2030Vi
               <div className="space-y-4 text-xs">
                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
                   <div className="font-bold text-slate-900">{isFinnish ? "Hankkeen Kuvaus & Ratkaisu:" : "Measure Description:"}</div>
-                  <p className="text-slate-600 leading-relaxed text-[11px]">{activeMeasure.description}</p>
+                  <p className="text-slate-600 leading-relaxed text-xs">{activeMeasure.description}</p>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-1.5">
@@ -195,12 +195,12 @@ export function EspooClimateWatch2030View({ isFinnish }: EspooClimateWatch2030Vi
                     <ShieldCheck className="w-4 h-4 text-emerald-600" />
                     <span>{isFinnish ? "Mitä tämä tarkoittaa espoolaiselle asukkaalle?" : "Resident Practical Impact:"}</span>
                   </div>
-                  <p className="text-emerald-900 leading-relaxed text-[11px]">{activeMeasure.residentImpact}</p>
+                  <p className="text-emerald-900 leading-relaxed text-xs">{activeMeasure.residentImpact}</p>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 space-y-1">
                   <div className="font-bold text-blue-950">{isFinnish ? "Yhteistyökumppanit & Johtovastuu:" : "Lead Partners:"}</div>
-                  <p className="text-blue-900 text-[11px]">{activeMeasure.leadPartner}</p>
+                  <p className="text-blue-900 text-xs">{activeMeasure.leadPartner}</p>
                 </div>
               </div>
             </div>
@@ -240,10 +240,10 @@ export function EspooClimateWatch2030View({ isFinnish }: EspooClimateWatch2030Vi
             <div key={i} className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 hover:border-emerald-300 transition shadow-2xs">
               <div className="flex items-center justify-between">
                 <span className="font-extrabold text-slate-900 text-xs">{d.name}</span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-100 text-emerald-800">{d.emissionsCut}</span>
+                <span className="px-2 py-0.5 rounded text-[12px] font-black bg-emerald-100 text-emerald-800">{d.emissionsCut}</span>
               </div>
               <div className="text-xs font-bold text-emerald-800">{d.flagship}</div>
-              <p className="text-[11px] text-slate-600 leading-relaxed">{d.description}</p>
+              <p className="text-xs text-slate-600 leading-relaxed">{d.description}</p>
             </div>
           ))}
         </div>

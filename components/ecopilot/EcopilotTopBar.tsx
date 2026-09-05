@@ -20,7 +20,7 @@ export function EcopilotTopBar({ onOpenRoadmap, isFinnish, onToggleLanguage, onO
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
       {/* Top Banner / Municipal Roadmap Context */}
-      <div className="bg-slate-900 text-white text-[11px] py-1.5 px-4 sm:px-8 flex flex-wrap items-center justify-between gap-2">
+      <div className="bg-slate-900 text-white text-xs py-1.5 px-4 sm:px-8 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <button
             onClick={onOpenRoadmap}
@@ -35,14 +35,14 @@ export function EcopilotTopBar({ onOpenRoadmap, isFinnish, onToggleLanguage, onO
         <div className="flex items-center gap-3">
           <button
             onClick={onToggleLanguage}
-            className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-200 border border-slate-700 transition"
+            className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[12px] font-bold text-slate-200 border border-slate-700 transition"
           >
             {isFinnish ? "FI / EN" : "EN / FI"}
           </button>
 
           <button
             onClick={onOpenShareModal}
-            className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-200 border border-slate-700 transition"
+            className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[12px] font-bold text-slate-200 border border-slate-700 transition"
             title={isFinnish ? "Jaa sitoumus" : "Share commitment"}
           >
             <Share2 className="w-3 h-3" />

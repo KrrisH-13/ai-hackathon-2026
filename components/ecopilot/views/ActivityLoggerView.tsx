@@ -227,24 +227,24 @@ export function ActivityLoggerView({ isFinnish }: ActivityLoggerViewProps) {
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-slate-900 truncate">{estimate.extraction.rawText}</p>
                   {estimate.extraction.kind === "trip" ? (
-                    <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
+                    <div className="flex items-center gap-1.5 text-[12px] text-slate-500">
                       <Globe2 className="w-3 h-3" />
                       <span>
                         {estimate.extraction.distanceKm} km · {estimate.extraction.country}
                       </span>
                     </div>
                   ) : (
-                    <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-white border border-fuchsia-200 text-fuchsia-800 capitalize">
+                    <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded-md text-[12px] font-bold bg-white border border-fuchsia-200 text-fuchsia-800 capitalize">
                       {estimate.extraction.category}
                     </span>
                   )}
                 </div>
               </div>
-              <span className="shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-black bg-fuchsia-200 text-fuchsia-900">
+              <span className="shrink-0 px-2.5 py-1 rounded-lg text-xs font-black bg-fuchsia-200 text-fuchsia-900">
                 {estimate.co2Kg} kg CO2e
               </span>
             </div>
-            <p className="text-[11px] text-slate-600">{estimate.factorNote}</p>
+            <p className="text-xs text-slate-600">{estimate.factorNote}</p>
             <div className="flex items-center gap-2">
               <button
                 onClick={handleConfirm}
@@ -288,10 +288,10 @@ export function ActivityLoggerView({ isFinnish }: ActivityLoggerViewProps) {
               <div key={entry.id} className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-200">
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-slate-900 truncate">{entry.description}</p>
-                  <p className="text-[10px] text-slate-500">{entry.occurredOn}</p>
+                  <p className="text-[12px] text-slate-500">{entry.occurredOn}</p>
                 </div>
                 <span
-                  className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-black ${
+                  className={`shrink-0 px-2.5 py-1 rounded-lg text-xs font-black ${
                     entry.co2Kg === 0 ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-800"
                   }`}
                 >

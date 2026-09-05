@@ -174,7 +174,7 @@ export function TrackerRewardsView({ userProfile, isFinnish }: TrackerRewardsVie
 
         <div className="p-4 rounded-2xl bg-slate-900 text-white shadow-xs text-center shrink-0 min-w-[140px]">
           <div className="text-3xl font-black text-amber-400">{rewards?.balance ?? 0}</div>
-          <div className="text-[10px] text-slate-300 font-bold uppercase tracking-wider">EcoCredits</div>
+          <div className="text-[12px] text-slate-300 font-bold uppercase tracking-wider">EcoCredits</div>
         </div>
       </div>
 
@@ -184,7 +184,7 @@ export function TrackerRewardsView({ userProfile, isFinnish }: TrackerRewardsVie
         <StatTile label={isFinnish ? "Viimeiset 7 päivää" : "Last 7 days"} valueKg={last7Total} isFinnish={isFinnish} />
         <div className="p-4 rounded-2xl bg-slate-900 text-white shadow-xs flex items-center justify-between">
           <div>
-            <div className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">
+            <div className="text-[12px] font-bold text-emerald-400 uppercase tracking-wider">
               {isFinnish ? "Säästetty yhteensä" : "Lifetime Saved"}
             </div>
             <div className="text-xl font-black text-slate-100">-{userProfile.savedCo2Kg.toFixed(1)} kg</div>
@@ -200,7 +200,7 @@ export function TrackerRewardsView({ userProfile, isFinnish }: TrackerRewardsVie
               <span className="text-2xl">{tierStatus.currentTier.badge}</span>
               <div>
                 <div className="text-sm font-extrabold text-slate-900">{tierStatus.currentTier.tierName}</div>
-                <div className="text-[11px] text-slate-500">
+                <div className="text-xs text-slate-500">
                   {tierStatus.nextTier
                     ? isFinnish
                       ? `${tierStatus.creditsToNextTier} pistettä seuraavaan tasoon (${tierStatus.nextTier.tierName})`
@@ -224,26 +224,26 @@ export function TrackerRewardsView({ userProfile, isFinnish }: TrackerRewardsVie
           <h3 className="text-base font-extrabold text-slate-900">
             {isFinnish ? "Viikkotrendi: EcoCreditit & säästetty CO2" : "Weekly Trend: EcoCredits & CO2 Saved"}
           </h3>
-          <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200 text-[10px] font-bold">
+          <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200 text-[12px] font-bold">
             {isFinnish ? "🎲 Esimerkkidata" : "🎲 Sample data"}
           </span>
         </div>
         <div className="flex items-end gap-3 h-32">
           {SAMPLE_WEEKLY_TREND.map((week) => (
             <div key={week.label} className="flex-1 flex flex-col items-center gap-1.5">
-              <span className="text-[10px] font-bold text-slate-600">+{week.points}</span>
+              <span className="text-[12px] font-bold text-slate-600">+{week.points}</span>
               <div className="w-full flex flex-col justify-end h-20">
                 <div
                   style={{ height: `${Math.max(6, (week.points / maxSampleValue) * 100)}%` }}
                   className="w-full bg-amber-400 rounded-t-md"
                 />
               </div>
-              <span className="text-[9px] text-slate-400 font-medium">{week.label}</span>
-              <span className="text-[9px] text-emerald-600 font-bold">-{week.co2SavedKg} kg</span>
+              <span className="text-[12px] text-slate-400 font-medium">{week.label}</span>
+              <span className="text-[12px] text-emerald-600 font-bold">-{week.co2SavedKg} kg</span>
             </div>
           ))}
         </div>
-        <p className="text-[10px] text-slate-400 italic">
+        <p className="text-[12px] text-slate-400 italic">
           {isFinnish
             ? "Havainnollistava esimerkki — ei tilisi todellista historiaa."
             : "Illustrative only — not your account's real history."}
@@ -269,16 +269,16 @@ export function TrackerRewardsView({ userProfile, isFinnish }: TrackerRewardsVie
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <span className="text-2xl">{reward.icon}</span>
-                    <span className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-[10px] font-bold text-slate-700">
+                    <span className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-[12px] font-bold text-slate-700">
                       {reward.creditsCost} pts
                     </span>
                   </div>
                   <div className="text-xs font-bold text-slate-900">{reward.title}</div>
-                  <p className="text-[11px] text-slate-600 leading-relaxed">{reward.description}</p>
+                  <p className="text-xs text-slate-600 leading-relaxed">{reward.description}</p>
                 </div>
 
                 {alreadyClaimed ? (
-                  <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-[11px] text-emerald-800 font-mono flex items-center gap-1.5">
+                  <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 font-mono flex items-center gap-1.5">
                     <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                     {claimedRecord?.voucher_code}
                   </div>
@@ -302,7 +302,7 @@ export function TrackerRewardsView({ userProfile, isFinnish }: TrackerRewardsVie
             );
           })}
         </div>
-        <p className="text-[10px] text-slate-400 italic">{PROTOTYPE_REWARDS_DISCLAIMER}</p>
+        <p className="text-[12px] text-slate-400 italic">{PROTOTYPE_REWARDS_DISCLAIMER}</p>
       </div>
 
       {/* Unified CO2 + EcoCredits history */}
@@ -327,7 +327,7 @@ export function TrackerRewardsView({ userProfile, isFinnish }: TrackerRewardsVie
                     </div>
                     <div className="min-w-0">
                       <div className="text-xs font-bold text-slate-900 truncate">{row.description}</div>
-                      <div className="text-[10px] text-slate-500">{row.date}</div>
+                      <div className="text-[12px] text-slate-500">{row.date}</div>
                     </div>
                   </div>
 
@@ -340,7 +340,7 @@ export function TrackerRewardsView({ userProfile, isFinnish }: TrackerRewardsVie
                     )}
                     {row.points !== undefined && (
                       <span
-                        className={`px-2 py-0.5 rounded-md text-[10px] font-black border ${
+                        className={`px-2 py-0.5 rounded-md text-[12px] font-black border ${
                           row.points >= 0
                             ? "bg-amber-50 text-amber-800 border-amber-200"
                             : "bg-slate-100 text-slate-600 border-slate-200"
@@ -375,13 +375,13 @@ function StatTile({ label, valueKg, isFinnish }: { label: string; valueKg: numbe
   return (
     <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs flex items-center justify-between">
       <div>
-        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{label}</div>
+        <div className="text-[12px] font-bold text-slate-500 uppercase tracking-wider">{label}</div>
         <div className={`text-xl font-black ${isSaving ? "text-emerald-600" : valueKg > 0 ? "text-rose-600" : "text-slate-900"}`}>
           {isSaving ? "" : valueKg > 0 ? "+" : ""}
           {valueKg.toFixed(1)} kg
         </div>
       </div>
-      <span className="text-[10px] font-bold text-slate-400">{isFinnish ? "netto CO2" : "net CO2"}</span>
+      <span className="text-[12px] font-bold text-slate-400">{isFinnish ? "netto CO2" : "net CO2"}</span>
     </div>
   );
 }

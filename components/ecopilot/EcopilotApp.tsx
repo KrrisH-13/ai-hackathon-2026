@@ -121,7 +121,7 @@ export function EcopilotApp({
         <footer className="border-t border-slate-200 bg-white py-6 px-4 text-xs text-slate-500">
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <div className="w-5 h-5 bg-emerald-600 rounded flex items-center justify-center text-white font-bold text-[10px]">
+              <div className="w-5 h-5 bg-emerald-600 rounded flex items-center justify-center text-white font-bold text-[12px]">
                 E
               </div>
               <span className="font-bold text-slate-900">

@@ -51,7 +51,7 @@ export function InfoHint({ instruction, example, align = "left", label, isFinnis
         <span
           id={tooltipId}
           role="tooltip"
-          className={`absolute z-50 top-full mt-1.5 w-60 rounded-xl bg-slate-900 text-white text-[11px] font-normal leading-relaxed p-3 shadow-lg ${
+          className={`absolute z-50 top-full mt-1.5 w-60 rounded-xl bg-slate-900 text-white text-xs font-normal leading-relaxed p-3 shadow-lg ${
             align === "right" ? "right-0" : "left-0"
           }`}
         >
