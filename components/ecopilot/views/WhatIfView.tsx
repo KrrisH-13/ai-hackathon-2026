@@ -166,7 +166,7 @@ export function WhatIfView({ userProfile, isFinnish }: WhatIfViewProps) {
                 <span>{isFinnish ? "Projektio" : "Projection"}</span>
               </h3>
               <span
-                className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${CONFIDENCE_LABEL[projection.confidence].className}`}
+                className={`px-2.5 py-1 rounded-full text-[12px] font-bold border ${CONFIDENCE_LABEL[projection.confidence].className}`}
               >
                 {isFinnish ? CONFIDENCE_LABEL[projection.confidence].fi : CONFIDENCE_LABEL[projection.confidence].en}
               </span>
@@ -176,7 +176,7 @@ export function WhatIfView({ userProfile, isFinnish }: WhatIfViewProps) {
               <span>{projection.question}</span>
             </p>
             <p className="text-xs text-slate-700 leading-relaxed">{projection.narrative}</p>
-            <p className="text-[11px] text-slate-500 leading-relaxed italic">{projection.assumption}</p>
+            <p className="text-xs text-slate-500 leading-relaxed italic">{projection.assumption}</p>
           </div>
 
           <div className="p-6 rounded-3xl bg-gradient-to-r from-cyan-600 to-emerald-600 text-white shadow-md flex flex-col md:flex-row items-center justify-between gap-6">
@@ -189,11 +189,11 @@ export function WhatIfView({ userProfile, isFinnish }: WhatIfViewProps) {
             <div className="flex items-center gap-4 shrink-0">
               <div className="p-3.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-center min-w-[110px] hover:scale-105 transition">
                 <div className="text-2xl font-black text-emerald-200">-{projection.co2SavedKgPerYear} kg</div>
-                <div className="text-[10px] text-cyan-100 font-bold">CO2e / {isFinnish ? "vuosi" : "year"}</div>
+                <div className="text-[12px] text-cyan-100 font-bold">CO2e / {isFinnish ? "vuosi" : "year"}</div>
               </div>
               <div className="p-3.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-center min-w-[110px] hover:scale-105 transition">
                 <div className="text-2xl font-black text-amber-200">+{projection.moneySavedEurPerYear} €</div>
-                <div className="text-[10px] text-cyan-100 font-bold">{isFinnish ? "Säästö" : "Saved"}</div>
+                <div className="text-[12px] text-cyan-100 font-bold">{isFinnish ? "Säästö" : "Saved"}</div>
               </div>
             </div>
             <div className="flex flex-col sm:flex-row items-stretch gap-2 shrink-0">
@@ -247,7 +247,7 @@ export function WhatIfView({ userProfile, isFinnish }: WhatIfViewProps) {
             </p>
           )}
 
-          <p className="text-[10px] text-slate-400 italic">
+          <p className="text-[12px] text-slate-400 italic">
             {isFinnish
               ? "\"Kirjaa toteutuneeksi\" merkitsee koko vuotuisen projisoidun säästön yhtenä merkintänä Päästö- ja Palkintohistoriaan — käytä vain, kun olet oikeasti tekemässä tämän muutoksen."
               : "\"Log it as done\" records the full projected annual saving as one entry in the CO2 & Rewards history — only use this once you're actually committing to the change."}
@@ -275,7 +275,7 @@ export function WhatIfView({ userProfile, isFinnish }: WhatIfViewProps) {
               >
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 mt-0.5 shrink-0" />
                 <span className="text-xs text-slate-700 flex-1">{item.question}</span>
-                <span className="text-[11px] font-bold text-emerald-700 whitespace-nowrap">
+                <span className="text-xs font-bold text-emerald-700 whitespace-nowrap">
                   -{item.co2SavedKgPerYear} kg · +{item.moneySavedEurPerYear} €
                 </span>
               </li>

@@ -46,7 +46,7 @@ export function SharePledgeModal({ isOpen, onClose, userProfile, isFinnish }: Sh
 
         <div className="p-6 space-y-5">
           <div className="p-6 rounded-2xl bg-gradient-to-br from-emerald-600 via-teal-700 to-slate-900 text-white shadow-md space-y-4 text-center">
-            <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/20 text-[10px] font-bold text-emerald-200 border border-white/20">
+            <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/20 text-[12px] font-bold text-emerald-200 border border-white/20">
               <Sparkles className="w-3 h-3 text-amber-300" />
               <span>Espoon Ilmastokumppani 2030</span>
             </div>
@@ -61,15 +61,15 @@ export function SharePledgeModal({ isOpen, onClose, userProfile, isFinnish }: Sh
             <div className="grid grid-cols-2 gap-3 pt-2">
               <div className="p-3 rounded-xl bg-white/10 backdrop-blur-xs border border-white/20">
                 <div className="text-lg font-black text-amber-300">{userProfile.targetFootprintTonnes} t</div>
-                <div className="text-[9px] text-slate-200 font-bold">2030 CO2e Tavoite</div>
+                <div className="text-[12px] text-slate-200 font-bold">2030 CO2e Tavoite</div>
               </div>
               <div className="p-3 rounded-xl bg-white/10 backdrop-blur-xs border border-white/20">
                 <div className="text-lg font-black text-emerald-300">+{userProfile.savedCo2Kg} kg</div>
-                <div className="text-[9px] text-slate-200 font-bold">CO2e Säästetty</div>
+                <div className="text-[12px] text-slate-200 font-bold">CO2e Säästetty</div>
               </div>
             </div>
 
-            <p className="text-[10px] text-slate-300 italic pt-1">
+            <p className="text-[12px] text-slate-300 italic pt-1">
               &quot;Sitoudun edistämään Espoon hiilineutraaliutta 2030 arjen energiavalinnoilla, HSL-joukkoliikenteellä ja
               HSY-kierrätyksellä.&quot;
             </p>
