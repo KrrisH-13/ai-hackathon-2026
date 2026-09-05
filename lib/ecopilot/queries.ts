@@ -110,6 +110,13 @@ export function toCo2LogEntries(logs: Co2Log[]): Co2LogEntry[] {
   }));
 }
 
+/** Fetches + maps a user's ecopilot profile in one call — shared by every page that needs it (dashboard, profile editor). */
+export async function loadUserProfile(userId: string, displayName: string, client: Client): Promise<UserProfile | null> {
+  const [row, savedCo2Kg] = await Promise.all([getEcopilotProfile(userId, client), getTotalCo2SavedKg(userId, client)]);
+  if (!row) return null;
+  return mapProfileRowToUserProfile(row, displayName, savedCo2Kg);
+}
+
 /** Maps the DB row (+ display name and computed lifetime savings) to the UserProfile shape the ported UI expects. */
 export function mapProfileRowToUserProfile(row: EcopilotProfile, displayName: string, savedCo2Kg: number): UserProfile {
   return {

@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import type { UserProfile, Season, EcopilotTab, SpotPricePoint } from "@/lib/ecopilot/types";
 import { SEASONAL_PRESETS } from "@/lib/ecopilot/data";
-import { updateEcopilotProfileAPI } from "@/lib/ecopilot/profileClient";
 import { EcopilotSidebar } from "@/components/ecopilot/EcopilotSidebar";
 import { EcopilotTopBar } from "@/components/ecopilot/EcopilotTopBar";
 import { AiClimateCopilotView } from "@/components/ecopilot/views/AiClimateCopilotView";
@@ -16,7 +16,6 @@ import { ActivityLoggerView } from "@/components/ecopilot/views/ActivityLoggerVi
 import { ReceiptScannerView } from "@/components/ecopilot/views/ReceiptScannerView";
 import { WhatIfView } from "@/components/ecopilot/views/WhatIfView";
 import { TrackerRewardsView } from "@/components/ecopilot/views/TrackerRewardsView";
-import { ProfileCustomizerModal } from "@/components/ecopilot/ProfileCustomizerModal";
 import { SharePledgeModal } from "@/components/ecopilot/SharePledgeModal";
 
 interface EcopilotAppProps {
@@ -54,30 +53,24 @@ export function EcopilotApp({
   spotPrices,
   isLiveSpotPrices,
 }: EcopilotAppProps) {
-  const [profile, setProfile] = useState<UserProfile>(initialProfile);
+  const [profile] = useState<UserProfile>(initialProfile);
   const [currentTab, setCurrentTab] = useState<EcopilotTab>("chat");
   const [currentSeason, setCurrentSeason] = useState<Season>(initialSeason);
   const [isFinnish, setIsFinnish] = useState<boolean>(false);
 
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const pathname = usePathname();
+  // The profile editor is a separate page (app/(dashboard)/[roleSlug]/profile)
+  // rather than a modal — carry the current language over via query param
+  // since it's otherwise only kept in this component's local state.
+  const profileHref = `${pathname}/profile?lang=${isFinnish ? "fi" : "en"}`;
 
   // Real weather only applies to today's actual season — flipping the season
   // switcher to explore a different one falls back to that season's typical
   // mock temperature, same as before live weather existed.
   const isShowingLiveWeather = isLiveWeather && currentSeason === initialSeason;
   const outdoorTempCelsius = isShowingLiveWeather ? initialOutdoorTempCelsius : SEASONAL_PRESETS[currentSeason].typicalTemp;
-
-  const handleSaveProfile = async (updated: UserProfile) => {
-    setSaveError(null);
-    try {
-      const saved = await updateEcopilotProfileAPI(updated);
-      setProfile(saved);
-    } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "Failed to save profile");
-    }
-  };
 
   return (
     <div className="flex min-h-screen bg-slate-50 text-slate-800">
@@ -86,7 +79,7 @@ export function EcopilotApp({
       <div className="flex-1 min-w-0 flex flex-col">
         <EcopilotTopBar
           userProfile={profile}
-          onOpenProfileModal={() => setIsProfileModalOpen(true)}
+          profileHref={profileHref}
           currentSeason={currentSeason}
           onSelectSeason={setCurrentSeason}
           isFinnish={isFinnish}
@@ -96,12 +89,6 @@ export function EcopilotApp({
           outdoorTempCelsius={outdoorTempCelsius}
           isLiveWeather={isShowingLiveWeather}
         />
-
-        {saveError && (
-          <div className="px-4 sm:px-8 py-2 bg-rose-50 border-b border-rose-200 text-xs text-rose-700 font-medium">
-            {saveError}
-          </div>
-        )}
 
         <main className="flex-1 pb-16">
           {currentTab === "chat" && (
@@ -177,14 +164,6 @@ export function EcopilotApp({
           </div>
         </footer>
       </div>
-
-      <ProfileCustomizerModal
-        isOpen={isProfileModalOpen}
-        onClose={() => setIsProfileModalOpen(false)}
-        userProfile={profile}
-        onSaveProfile={handleSaveProfile}
-        isFinnish={isFinnish}
-      />
 
       <SharePledgeModal
         isOpen={isShareModalOpen}

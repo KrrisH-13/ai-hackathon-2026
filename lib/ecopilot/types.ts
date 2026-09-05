@@ -10,7 +10,7 @@ export type Season = 'winter' | 'spring' | 'summer' | 'autumn';
 
 /**
  * Each list below is the single source of truth for its field — the type is
- * derived from it, and lib/validation.ts + ProfileCustomizerModal reuse the
+ * derived from it, and lib/validation.ts + ProfileEditView reuse the
  * same array instead of re-listing the options a third time.
  */
 export const HOUSING_TYPES = ['kerrostalo', 'rivitalo', 'omakotitalo', 'paritalo'] as const;

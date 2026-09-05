@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getUser, getProfile } from "@/lib/supabase/auth";
 import { createServerComponentClient } from "@/lib/supabase/server";
-import { getEcopilotProfile, getTotalCo2SavedKg, mapProfileRowToUserProfile, displayNameFromUser } from "@/lib/ecopilot/queries";
+import { loadUserProfile, displayNameFromUser } from "@/lib/ecopilot/queries";
 import { currentSeason, fetchCurrentEspooTemperatureCelsius } from "@/lib/ecopilot/weather";
 import { fetchTodaySpotPricesCentsPerKwh, applyLivePrices } from "@/lib/ecopilot/gridPrice";
 import { SEASONAL_PRESETS, MOCK_HOURLY_SPOT_PRICES } from "@/lib/ecopilot/data";
@@ -29,15 +29,12 @@ export default async function RoleDashboardPage({ params }: RoleDashboardPagePro
   if (profile.role !== role) redirect(ROUTES.dashboard(profile.role));
 
   const supabase = await createServerComponentClient();
-  const ecopilotProfileRow = await getEcopilotProfile(user.id, supabase);
-  if (!ecopilotProfileRow) redirect(ROUTES.unauthorized);
-
-  const [savedCo2Kg, liveTemperatureCelsius, liveSpotPrices] = await Promise.all([
-    getTotalCo2SavedKg(user.id, supabase),
+  const [ecopilotProfile, liveTemperatureCelsius, liveSpotPrices] = await Promise.all([
+    loadUserProfile(user.id, displayNameFromUser(user), supabase),
     fetchCurrentEspooTemperatureCelsius(),
     fetchTodaySpotPricesCentsPerKwh(),
   ]);
-  const ecopilotProfile = mapProfileRowToUserProfile(ecopilotProfileRow, displayNameFromUser(user), savedCo2Kg);
+  if (!ecopilotProfile) redirect(ROUTES.unauthorized);
 
   const initialSeason = currentSeason(new Date());
   const initialOutdoorTempCelsius = liveTemperatureCelsius ?? SEASONAL_PRESETS[initialSeason].typicalTemp;
