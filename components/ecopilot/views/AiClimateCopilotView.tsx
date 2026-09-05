@@ -28,7 +28,7 @@ export function AiClimateCopilotView({ userProfile, currentSeason, outdoorTempCe
 
 Olen räätälöity suomalaiseen asumiseen ja Espoon **Hiilineutraali 2030** -tiekarttaan. Autan sinua optimoimaan:
 - ⚡ **Pörssisähkön ja saunan** ajoituksen edullisimmille ja puhtaimmille tunneille
-- ❄️ **Lämmitysratkaisut** (${userProfile.heatingSystem}) kaamospakkasista kesähelteisiin
+- ❄️ **Lämmitysratkaisut** (${userProfile.heatingSystems.join(", ")}) kaamospakkasista kesähelteisiin
 - ♻️ **HSY:n lajitteluohjeet** ja Mankkaan/Ämmässuon Sortti-asemien säännöt
 - 🚆 **HSL-joukkoliikenteen** (Pikaratikka 15, Länsimetro) ja pyöräbaanojen päästönsäästöt
 - 🏢 **Taloyhtiöiden energiaremontit** (ARA-tuet, aurinkovoimalat, poistoilman LTO)
@@ -38,7 +38,7 @@ Mitä haluaisit tietää tai ratkaista tänään?`
 
 I translate Finnish daily routines into practical, high-impact climate choices for your home in **${userProfile.district.split(" ")[0]}**:
 - ⚡ **Nord Pool Spot Electricity & Sauna scheduling** (6-9 kW kiuas optimization)
-- ❄️ **Seasonal heating & heat pumps** (${userProfile.heatingSystem})
+- ❄️ **Seasonal heating & heat pumps** (${userProfile.heatingSystems.join(", ")})
 - ♻️ **HSY regional recycling rules** and Sortti station material cycles
 - 🚆 **HSL transit (Pikaratikka 15, Länsimetro)** vs private vehicle commute footprint
 - 🏢 **Housing company (taloyhtiö)** solar communities and ARA grants
@@ -168,7 +168,7 @@ How can I help power your climate choices today?`,
               {userProfile.name} • {userProfile.housingType}
             </div>
             <p className="text-[11px] text-slate-500 truncate">
-              {userProfile.district.split("(")[0]} • {userProfile.heatingSystem.split("(")[0]} • {userProfile.commuteHabit}
+              {userProfile.district.split("(")[0]} • {userProfile.heatingSystems.join(", ")} • {userProfile.commuteHabit}
             </p>
           </div>
         </div>

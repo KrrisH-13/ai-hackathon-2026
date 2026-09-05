@@ -67,3 +67,18 @@
 .animate-fadeIn {
   animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/*
+ * The OS text (I-beam) cursor can render pure white with no outline on some
+ * Windows cursor themes, making it disappear over light input backgrounds.
+ * Force a high-contrast custom I-beam (black fill, white halo) so it stays
+ * visible regardless of the user's system cursor theme, and set an explicit
+ * caret-color so the blinking text caret isn't white-on-white either.
+ */
+.visible-text-cursor {
+  caret-color: #0f172a;
+  cursor:
+    url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc5JyBoZWlnaHQ9JzE4Jz48cGF0aCBkPSdNNC41IDEuNXYxNU0xLjUgMS41aDZNMS41IDE2LjVoNicgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPSczJyBzdHJva2UtbGluZWNhcD0nc3F1YXJlJyBmaWxsPSdub25lJy8+PHBhdGggZD0nTTQuNSAxLjV2MTVNMS41IDEuNWg2TTEuNSAxNi41aDYnIHN0cm9rZT0nYmxhY2snIHN0cm9rZS13aWR0aD0nMS40JyBzdHJva2UtbGluZWNhcD0nc3F1YXJlJyBmaWxsPSdub25lJy8+PC9zdmc+")
+      4 9,
+    text;
+}

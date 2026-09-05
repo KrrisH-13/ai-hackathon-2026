@@ -119,7 +119,7 @@ export function mapProfileRowToUserProfile(row: EcopilotProfile, displayName: st
     housingType: row.housing_type,
     householdSize: row.household_size,
     livingAreaSqM: row.living_area_sq_m,
-    heatingSystem: row.heating_system,
+    heatingSystems: row.heating_systems,
     electricityContract: row.electricity_contract,
     saunaType: row.sauna_type,
     saunaTimesPerWeek: row.sauna_times_per_week,
@@ -127,7 +127,6 @@ export function mapProfileRowToUserProfile(row: EcopilotProfile, displayName: st
     carType: row.car_type,
     carCo2GramsPerKm: row.car_co2_grams_per_km,
     wasteManagementSystem: row.waste_management_system,
-    energySavingMeasures: row.energy_saving_measures,
     estimatedFootprintTonnes: row.estimated_footprint_tonnes,
     targetFootprintTonnes: row.target_footprint_tonnes,
     savedCo2Kg,
@@ -142,7 +141,7 @@ export function mapUserProfileToUpdate(patch: Partial<UserProfile>): EcopilotPro
   if (patch.housingType !== undefined) update.housing_type = patch.housingType;
   if (patch.householdSize !== undefined) update.household_size = patch.householdSize;
   if (patch.livingAreaSqM !== undefined) update.living_area_sq_m = patch.livingAreaSqM;
-  if (patch.heatingSystem !== undefined) update.heating_system = patch.heatingSystem;
+  if (patch.heatingSystems !== undefined) update.heating_systems = patch.heatingSystems;
   if (patch.electricityContract !== undefined) update.electricity_contract = patch.electricityContract;
   if (patch.saunaType !== undefined) update.sauna_type = patch.saunaType;
   if (patch.saunaTimesPerWeek !== undefined) update.sauna_times_per_week = patch.saunaTimesPerWeek;
@@ -150,7 +149,6 @@ export function mapUserProfileToUpdate(patch: Partial<UserProfile>): EcopilotPro
   if (patch.carType !== undefined) update.car_type = patch.carType;
   if (patch.carCo2GramsPerKm !== undefined) update.car_co2_grams_per_km = patch.carCo2GramsPerKm;
   if (patch.wasteManagementSystem !== undefined) update.waste_management_system = patch.wasteManagementSystem;
-  if (patch.energySavingMeasures !== undefined) update.energy_saving_measures = patch.energySavingMeasures;
   if (patch.estimatedFootprintTonnes !== undefined) update.estimated_footprint_tonnes = patch.estimatedFootprintTonnes;
   if (patch.targetFootprintTonnes !== undefined) update.target_footprint_tonnes = patch.targetFootprintTonnes;
 

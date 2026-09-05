@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "dev:prod":"env-cmd -f .env.prod next dev --webpack",
     "dev": "next dev --webpack",
     "build": "next build --webpack",
     "start": "next start",
@@ -50,6 +51,7 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "autoprefixer": "^10.5.4",
+    "env-cmd": "^11.0.0",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.3.1",
     "postcss": "^8.5.26",

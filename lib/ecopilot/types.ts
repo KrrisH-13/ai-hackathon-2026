@@ -27,10 +27,10 @@ export const ESPOO_DISTRICTS = [
 export type EspooDistrict = (typeof ESPOO_DISTRICTS)[number];
 
 export const HEATING_SYSTEMS = [
-  'District Heating (Fortum Clean Heat)',
+  'District Heating',
   'Geothermal Heat Pump',
-  'Air Heat Pump + Electric',
-  'Direct Electric Heating',
+  'Air Heat Pump',
+  'Electric Heating',
   'Wood / Masonry Heater',
   'Oil Heating (Transitioning Away)',
 ] as const;
@@ -52,6 +52,7 @@ export type CarType = (typeof CAR_TYPES)[number];
 export const WASTE_MANAGEMENT_SYSTEMS = [
   'Full Sorting (Sorts everything per HSY guide)',
   'Partial Sorting (Some categories sorted)',
+  'Partial Sorting with Home Composting (Some categories sorted, biowaste composted at home)',
   'No Sorting (Mixed waste only)',
 ] as const;
 export type WasteManagementSystem = (typeof WASTE_MANAGEMENT_SYSTEMS)[number];
@@ -67,7 +68,8 @@ export interface UserProfile {
   housingType: HousingType;
   householdSize: number;
   livingAreaSqM: number;
-  heatingSystem: HeatingSystem;
+  /** Multi-select — a home can combine e.g. an air heat pump with electric backup. */
+  heatingSystems: HeatingSystem[];
   electricityContract: ElectricityContract;
   saunaType: SaunaType;
   saunaTimesPerWeek: number;
@@ -77,8 +79,6 @@ export interface UserProfile {
   carType: CarType | null;
   carCo2GramsPerKm: number | null;
   wasteManagementSystem: WasteManagementSystem;
-  /** Other measures already in place (solar panels, smart thermostat, etc). */
-  energySavingMeasures: string[];
   estimatedFootprintTonnes: number; // e.g., 4.8 t CO2e/year
   targetFootprintTonnes: number; // e.g., 2.5 t CO2e/year by 2030
   /** Derived from the CO2 ledger (lib/ecopilot/queries.ts), not stored directly. */
