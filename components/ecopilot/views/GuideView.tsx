@@ -149,18 +149,18 @@ const FEATURES: FeatureGuide[] = [
     titleEn: "Activity Log & Receipts",
     titleFi: "Päiväkirja & Kuitit",
     blurbEn:
-      "One page, two ways to log: type a trip in plain language — “drove to Turku today” — or snap a grocery receipt. AI does the CO2 math either way.",
+      "One page, two ways to log: type any activity in plain language — “drove to Turku”, “beef burger for lunch” — or snap a grocery receipt. AI does the CO2 math either way.",
     blurbFi:
-      "Yksi sivu, kaksi tapaa kirjata: kirjoita matka omin sanoin — ”ajoin tänään Turkuun” — tai kuvaa ruokakuitti. Tekoäly laskee CO2:n kummallakin tavalla.",
+      "Yksi sivu, kaksi tapaa kirjata: kirjoita mikä tahansa toiminto omin sanoin — ”ajoin Turkuun”, ”naudanlihapihvi lounaaksi” — tai kuvaa ruokakuitti. Tekoäly laskee CO2:n kummallakin tavalla.",
     pointsEn: [
-      "Trip mode: AI extracts the mode, distance and country-aware emission factor — review it before saving",
+      "Trips get a country-aware emission factor; meals, home energy, heating and waste get a lifecycle estimate",
       "Receipt mode: Gemini Vision reads each line item, estimates a per-item footprint and suggests lower-carbon swaps",
-      "Everything you save lands in your shared CO2 ledger and the recent-entries list below",
+      "Review the estimate before saving — everything you keep lands in your shared CO2 ledger and the recent-entries list below",
     ],
     pointsFi: [
-      "Matkatila: tekoäly poimii kulkutavan, matkan ja maakohtaisen päästökertoimen — tarkista ennen tallennusta",
+      "Matkoille lasketaan maakohtainen päästökerroin; aterioille, kodin energialle, lämmitykselle ja jätteelle elinkaariarvio",
       "Kuittitila: Gemini Vision lukee jokaisen rivin, arvioi tuotekohtaisen jalanjäljen ja ehdottaa vähähiilisempiä vaihtoja",
-      "Kaikki tallentamasi menee yhteiseen CO2-kirjanpitoon ja alla olevaan merkintälistaan",
+      "Tarkista arvio ennen tallennusta — kaikki tallentamasi menee yhteiseen CO2-kirjanpitoon ja alla olevaan merkintälistaan",
     ],
   },
   {

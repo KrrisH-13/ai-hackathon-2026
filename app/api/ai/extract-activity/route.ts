@@ -4,7 +4,12 @@ import { estimateCo2Kg } from "@/lib/ecopilot/emissionFactors";
 import { activityExtractRequestSchema } from "@/lib/validation";
 import type { ActivityLogEstimate } from "@/lib/ecopilot/types";
 
-/** Ecopilot: natural-language activity logger — Gemini function calling extracts a trip, then a country-aware factor table prices its CO2. */
+/**
+ * Ecopilot: natural-language activity logger. Gemini function calling decides
+ * whether the entry is a trip or a general activity: trips are priced by the
+ * country-aware factor table here; general activities carry Gemini's own
+ * lifecycle estimate straight through.
+ */
 export async function POST(request: Request) {
   try {
     const supabase = await createRouteHandlerClient();
@@ -18,13 +23,26 @@ export async function POST(request: Request) {
     const { text } = activityExtractRequestSchema.parse(body);
 
     const extraction = await extractActivityFromText(text);
-    const { co2Kg, gramsPerKm, matchedCountry, isFallback } = estimateCo2Kg(extraction.mode, extraction.distanceKm, extraction.country);
 
-    const factorNote = isFallback
-      ? `No specific factor for "${matchedCountry}" — used a grid-average estimate (${gramsPerKm} g CO2/km).`
-      : `Using ${matchedCountry}'s grid-aware factor for ${extraction.mode}: ${gramsPerKm} g CO2/km.`;
-
-    const data: ActivityLogEstimate = { extraction, co2Kg, emissionFactorGramsPerKm: gramsPerKm, factorNote };
+    let data: ActivityLogEstimate;
+    if (extraction.kind === "trip") {
+      const { co2Kg, gramsPerKm, matchedCountry, isFallback } = estimateCo2Kg(
+        extraction.mode,
+        extraction.distanceKm,
+        extraction.country
+      );
+      const factorNote = isFallback
+        ? `No specific factor for "${matchedCountry}" — used a grid-average estimate (${gramsPerKm} g CO2/km).`
+        : `Using ${matchedCountry}'s grid-aware factor for ${extraction.mode}: ${gramsPerKm} g CO2/km.`;
+      data = { extraction, co2Kg, emissionFactorGramsPerKm: gramsPerKm, factorNote };
+    } else {
+      data = {
+        extraction,
+        co2Kg: extraction.co2Kg,
+        emissionFactorGramsPerKm: null,
+        factorNote: extraction.note,
+      };
+    }
 
     return Response.json({ success: true, data });
   } catch (err) {
