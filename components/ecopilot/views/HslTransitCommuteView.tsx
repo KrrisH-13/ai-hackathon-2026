@@ -10,6 +10,23 @@ interface HslTransitCommuteViewProps {
   isFinnish: boolean;
 }
 
+/**
+ * Gemini returns free-text mode names (and an unreliable `icon` string), so
+ * match on keywords rather than trusting either verbatim. Bike is checked
+ * first because "e-bike" / "sähköpyörä" also contain the electric-vehicle
+ * keywords and would otherwise fall through to the car icon.
+ */
+function ModeIcon({ mode }: { mode: CommuteComparison["modes"][number] }) {
+  const hint = `${mode.icon} ${mode.name}`.toLowerCase();
+
+  if (/bike|bicycle|cycl|pyör/.test(hint)) return <Bike className="w-4 h-4" />;
+  if (/metro|ratikka|tram|train|juna|rail|bus|bussi|transit|hsl|joukkoliik/.test(hint)) {
+    return <Train className="w-4 h-4" />;
+  }
+  if (/\bev\b|electric|sähköaut/.test(hint)) return <Zap className="w-4 h-4 text-amber-500" />;
+  return <Car className="w-4 h-4" />;
+}
+
 export function HslTransitCommuteView({ isFinnish }: HslTransitCommuteViewProps) {
   const [origin, setOrigin] = useState<string>("Espoon Matinkylä (Iso Omena)");
   const [destination, setDestination] = useState<string>("Otaniemi / Aalto-yliopisto");
@@ -283,15 +300,7 @@ export function HslTransitCommuteView({ isFinnish }: HslTransitCommuteViewProps)
                             isZeroEmission ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-700"
                           }`}
                         >
-                          {m.name.includes("Metro") || m.name.includes("Ratikka") ? (
-                            <Train className="w-4 h-4" />
-                          ) : m.name.includes("Pyörä") ? (
-                            <Bike className="w-4 h-4" />
-                          ) : m.name.includes("Sähköauto") ? (
-                            <Zap className="w-4 h-4 text-amber-500" />
-                          ) : (
-                            <Car className="w-4 h-4" />
-                          )}
+                          <ModeIcon mode={m} />
                         </div>
                         <div>
                           <h4 className="font-extrabold text-slate-900 text-xs">{m.name}</h4>

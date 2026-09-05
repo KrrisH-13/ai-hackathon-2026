@@ -9,8 +9,10 @@ import type {
   GroceryReceiptResult,
   TodaysActionResult,
   Co2LogEntry,
+  Co2LogCategory,
   WhatIfProjection,
   ActivityExtraction,
+  TripActivityExtraction,
 } from "./types";
 import { ACTIVITY_MODES } from "./types";
 import { DEFAULT_COUNTRY } from "./emissionFactors";
@@ -534,11 +536,11 @@ Pick ONE single best action (not a list). Categorize it as one of: heating, tran
   return JSON.parse(response.text || "{}") as TodaysActionResult;
 }
 
-/** The single tool Gemini is allowed to call when parsing an activity-log entry. */
-const LOG_ACTIVITY_FUNCTION: FunctionDeclaration = {
-  name: "log_activity",
+/** Tool: a travel/commute trip — priced afterwards by the country-aware factor table. */
+const LOG_TRIP_FUNCTION: FunctionDeclaration = {
+  name: "log_trip",
   description:
-    "Records the single trip or commute activity described in a resident's free-text diary entry, so its CO2 impact can be estimated.",
+    "Records a single travel/commute trip from a resident's diary entry — any entry about going somewhere by car, EV, train, bus, bike, walking, plane or ferry.",
   parameters: {
     type: Type.OBJECT,
     properties: {
@@ -564,7 +566,35 @@ const LOG_ACTIVITY_FUNCTION: FunctionDeclaration = {
   },
 };
 
-interface LogActivityArgs {
+/** Tool: anything that isn't travel — food, home energy/heating, waste, purchases. Gemini estimates the CO2 itself. */
+const LOG_GENERAL_ACTIVITY_FUNCTION: FunctionDeclaration = {
+  name: "log_general_activity",
+  description:
+    "Records a NON-travel activity (a meal or food item, home electricity or heating use, waste & recycling, a purchase, or anything else that isn't going somewhere) together with your own rough lifecycle CO2 estimate. Never use this for trips — use log_trip for those.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      category: {
+        type: Type.STRING,
+        enum: ["food", "energy", "heating", "waste", "other"],
+        description: "Best-fit ledger category for the activity.",
+      },
+      description: {
+        type: Type.STRING,
+        description: "Short summary of the activity, e.g. 'Beef burger dinner' or '3 loads of laundry at 60°C'.",
+      },
+      co2Kg: {
+        type: Type.NUMBER,
+        description:
+          "Your rough lifecycle estimate in kg CO2e. Positive = emitted, negative = avoided/saved versus a typical baseline. Use well-known Finnish/Nordic benchmarks (beef ~28 kg CO2e/kg, cheese ~10, chicken ~3.8, pork ~5.5, rice ~2.7/kg, dairy milk ~1.2/L, oat drink ~0.3/L, root vegetables ~0.2/kg; 1 kWh of Finnish grid electricity ~0.08 kg; a hot shower ~0.5 kg; a mixed-waste bag ~0.2 kg).",
+      },
+      note: { type: Type.STRING, description: "One sentence explaining the assumptions behind the estimate." },
+    },
+    required: ["category", "description", "co2Kg", "note"],
+  },
+};
+
+interface LogTripArgs {
   mode?: string;
   distanceKm?: number;
   origin?: string | null;
@@ -572,34 +602,69 @@ interface LogActivityArgs {
   country?: string;
 }
 
+interface LogGeneralActivityArgs {
+  category?: string;
+  description?: string;
+  co2Kg?: number;
+  note?: string;
+}
+
+const GENERAL_ACTIVITY_CATEGORIES = ["food", "energy", "heating", "waste", "other"] as const;
+
+function normalizeGeneralCategory(category: string | undefined): Co2LogCategory {
+  return (GENERAL_ACTIVITY_CATEGORIES as readonly string[]).includes(category ?? "")
+    ? (category as Co2LogCategory)
+    : "other";
+}
+
 /**
- * 6. Natural-language Activity Logger — Gemini function calling turns
- * free text ("drove to Turku today", "took the train from Espoo to
- * Helsinki") into a structured trip. The country it returns is what makes
- * the emission factor lookup (lib/ecopilot/emissionFactors.ts) Nordic-aware:
- * the same "ev" mode maps to a very different gCO2/km depending on whether
- * the grid behind it is Norwegian hydro or a coal-heavier grid elsewhere.
+ * 6. Natural-language Activity Logger — Gemini function calling turns free
+ * text into a structured activity. Trips ("drove to Turku today", "took the
+ * train from Espoo to Helsinki") go through log_trip, where the country it
+ * returns makes the emission-factor lookup (lib/ecopilot/emissionFactors.ts)
+ * Nordic-aware — the same "ev" mode maps to a very different gCO2/km depending
+ * on whether the grid behind it is Norwegian hydro or coal-heavier elsewhere.
+ * Everything else ("beef burger for lunch", "ran the sauna for an hour") goes
+ * through log_general_activity, where Gemini estimates the lifecycle CO2 itself.
  */
 export async function extractActivityFromText(text: string): Promise<ActivityExtraction> {
   const response = await ai.models.generateContent({
     model: MODEL_NAME,
-    contents: `Parse the trip described in this diary entry and call log_activity with the result: "${text}"`,
+    contents:
+      `A resident logged this in their climate diary: "${text}"\n` +
+      `If it describes travelling somewhere, call log_trip. Otherwise call log_general_activity with your own CO2 estimate.`,
     config: {
       toolConfig: {
         functionCallingConfig: {
           mode: FunctionCallingConfigMode.ANY,
-          allowedFunctionNames: ["log_activity"],
+          allowedFunctionNames: ["log_trip", "log_general_activity"],
         },
       },
-      tools: [{ functionDeclarations: [LOG_ACTIVITY_FUNCTION] }],
+      tools: [{ functionDeclarations: [LOG_TRIP_FUNCTION, LOG_GENERAL_ACTIVITY_FUNCTION] }],
     },
   });
 
-  const call = response.functionCalls?.find((c: FunctionCall) => c.name === "log_activity");
-  const args = (call?.args ?? {}) as LogActivityArgs;
-  const mode = (ACTIVITY_MODES as readonly string[]).includes(args.mode ?? "") ? (args.mode as ActivityExtraction["mode"]) : "car";
+  const calls = response.functionCalls ?? [];
+  const tripCall = calls.find((c: FunctionCall) => c.name === "log_trip");
+  const generalCall = calls.find((c: FunctionCall) => c.name === "log_general_activity");
+
+  if (generalCall && !tripCall) {
+    const args = (generalCall.args ?? {}) as LogGeneralActivityArgs;
+    return {
+      kind: "general",
+      category: normalizeGeneralCategory(args.category),
+      description: args.description?.trim() || text.trim(),
+      co2Kg: Math.round((Number(args.co2Kg) || 0) * 100) / 100,
+      note: args.note?.trim() || "Rough estimate based on typical Nordic lifecycle benchmarks.",
+      rawText: text,
+    };
+  }
+
+  const args = (tripCall?.args ?? {}) as LogTripArgs;
+  const mode = (ACTIVITY_MODES as readonly string[]).includes(args.mode ?? "") ? (args.mode as TripActivityExtraction["mode"]) : "car";
 
   return {
+    kind: "trip",
     mode,
     distanceKm: Math.max(0, Number(args.distanceKm) || 0),
     origin: args.origin?.trim() || null,
