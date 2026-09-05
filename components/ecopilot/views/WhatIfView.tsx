@@ -5,6 +5,7 @@ import { Lightbulb, Sparkles, ArrowRight, AlertTriangle, Plus, CheckCircle2, Lis
 import type { UserProfile, Season, WhatIfProjection } from "@/lib/ecopilot/types";
 import { projectWhatIfScenarioAPI } from "@/lib/ecopilot/client";
 import { addCo2LogAPI } from "@/lib/ecopilot/profileClient";
+import { InfoHint } from "@/components/ecopilot/InfoHint";
 
 interface WhatIfViewProps {
   userProfile: UserProfile;
@@ -99,6 +100,23 @@ export function WhatIfView({ userProfile, currentSeason, isFinnish }: WhatIfView
       </div>
 
       <div className="rounded-3xl bg-white border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4">
+        <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+          {isFinnish ? "Kuvaile muutos, jonka haluat arvioida:" : "Describe the change you want to project:"}
+          <InfoHint
+            isFinnish={isFinnish}
+            label={isFinnish ? "Skenaario" : "Scenario"}
+            instruction={
+              isFinnish
+                ? "Kysy ”entä jos” yhden tavan muuttamisesta. Kerro kuinka usein ja mistä mihin vaihtaisit."
+                : "Ask a 'what if' about changing one habit. Include how often, and what you'd switch from and to."
+            }
+            example={
+              isFinnish
+                ? "Entä jos pyöräilisin töihin 3 päivänä viikossa autoilun sijaan?"
+                : "What if I biked to work 3 days a week instead of driving?"
+            }
+          />
+        </label>
         <div className="flex flex-col sm:flex-row gap-3">
           <input
             type="text"

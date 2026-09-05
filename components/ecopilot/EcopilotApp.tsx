@@ -7,6 +7,7 @@ import { updateEcopilotProfileAPI } from "@/lib/ecopilot/profileClient";
 import { EcopilotSidebar } from "@/components/ecopilot/EcopilotSidebar";
 import { EcopilotTopBar } from "@/components/ecopilot/EcopilotTopBar";
 import { AiClimateCopilotView } from "@/components/ecopilot/views/AiClimateCopilotView";
+import { GuideView } from "@/components/ecopilot/views/GuideView";
 import { NordPoolEnergyOptimizerView } from "@/components/ecopilot/views/NordPoolEnergyOptimizerView";
 import { HsyRecyclingScannerView } from "@/components/ecopilot/views/HsyRecyclingScannerView";
 import { HslTransitCommuteView } from "@/components/ecopilot/views/HslTransitCommuteView";
@@ -112,6 +113,8 @@ export function EcopilotApp({
               onNavigateTab={setCurrentTab}
             />
           )}
+
+          {currentTab === "guide" && <GuideView isFinnish={isFinnish} onNavigateTab={setCurrentTab} />}
 
           {currentTab === "energy" && (
             <NordPoolEnergyOptimizerView

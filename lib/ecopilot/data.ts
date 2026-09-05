@@ -30,17 +30,6 @@ export const CAR_TYPE_DEFAULT_CO2_G_PER_KM: Record<CarType, number> = {
 /** Re-exported so form components can import options for a field from one place. */
 export const WASTE_MANAGEMENT_OPTIONS = WASTE_MANAGEMENT_SYSTEMS;
 
-export const COMMON_ENERGY_SAVING_MEASURES: string[] = [
-  'Solar panels',
-  'Smart thermostat',
-  'Heat recovery ventilation (LTO)',
-  'Air heat pump',
-  'Smart EV charger',
-  'Water-saving showerhead',
-  'LED lighting',
-  'Home composting',
-];
-
 export const ESPOO_2030_ROADMAP_MEASURES: EspooRoadmapMeasure[] = [
   {
     id: 'fortum-clean-heat',

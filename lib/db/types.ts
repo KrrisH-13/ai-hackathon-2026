@@ -70,7 +70,7 @@ export type EcopilotProfile = {
   housing_type: HousingType;
   living_area_sq_m: number;
   household_size: number;
-  heating_system: HeatingSystem;
+  heating_systems: HeatingSystem[];
   electricity_contract: ElectricityContract;
   sauna_type: SaunaType;
   sauna_times_per_week: number;
@@ -79,7 +79,6 @@ export type EcopilotProfile = {
   car_type: CarType | null;
   car_co2_grams_per_km: number | null;
   waste_management_system: WasteManagementSystem;
-  energy_saving_measures: string[];
   estimated_footprint_tonnes: number;
   target_footprint_tonnes: number;
   created_at: string;

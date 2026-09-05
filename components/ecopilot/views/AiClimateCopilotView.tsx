@@ -7,6 +7,7 @@ import { CO2_LOG_CATEGORIES } from "@/lib/ecopilot/types";
 import { chatWithClimateAssistantAPI, getTodaysActionAPI } from "@/lib/ecopilot/client";
 import { addCo2LogAPI } from "@/lib/ecopilot/profileClient";
 import { SEASONAL_PRESETS } from "@/lib/ecopilot/data";
+import { InfoHint } from "@/components/ecopilot/InfoHint";
 
 interface AiClimateCopilotViewProps {
   userProfile: UserProfile;
@@ -27,7 +28,7 @@ export function AiClimateCopilotView({ userProfile, currentSeason, outdoorTempCe
 
 Olen räätälöity suomalaiseen asumiseen ja Espoon **Hiilineutraali 2030** -tiekarttaan. Autan sinua optimoimaan:
 - ⚡ **Pörssisähkön ja saunan** ajoituksen edullisimmille ja puhtaimmille tunneille
-- ❄️ **Lämmitysratkaisut** (${userProfile.heatingSystem}) kaamospakkasista kesähelteisiin
+- ❄️ **Lämmitysratkaisut** (${userProfile.heatingSystems.join(", ")}) kaamospakkasista kesähelteisiin
 - ♻️ **HSY:n lajitteluohjeet** ja Mankkaan/Ämmässuon Sortti-asemien säännöt
 - 🚆 **HSL-joukkoliikenteen** (Pikaratikka 15, Länsimetro) ja pyöräbaanojen päästönsäästöt
 - 🏢 **Taloyhtiöiden energiaremontit** (ARA-tuet, aurinkovoimalat, poistoilman LTO)
@@ -37,7 +38,7 @@ Mitä haluaisit tietää tai ratkaista tänään?`
 
 I translate Finnish daily routines into practical, high-impact climate choices for your home in **${userProfile.district.split(" ")[0]}**:
 - ⚡ **Nord Pool Spot Electricity & Sauna scheduling** (6-9 kW kiuas optimization)
-- ❄️ **Seasonal heating & heat pumps** (${userProfile.heatingSystem})
+- ❄️ **Seasonal heating & heat pumps** (${userProfile.heatingSystems.join(", ")})
 - ♻️ **HSY regional recycling rules** and Sortti station material cycles
 - 🚆 **HSL transit (Pikaratikka 15, Länsimetro)** vs private vehicle commute footprint
 - 🏢 **Housing company (taloyhtiö)** solar communities and ARA grants
@@ -167,7 +168,7 @@ How can I help power your climate choices today?`,
               {userProfile.name} • {userProfile.housingType}
             </div>
             <p className="text-[11px] text-slate-500 truncate">
-              {userProfile.district.split("(")[0]} • {userProfile.heatingSystem.split("(")[0]} • {userProfile.commuteHabit}
+              {userProfile.district.split("(")[0]} • {userProfile.heatingSystems.join(", ")} • {userProfile.commuteHabit}
             </p>
           </div>
         </div>
@@ -377,6 +378,24 @@ How can I help power your climate choices today?`,
               <Building2 className="w-3 h-3 text-indigo-600" />
               <span>{isFinnish ? "Espoo 2030 Tiekartta" : "Espoo 2030 Sinks"}</span>
             </button>
+          </div>
+
+          <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase text-slate-400">
+            <span>{isFinnish ? "Kysymyksesi" : "Your question"}</span>
+            <InfoHint
+              isFinnish={isFinnish}
+              label={isFinnish ? "Kysymys" : "Question"}
+              instruction={
+                isFinnish
+                  ? "Kysy omin sanoin arjen ilmastovalinnoista Espoossa. Mainitse tilanne (koti, sää, aikataulu), niin vastaus tarkentuu. Enter lähettää, Shift+Enter tekee rivinvaihdon."
+                  : "Ask in your own words about everyday climate choices in Espoo. Mention your situation (home, weather, timing) for a sharper answer. Enter sends, Shift+Enter adds a line."
+              }
+              example={
+                isFinnish
+                  ? "Milloin lämmitän sähkösaunan tänään halvimmalla?"
+                  : "When's the cheapest time to heat my electric sauna tonight?"
+              }
+            />
           </div>
 
           <div className="flex items-center gap-2">

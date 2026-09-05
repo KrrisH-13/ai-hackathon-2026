@@ -57,7 +57,7 @@ Context & Core Domain Knowledge:
 User Context:
 ${
   userProfile
-    ? `Resident: ${userProfile.name}, District: ${userProfile.district}, Housing: ${userProfile.housingType} (${userProfile.livingAreaSqM}m², ${userProfile.householdSize} persons), Heating: ${userProfile.heatingSystem}, Electricity: ${userProfile.electricityContract}, Sauna: ${userProfile.saunaType} (${userProfile.saunaTimesPerWeek}x/wk), Commute: ${describeCommute(userProfile)}, Current Footprint: ${userProfile.estimatedFootprintTonnes} t CO2e (Target: ${userProfile.targetFootprintTonnes} t).`
+    ? `Resident: ${userProfile.name}, District: ${userProfile.district}, Housing: ${userProfile.housingType} (${userProfile.livingAreaSqM}m², ${userProfile.householdSize} persons), Heating: ${userProfile.heatingSystems.join(", ")}, Electricity: ${userProfile.electricityContract}, Sauna: ${userProfile.saunaType} (${userProfile.saunaTimesPerWeek}x/wk), Commute: ${describeCommute(userProfile)}, Current Footprint: ${userProfile.estimatedFootprintTonnes} t CO2e (Target: ${userProfile.targetFootprintTonnes} t).`
     : "General Espoo resident."
 }
 Current Season: ${currentSeason}
@@ -178,7 +178,7 @@ export async function optimizeDailyEnergy(
   spotPrices: { hour: number; priceCentsKwh: number; gridCo2IntensityGramsKwh: number }[]
 ): Promise<DailyEnergyPlan> {
   const prompt = `Analyze today's Finnish Nord Pool hourly spot prices and outdoor temperature (${outdoorTemp}°C, Season: ${currentSeason}) for this Espoo household:
-Resident: ${userProfile.name}, Housing: ${userProfile.housingType} (${userProfile.livingAreaSqM}m²), Heating: ${userProfile.heatingSystem}, Electricity Contract: ${userProfile.electricityContract}, Sauna: ${userProfile.saunaType} (${userProfile.saunaTimesPerWeek}x/wk), Commute: ${describeCommute(userProfile)}.
+Resident: ${userProfile.name}, Housing: ${userProfile.housingType} (${userProfile.livingAreaSqM}m²), Heating: ${userProfile.heatingSystems.join(", ")}, Electricity Contract: ${userProfile.electricityContract}, Sauna: ${userProfile.saunaType} (${userProfile.saunaTimesPerWeek}x/wk), Commute: ${describeCommute(userProfile)}.
 
 Hourly spot price snapshot:
 ${spotPrices.map((p) => `Hour ${p.hour}:00 -> ${p.priceCentsKwh} c/kWh, ${p.gridCo2IntensityGramsKwh} g CO2/kWh`).join("\n")}
@@ -276,7 +276,7 @@ export async function projectWhatIfScenario(
 ): Promise<WhatIfProjection> {
   const prompt = `A resident of Espoo, Finland is asking a hypothetical "what if" question about changing a daily habit. Ground your answer in their actual logged data below — do not just use generic national averages if their own data suggests different numbers. If their logs don't contain enough relevant data to project confidently, say so via a lower confidence and explain the assumption you fell back on.
 
-Resident profile: ${userProfile.name}, District: ${userProfile.district}, Housing: ${userProfile.housingType} (${userProfile.livingAreaSqM}m², ${userProfile.householdSize} persons), Heating: ${userProfile.heatingSystem}, Electricity: ${userProfile.electricityContract}, Commute: ${describeCommute(userProfile)}, Current footprint: ${userProfile.estimatedFootprintTonnes} t CO2e/year (Target: ${userProfile.targetFootprintTonnes} t).
+Resident profile: ${userProfile.name}, District: ${userProfile.district}, Housing: ${userProfile.housingType} (${userProfile.livingAreaSqM}m², ${userProfile.householdSize} persons), Heating: ${userProfile.heatingSystems.join(", ")}, Electricity: ${userProfile.electricityContract}, Commute: ${describeCommute(userProfile)}, Current footprint: ${userProfile.estimatedFootprintTonnes} t CO2e/year (Target: ${userProfile.targetFootprintTonnes} t).
 Current season: ${currentSeason}
 
 Their logged CO2 ledger:
@@ -392,7 +392,7 @@ export async function generatePersonalizedRoadmapPlan(userProfile: UserProfile, 
 Resident: ${userProfile.name}
 Espoo District: ${userProfile.district}
 Housing Type: ${userProfile.housingType} (${userProfile.livingAreaSqM} m², ${userProfile.householdSize} persons)
-Heating: ${userProfile.heatingSystem}
+Heating: ${userProfile.heatingSystems.join(", ")}
 Electricity Contract: ${userProfile.electricityContract}
 Sauna: ${userProfile.saunaType} (${userProfile.saunaTimesPerWeek} times/week)
 Commute: ${describeCommute(userProfile)}
@@ -512,7 +512,7 @@ export async function generateTodaysBestAction(
 ): Promise<TodaysActionResult> {
   const prompt = `Recommend exactly ONE concrete, practical action this Espoo resident could take TODAY to cut their carbon footprint or save money, grounded strictly in the facts below. Do not invent numbers beyond what a reasonable person could estimate from these facts — keep estimates conservative and round.
 
-Resident: ${userProfile.name}, District: ${userProfile.district}, Housing: ${userProfile.housingType} (${userProfile.livingAreaSqM}m²), Heating: ${userProfile.heatingSystem}, Sauna: ${userProfile.saunaType} (${userProfile.saunaTimesPerWeek}x/wk), Commute: ${describeCommute(userProfile)}, Waste sorting: ${userProfile.wasteManagementSystem}.
+Resident: ${userProfile.name}, District: ${userProfile.district}, Housing: ${userProfile.housingType} (${userProfile.livingAreaSqM}m²), Heating: ${userProfile.heatingSystems.join(", ")}, Sauna: ${userProfile.saunaType} (${userProfile.saunaTimesPerWeek}x/wk), Commute: ${describeCommute(userProfile)}, Waste sorting: ${userProfile.wasteManagementSystem}.
 Season: ${currentSeason}, Outdoor temperature: ${outdoorTempCelsius}°C.
 Recent logged activity: ${recentLogsSummary || "No activity logged yet."}
 
