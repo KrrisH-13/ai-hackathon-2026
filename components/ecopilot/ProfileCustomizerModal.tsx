@@ -6,6 +6,7 @@ import type { UserProfile, HousingType, EspooDistrict, HeatingSystem, Electricit
 import { ESPOO_DISTRICTS, HEATING_SYSTEMS, ELECTRICITY_CONTRACTS, COMMUTE_HABITS } from "@/lib/ecopilot/types";
 import { CAR_TYPE_OPTIONS, CAR_TYPE_DEFAULT_CO2_G_PER_KM, WASTE_MANAGEMENT_OPTIONS, COMMON_ENERGY_SAVING_MEASURES } from "@/lib/ecopilot/data";
 import { InfoHint } from "@/components/ecopilot/InfoHint";
+import { NumberStepperInput } from "@/components/ecopilot/NumberStepperInput";
 
 interface ProfileCustomizerModalProps {
   isOpen: boolean;
@@ -152,11 +153,9 @@ export function ProfileCustomizerModal({
                   example={isFinnish ? "72" : "72"}
                 />
               </label>
-              <input
-                type="number"
+              <NumberStepperInput
                 value={formData.livingAreaSqM}
-                onChange={(e) => setFormData({ ...formData, livingAreaSqM: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
+                onChange={(v) => setFormData({ ...formData, livingAreaSqM: v })}
                 min={15}
                 max={500}
               />
@@ -164,11 +163,9 @@ export function ProfileCustomizerModal({
 
             <div className="space-y-1">
               <label className="font-bold text-slate-700">{isFinnish ? "Henkilömäärä:" : "Persons:"}</label>
-              <input
-                type="number"
+              <NumberStepperInput
                 value={formData.householdSize}
-                onChange={(e) => setFormData({ ...formData, householdSize: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
+                onChange={(v) => setFormData({ ...formData, householdSize: v })}
                 min={1}
                 max={12}
               />
@@ -267,11 +264,9 @@ export function ProfileCustomizerModal({
                   example={isFinnish ? "2" : "2"}
                 />
               </label>
-              <input
-                type="number"
+              <NumberStepperInput
                 value={formData.saunaTimesPerWeek}
-                onChange={(e) => setFormData({ ...formData, saunaTimesPerWeek: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
+                onChange={(v) => setFormData({ ...formData, saunaTimesPerWeek: v })}
                 min={0}
                 max={7}
               />
@@ -349,11 +344,9 @@ export function ProfileCustomizerModal({
                     example={isFinnish ? "118" : "118"}
                   />
                 </label>
-                <input
-                  type="number"
+                <NumberStepperInput
                   value={formData.carCo2GramsPerKm ?? 0}
-                  onChange={(e) => setFormData({ ...formData, carCo2GramsPerKm: Number(e.target.value) })}
-                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
+                  onChange={(v) => setFormData({ ...formData, carCo2GramsPerKm: v })}
                   min={0}
                   max={1000}
                 />
