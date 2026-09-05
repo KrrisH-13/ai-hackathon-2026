@@ -544,6 +544,67 @@ export function PageHeader({ title, subtitle, action }: PageHeaderProps) {
 
 ---
 
+## Applying Database Migrations
+
+Adding a migration file to `supabase/migrations/` doesn't apply it anywhere by
+itself — you (or an AI agent) still have to explicitly run it against a
+database. There are two separate targets; know which one you're touching
+before running anything.
+
+### Local development database
+
+- **Docker-based local Supabase** (`npm run db:start`, the default —
+  see README "Option A"): migrations apply automatically when the stack
+  starts. To pick up newly-added migration files without a full reset:
+  `npx supabase migration up`. To wipe and reapply everything from scratch:
+  `npm run db:reset`.
+- **Hosted/production Supabase used for local dev** (`npm run dev:prod`,
+  see README "Option C"): running the app this way does **not** apply
+  migrations — the env vars only grant API access, nothing more. Treat this
+  the same as the production case below.
+
+### Checking migration state before doing anything
+
+```bash
+npx supabase migration list          # local files vs. the linked project (usually production)
+npx supabase migration list --local  # local files vs. your local Docker DB
+```
+
+A migration listed under `local` but blank under `remote` hasn't been
+applied there yet — don't assume your checkout matches the database just
+because `npm install` succeeded.
+
+### Pushing migrations to the hosted/production project
+
+```bash
+npx supabase db push --dry-run   # lists exactly which migrations would run (filenames only)
+npx supabase db push             # actually applies them
+```
+
+This requires the CLI to be logged in (`npx supabase login`) and linked
+(`npx supabase link --project-ref <ref>`) to that specific Supabase
+project. Since the project may have been created under one developer's
+account, others may need to be added as a collaborator first (Supabase
+Dashboard → project → **Project Settings → Team**) before `login`/`link`
+will work for them — see README "Option C" for the full explanation.
+
+**Before running `db push` against the hosted/production project:**
+
+- Read every pending migration's actual SQL first
+  (`supabase/migrations/*.sql`) — `--dry-run` only lists filenames, not
+  contents, so it won't show you what a migration does.
+- Treat anything that drops a column, drops a table, or rewrites/deletes
+  existing rows as **irreversible** — confirm with a human before applying
+  it, even one you (the AI agent) wrote earlier in the same session.
+  Production data lost this way does not come back.
+- Prefer an additive migration (a new nullable column, a widened check
+  constraint) over a destructive one when a schema change can be done
+  either way.
+- After pushing, re-run `npx supabase migration list` and confirm every
+  local migration file now shows a matching `remote` timestamp.
+
+---
+
 ## AI Agent Contribution Checklist
 
 **When Claude or another AI agent contributes, they should:**
@@ -559,6 +620,8 @@ export function PageHeader({ title, subtitle, action }: PageHeaderProps) {
 - [ ] Test form submissions and API routes locally before pushing.
 - [ ] Add database migrations to `supabase/migrations/` with clear naming.
 - [ ] Update `lib/db/types.ts` if the database schema changes.
+- [ ] Apply new migrations locally and verify before considering the change done — see [Applying Database Migrations](#applying-database-migrations).
+- [ ] Never push a migration to the hosted/production project without confirming with the user first, especially anything that drops or rewrites data.
 
 ---
 
@@ -578,10 +641,11 @@ export function PageHeader({ title, subtitle, action }: PageHeaderProps) {
 4. Use Tailwind + shadcn/ui for layout.
 
 ### Add a Database Migration
-1. Create `supabase/migrations/v00X_description.sql` with exact SQL.
+1. Create `supabase/migrations/<timestamp>_description.sql` with exact SQL.
 2. Write clear comments explaining schema changes.
 3. Test locally: run migration, verify RLS policies, test with different roles.
-4. Update `lib/db/types.ts` to reflect new tables/columns.
+4. Update `lib/db/types.ts` (and the corresponding `lib/*/types.ts` app-level type) to reflect new tables/columns.
+5. Apply it — see [Applying Database Migrations](#applying-database-migrations) below for the exact commands and, especially, how to do this safely against the hosted/production project.
 
 ### Modify RLS Policies
 1. Edit policies in Supabase dashboard OR in `supabase/migrations/`.

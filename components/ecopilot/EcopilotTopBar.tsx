@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Share2, LogOut } from "lucide-react";
 import type { UserProfile, Season } from "@/lib/ecopilot/types";
 import { SEASONAL_PRESETS } from "@/lib/ecopilot/data";
@@ -7,7 +8,8 @@ import { signOut } from "@/app/(auth)/logout/action";
 
 interface EcopilotTopBarProps {
   userProfile: UserProfile;
-  onOpenProfileModal: () => void;
+  /** Link to the full-page profile editor (app/(dashboard)/[roleSlug]/profile) — see EcopilotApp. */
+  profileHref: string;
   currentSeason: Season;
   onSelectSeason: (s: Season) => void;
   isFinnish: boolean;
@@ -24,7 +26,7 @@ interface EcopilotTopBarProps {
 /** Municipal status banner + profile/language/account controls. Tabs live in EcopilotSidebar. */
 export function EcopilotTopBar({
   userProfile,
-  onOpenProfileModal,
+  profileHref,
   currentSeason,
   onSelectSeason,
   isFinnish,
@@ -100,8 +102,8 @@ export function EcopilotTopBar({
 
       {/* Profile selector + account controls */}
       <div className="px-4 sm:px-8 py-3 flex items-center justify-end gap-2">
-        <button
-          onClick={onOpenProfileModal}
+        <Link
+          href={profileHref}
           className="hidden sm:flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 hover:bg-slate-100 transition"
           title={isFinnish ? "Muokkaa profiilia" : "Edit profile"}
         >
@@ -109,7 +111,7 @@ export function EcopilotTopBar({
             {userProfile.name} ({userProfile.district.split(" ")[0]})
           </span>
           <span className="text-slate-400">⚙️</span>
-        </button>
+        </Link>
 
         <button
           onClick={onOpenShareModal}
