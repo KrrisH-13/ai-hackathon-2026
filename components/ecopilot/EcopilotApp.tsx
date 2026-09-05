@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import type { UserProfile, Season, EcopilotTab, SpotPricePoint } from "@/lib/ecopilot/types";
 import { SEASONAL_PRESETS } from "@/lib/ecopilot/data";
@@ -60,6 +60,13 @@ export function EcopilotApp({
 
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
 
+  // The whole app scrolls on the window (no inner scroll container), so
+  // switching tabs otherwise leaves you wherever the previous tab's content
+  // had scrolled to instead of starting each tab at the top.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [currentTab]);
+
   const pathname = usePathname();
   // The profile editor is a separate page (app/(dashboard)/[roleSlug]/profile)
   // rather than a modal — carry the current language over via query param
@@ -73,13 +80,14 @@ export function EcopilotApp({
   const outdoorTempCelsius = isShowingLiveWeather ? initialOutdoorTempCelsius : SEASONAL_PRESETS[currentSeason].typicalTemp;
 
   return (
-    <div className="flex min-h-screen bg-slate-50 text-slate-800">
+    <div className="flex h-screen overflow-hidden bg-slate-50 text-slate-800">
       <EcopilotSidebar currentTab={currentTab} onSelectTab={setCurrentTab} isFinnish={isFinnish} />
 
-      <div className="flex-1 min-w-0 flex flex-col">
+      <div className="flex-1 min-w-0 min-h-0 flex flex-col">
         <EcopilotTopBar
           userProfile={profile}
           profileHref={profileHref}
+          onOpenRoadmap={() => setCurrentTab("roadmap")}
           currentSeason={currentSeason}
           onSelectSeason={setCurrentSeason}
           isFinnish={isFinnish}
@@ -90,7 +98,7 @@ export function EcopilotApp({
           isLiveWeather={isShowingLiveWeather}
         />
 
-        <main className="flex-1 pb-16">
+        <main className="flex-1 min-h-0 overflow-y-auto">
           {currentTab === "chat" && (
             <AiClimateCopilotView
               userProfile={profile}

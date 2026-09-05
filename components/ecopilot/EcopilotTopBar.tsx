@@ -10,6 +10,8 @@ interface EcopilotTopBarProps {
   userProfile: UserProfile;
   /** Link to the full-page profile editor (app/(dashboard)/[roleSlug]/profile) — see EcopilotApp. */
   profileHref: string;
+  /** Switches to the Espoo 2030 Watch tab — the "Carbon-Neutral Espoo 2030" badge is its only entry point now that it's off the sidebar nav. */
+  onOpenRoadmap: () => void;
   currentSeason: Season;
   onSelectSeason: (s: Season) => void;
   isFinnish: boolean;
@@ -27,6 +29,7 @@ interface EcopilotTopBarProps {
 export function EcopilotTopBar({
   userProfile,
   profileHref,
+  onOpenRoadmap,
   currentSeason,
   onSelectSeason,
   isFinnish,
@@ -41,15 +44,14 @@ export function EcopilotTopBar({
       {/* Top Banner / Municipal Roadmap Context */}
       <div className="bg-slate-900 text-white text-[11px] py-1.5 px-4 sm:px-8 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">
+          <button
+            onClick={onOpenRoadmap}
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30 hover:bg-emerald-500/30 transition"
+            title={isFinnish ? "Avaa Ilmastovahti 2030" : "Open Espoo 2030 Watch"}
+          >
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             {isFinnish ? "Hiilineutraali Espoo 2030" : "Carbon-Neutral Espoo 2030"}
-          </span>
-          <span className="text-slate-300 hidden md:inline">
-            {isFinnish
-              ? "Ilmastovahti: Kaukolämmön ja arjen päästövähennykset etenevät tavoiteaikataulussa (-68% 1990 tasosta)"
-              : "Climate Watch: District heating & resident daily decarbonization on track (-68% vs 1990 baseline)"}
-          </span>
+          </button>
         </div>
 
         <div className="flex items-center gap-3">
@@ -97,41 +99,38 @@ export function EcopilotTopBar({
           >
             {isFinnish ? "FI / EN" : "EN / FI"}
           </button>
+
+          <Link
+            href={profileHref}
+            className="hidden sm:flex items-center gap-1.5 bg-slate-800 border border-slate-700 rounded-lg px-2 py-0.5 hover:bg-slate-700 transition"
+            title={isFinnish ? "Muokkaa profiilia" : "Edit profile"}
+          >
+            <span className="text-[10px] font-bold text-slate-200">
+              {userProfile.name} ({userProfile.district.split(" ")[0]})
+            </span>
+            <span className="text-slate-400">⚙️</span>
+          </Link>
+
+          <button
+            onClick={onOpenShareModal}
+            className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
+            title="Export / Share Climate Commitment"
+          >
+            <Share2 className="w-3.5 h-3.5" />
+          </button>
+
+          {accountEmail && (
+            <form action={signOut}>
+              <button
+                type="submit"
+                className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
+                title={`Log out (${accountEmail})`}
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            </form>
+          )}
         </div>
-      </div>
-
-      {/* Profile selector + account controls */}
-      <div className="px-4 sm:px-8 py-3 flex items-center justify-end gap-2">
-        <Link
-          href={profileHref}
-          className="hidden sm:flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 hover:bg-slate-100 transition"
-          title={isFinnish ? "Muokkaa profiilia" : "Edit profile"}
-        >
-          <span className="text-xs font-bold text-slate-800">
-            {userProfile.name} ({userProfile.district.split(" ")[0]})
-          </span>
-          <span className="text-slate-400">⚙️</span>
-        </Link>
-
-        <button
-          onClick={onOpenShareModal}
-          className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
-          title="Export / Share Climate Commitment"
-        >
-          <Share2 className="w-4 h-4" />
-        </button>
-
-        {accountEmail && (
-          <form action={signOut}>
-            <button
-              type="submit"
-              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
-              title={`Log out (${accountEmail})`}
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </form>
-        )}
       </div>
     </header>
   );
