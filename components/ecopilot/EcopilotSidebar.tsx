@@ -18,21 +18,47 @@ interface EcopilotSidebarProps {
   isFinnish: boolean;
 }
 
+interface SidebarTab {
+  id: EcopilotTab;
+  icon: typeof Sparkles;
+  iconClass: string;
+  fi: string;
+  en: string;
+}
+
+interface SidebarSection {
+  /** Optional heading shown above the group (hidden on the mobile icon rail). */
+  titleFi?: string;
+  titleEn?: string;
+  tabs: SidebarTab[];
+}
+
 /**
- * Every ecopilot tab, in display order. The Activity Log tab covers both
- * natural-language trip logging and grocery-receipt scanning (see
- * ActivityLoggerView). A vertical list scales to far more tabs than a
- * horizontal row ever could, without needing a scroll strip.
+ * Every ecopilot tab, grouped into sidebar sections in display order. The
+ * Activity Log tab covers both natural-language trip logging and
+ * grocery-receipt scanning (see ActivityLoggerView). The "Useful links"
+ * section holds the guide plus the HSY / HSL reference tools. A vertical list scales to far
+ * more tabs than a horizontal row ever could, without needing a scroll strip.
  */
-const TABS: { id: EcopilotTab; icon: typeof Sparkles; iconClass: string; fi: string; en: string }[] = [
-  { id: "chat", icon: Sparkles, iconClass: "text-emerald-600", fi: "eCopilot-chatti", en: "eCopilot Chat" },
-  { id: "energy", icon: Zap, iconClass: "text-amber-500", fi: "Pörssisähkö & Sauna", en: "Nord Pool & Energy" },
-  { id: "recycling", icon: RotateCw, iconClass: "text-teal-600", fi: "HSY-Lajittelu", en: "HSY Recycling" },
-  { id: "transit", icon: Compass, iconClass: "text-blue-600", fi: "HSL & Matkat", en: "HSL Transit" },
-  { id: "activityLog", icon: NotebookPen, iconClass: "text-fuchsia-600", fi: "Päiväkirja & Kuitit", en: "Activity Log & Receipts" },
-  { id: "whatIf", icon: Lightbulb, iconClass: "text-cyan-600", fi: "Entä jos...?", en: "What If?" },
-  { id: "trackerRewards", icon: Activity, iconClass: "text-rose-600", fi: "Seuranta & Palkinnot", en: "Tracker & Rewards" },
-  { id: "guide", icon: BookOpen, iconClass: "text-slate-500", fi: "Ohjeet & Aloitus", en: "Guide & Getting Started" },
+const SECTIONS: SidebarSection[] = [
+  {
+    tabs: [
+      { id: "chat", icon: Sparkles, iconClass: "text-emerald-600", fi: "eCopilot-chatti", en: "eCopilot Chat" },
+      { id: "energy", icon: Zap, iconClass: "text-amber-500", fi: "Pörssisähkö & Sauna", en: "Nord Pool & Energy" },
+      { id: "activityLog", icon: NotebookPen, iconClass: "text-fuchsia-600", fi: "Päiväkirja & Kuitit", en: "Activity Log & Receipts" },
+      { id: "whatIf", icon: Lightbulb, iconClass: "text-cyan-600", fi: "Entä jos...?", en: "What If?" },
+      { id: "trackerRewards", icon: Activity, iconClass: "text-rose-600", fi: "Seuranta & Palkinnot", en: "Tracker & Rewards" },
+    ],
+  },
+  {
+    titleFi: "Hyödyllisiä linkkejä",
+    titleEn: "Useful links",
+    tabs: [
+      { id: "guide", icon: BookOpen, iconClass: "text-slate-500", fi: "Ohjeet & Aloitus", en: "Guide & Getting Started" },
+      { id: "recycling", icon: RotateCw, iconClass: "text-teal-600", fi: "HSY-Lajittelu", en: "HSY Recycling" },
+      { id: "transit", icon: Compass, iconClass: "text-blue-600", fi: "HSL & Matkat", en: "HSL Transit" },
+    ],
+  },
 ];
 
 /** Vertical left nav — icon rail on mobile, icon+label from `sm:` up. */
@@ -59,18 +85,30 @@ export function EcopilotSidebar({ currentTab, onSelectTab, isFinnish }: Ecopilot
       </button>
 
       <nav className="flex-1 overflow-y-auto py-3 px-2 sm:px-3 space-y-1">
-        {TABS.map(({ id, icon: Icon, iconClass, fi, en }) => (
-          <button
-            key={id}
-            onClick={() => onSelectTab(id)}
-            title={isFinnish ? fi : en}
-            className={`w-full flex items-center gap-3 justify-center sm:justify-start px-2.5 sm:px-3 py-2.5 rounded-xl text-xs font-bold transition ${
-              currentTab === id ? "bg-emerald-50 text-emerald-700" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-            }`}
+        {SECTIONS.map((section, sectionIdx) => (
+          <div
+            key={section.titleEn ?? sectionIdx}
+            className={sectionIdx > 0 ? "mt-3 pt-3 border-t border-slate-100 space-y-1" : "space-y-1"}
           >
-            <Icon className={`w-4 h-4 shrink-0 ${iconClass}`} />
-            <span className="hidden sm:inline truncate">{isFinnish ? fi : en}</span>
-          </button>
+            {section.titleEn && (
+              <p className="hidden sm:block px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                {isFinnish ? section.titleFi : section.titleEn}
+              </p>
+            )}
+            {section.tabs.map(({ id, icon: Icon, iconClass, fi, en }) => (
+              <button
+                key={id}
+                onClick={() => onSelectTab(id)}
+                title={isFinnish ? fi : en}
+                className={`w-full flex items-center gap-3 justify-center sm:justify-start px-2.5 sm:px-3 py-2.5 rounded-xl text-xs font-bold transition ${
+                  currentTab === id ? "bg-emerald-50 text-emerald-700" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                }`}
+              >
+                <Icon className={`w-4 h-4 shrink-0 ${iconClass}`} />
+                <span className="hidden sm:inline truncate">{isFinnish ? fi : en}</span>
+              </button>
+            ))}
+          </div>
         ))}
       </nav>
     </aside>

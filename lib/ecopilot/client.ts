@@ -66,7 +66,15 @@ export async function extractActivityAPI(text: string): Promise<ActivityLogEstim
     return await postJson(API_ROUTES.aiExtractActivity, { text });
   } catch (error) {
     console.error("Extract activity API client error:", error);
-    const extraction = { mode: "car" as const, distanceKm: 10, origin: null, destination: null, country: "Finland", rawText: text };
+    const extraction = {
+      kind: "trip" as const,
+      mode: "car" as const,
+      distanceKm: 10,
+      origin: null,
+      destination: null,
+      country: "Finland",
+      rawText: text,
+    };
     const { co2Kg, gramsPerKm } = estimateCo2Kg(extraction.mode, extraction.distanceKm, extraction.country);
     return {
       extraction,

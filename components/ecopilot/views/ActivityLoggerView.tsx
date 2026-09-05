@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { NotebookPen, Receipt, Car, Train, Bike, Bus, Plane, Ship, Footprints, Zap, Globe2, Sparkles, X, RotateCw as Spinner } from "lucide-react";
-import type { ActivityMode, ActivityLogEstimate, Co2LogEntry } from "@/lib/ecopilot/types";
+import { NotebookPen, Receipt, Car, Train, Bike, Bus, Plane, Ship, Footprints, Zap, Flame, Utensils, Trash2, Globe2, Sparkles, X, RotateCw as Spinner } from "lucide-react";
+import type { ActivityMode, ActivityLogEstimate, Co2LogCategory, Co2LogEntry } from "@/lib/ecopilot/types";
 import { extractActivityAPI } from "@/lib/ecopilot/client";
 import { fetchCo2LogsAPI, addCo2LogAPI } from "@/lib/ecopilot/profileClient";
 import { InfoHint } from "@/components/ecopilot/InfoHint";
@@ -26,12 +26,25 @@ const MODE_ICON: Record<ActivityMode, typeof Car> = {
   ferry: Ship,
 };
 
+/** Icon per ledger category, for general (non-trip) activities. */
+const CATEGORY_ICON: Record<Co2LogCategory, typeof Car> = {
+  transport: Car,
+  food: Utensils,
+  energy: Zap,
+  heating: Flame,
+  waste: Trash2,
+  other: Globe2,
+};
+
 /** Source tag this feature writes to the shared CO2 ledger — the reward system (WIP elsewhere) can filter on this later. */
 const ACTIVITY_LOGGER_SOURCE = "activity-logger";
 
-/** Bundles the trip context into the ledger's single description string so it survives the round trip through Supabase. */
+/** Flattens the extraction context into the ledger's single description string so it survives the round trip through Supabase. */
 function buildLogDescription(estimate: ActivityLogEstimate): string {
   const { extraction } = estimate;
+  if (extraction.kind === "general") {
+    return (extraction.rawText.trim() || extraction.description).slice(0, 200);
+  }
   const place = extraction.destination ?? extraction.origin;
   const suffix = `(${extraction.distanceKm} km, ${extraction.country})`;
   const base = extraction.rawText.trim() || `${extraction.mode} trip${place ? ` to ${place}` : ""}`;
@@ -85,7 +98,7 @@ export function ActivityLoggerView({ isFinnish }: ActivityLoggerViewProps) {
     setIsSaving(true);
     try {
       await addCo2LogAPI({
-        category: "transport",
+        category: estimate.extraction.kind === "trip" ? "transport" : estimate.extraction.category,
         description: buildLogDescription(estimate),
         co2Kg: estimate.co2Kg,
         source: ACTIVITY_LOGGER_SOURCE,
@@ -100,7 +113,11 @@ export function ActivityLoggerView({ isFinnish }: ActivityLoggerViewProps) {
     }
   };
 
-  const EstimateIcon = estimate ? MODE_ICON[estimate.extraction.mode] : null;
+  const EstimateIcon = estimate
+    ? estimate.extraction.kind === "trip"
+      ? MODE_ICON[estimate.extraction.mode]
+      : CATEGORY_ICON[estimate.extraction.category]
+    : null;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 space-y-8 animate-fadeIn">
@@ -124,8 +141,8 @@ export function ActivityLoggerView({ isFinnish }: ActivityLoggerViewProps) {
         <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
           {inputMode === "trip"
             ? isFinnish
-              ? '"Ajoin Turkuun tänään" tai "otin junan Espoosta Helsinkiin" — päästökertoimet ovat maakohtaisia (esim. sähköauto Norjassa ≈ lähes päästötön vesivoiman ansiosta, sama auto Puolassa on hyvin erilainen).'
-              : '"Drove to Turku today" or "took the train from Espoo to Helsinki" — emission factors are country-aware (an EV in Norway ≈ near-zero thanks to hydro; the same EV in Poland is very different).'
+              ? '"Ajoin Turkuun tänään", "söin naudanlihapihvin" tai "lämmitin saunan tunniksi" — matkoille lasketaan maakohtainen päästökerroin (sähköauto Norjassa ≈ lähes päästötön, sama Puolassa ei), muut saavat elinkaariarvion.'
+              : '"Drove to Turku today", "beef burger for lunch" or "ran the sauna for an hour" — trips get a country-aware emission factor (an EV in Norway ≈ near-zero; in Poland it isn\'t), everything else gets a lifecycle estimate.'
             : isFinnish
               ? "Gemini Vision lukee ostoskuitin rivit ja arvioi hiilijalanjäljen tuotteittain. Lisää haluamasi rivit samaan päiväkirjaan."
               : "Gemini Vision reads the grocery receipt's line items and estimates a rough footprint per item. Add the ones you want to the same activity log."}
@@ -164,16 +181,16 @@ export function ActivityLoggerView({ isFinnish }: ActivityLoggerViewProps) {
           {isFinnish ? "Kirjaa tämänpäiväinen matka tai toiminto:" : "Log today's trip or activity:"}
           <InfoHint
             isFinnish={isFinnish}
-            label={isFinnish ? "Matka" : "Trip"}
+            label={isFinnish ? "Toiminto" : "Activity"}
             instruction={
               isFinnish
-                ? "Kirjoita yksi matka tavallisena lauseena: kulkutapa, suunnilleen matka tai paikannimet, ja maa jos et ollut Suomessa. Tekoäly täydentää loput."
-                : "Write one trip as a normal sentence — how you travelled, a rough distance or place names, and the country if it wasn't Finland. AI fills in the rest."
+                ? "Kirjoita yksi toiminto tavallisena lauseena. Matkoista kerro kulkutapa ja suunnilleen matka tai paikannimet (ja maa jos et ollut Suomessa); muista, kuten aterioista, lämmityksestä tai pyykinpesusta, riittää lyhyt kuvaus. Tekoäly arvioi CO2:n."
+                : "Write one activity as a normal sentence. For trips, say how you travelled plus a rough distance or place names (and the country if it wasn't Finland); for anything else — a meal, heating, laundry — a short description is enough. AI estimates the CO2."
             }
             example={
               isFinnish
-                ? "Otin junan Helsingistä Tampereelle ja takaisin"
-                : "Took the train from Helsinki to Tampere and back"
+                ? "Otin junan Helsingistä Tampereelle · Naudanlihapata illalliseksi"
+                : "Took the train from Helsinki to Tampere · Beef stew for dinner"
             }
           />
         </label>
@@ -183,7 +200,9 @@ export function ActivityLoggerView({ isFinnish }: ActivityLoggerViewProps) {
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleExtract()}
-            placeholder={isFinnish ? "esim. Ajoin Turkuun tänään" : "e.g. Drove to Turku today"}
+            placeholder={
+              isFinnish ? "esim. Ajoin Turkuun · Naudanlihapihvi lounaaksi" : "e.g. Drove to Turku · Beef burger for lunch"
+            }
             className="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-fuchsia-500 shadow-xs"
           />
           <button
@@ -207,12 +226,18 @@ export function ActivityLoggerView({ isFinnish }: ActivityLoggerViewProps) {
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-slate-900 truncate">{estimate.extraction.rawText}</p>
-                  <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
-                    <Globe2 className="w-3 h-3" />
-                    <span>
-                      {estimate.extraction.distanceKm} km · {estimate.extraction.country}
+                  {estimate.extraction.kind === "trip" ? (
+                    <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
+                      <Globe2 className="w-3 h-3" />
+                      <span>
+                        {estimate.extraction.distanceKm} km · {estimate.extraction.country}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-white border border-fuchsia-200 text-fuchsia-800 capitalize">
+                      {estimate.extraction.category}
                     </span>
-                  </div>
+                  )}
                 </div>
               </div>
               <span className="shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-black bg-fuchsia-200 text-fuchsia-900">

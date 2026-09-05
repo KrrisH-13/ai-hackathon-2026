@@ -219,8 +219,9 @@ export interface Co2LogEntry {
 export const ACTIVITY_MODES = ['car', 'ev', 'train', 'bus', 'bike', 'walk', 'plane', 'ferry'] as const;
 export type ActivityMode = (typeof ACTIVITY_MODES)[number];
 
-/** Structured trip Gemini extracted from a single free-text log entry. */
-export interface ActivityExtraction {
+/** A travel/commute trip Gemini extracted from a free-text log entry — priced by the country-aware factor table. */
+export interface TripActivityExtraction {
+  kind: 'trip';
   mode: ActivityMode;
   distanceKm: number;
   origin: string | null;
@@ -230,12 +231,30 @@ export interface ActivityExtraction {
   rawText: string;
 }
 
-/** Extraction + the country-aware CO2 estimate computed from it, ready to log or discard. */
+/** A non-travel activity (a meal, home energy use, waste, a purchase…) with Gemini's own lifecycle CO2 estimate. */
+export interface GeneralActivityExtraction {
+  kind: 'general';
+  /** Best-fit ledger category (never 'transport' — that path is a TripActivityExtraction). */
+  category: Co2LogCategory;
+  /** Short human-readable summary of the activity, e.g. "Beef burger dinner". */
+  description: string;
+  /** Gemini's rough lifecycle estimate in kg CO2e — positive = emitted, negative = avoided/saved. */
+  co2Kg: number;
+  /** One-sentence explanation of the assumptions behind the estimate. */
+  note: string;
+  rawText: string;
+}
+
+/** Structured activity Gemini extracted from a single free-text log entry — either a trip or a general activity. */
+export type ActivityExtraction = TripActivityExtraction | GeneralActivityExtraction;
+
+/** Extraction + the CO2 estimate computed from it, ready to log or discard. */
 export interface ActivityLogEstimate {
   extraction: ActivityExtraction;
   co2Kg: number;
-  emissionFactorGramsPerKm: number;
-  /** Human-readable explanation of which country's factor was used (and why), for the UI. */
+  /** g CO2/km factor used for a trip; null for a general activity (Gemini estimated the total directly). */
+  emissionFactorGramsPerKm: number | null;
+  /** Human-readable explanation of how the estimate was reached, for the UI. */
   factorNote: string;
 }
 
