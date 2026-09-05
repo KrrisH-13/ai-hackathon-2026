@@ -3,7 +3,6 @@
 import { API_ROUTES } from "@/lib/constants";
 import type {
   UserProfile,
-  Season,
   WasteClassificationResult,
   DailyEnergyPlan,
   CommuteComparison,
@@ -38,11 +37,10 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
 export async function chatWithClimateAssistantAPI(
   chatHistory: { role: string; content: string }[],
   userMessage: string,
-  userProfile?: UserProfile,
-  currentSeason: Season = "winter"
+  userProfile?: UserProfile
 ): Promise<{ reply: string; suggestedFollowUps: string[] }> {
   try {
-    return await postJson(API_ROUTES.aiChat, { chatHistory, userMessage, userProfile, currentSeason });
+    return await postJson(API_ROUTES.aiChat, { chatHistory, userMessage, userProfile });
   } catch (error) {
     console.error("Chat API client error:", error);
     return {
@@ -100,16 +98,14 @@ export async function classifyWasteAPI(query: string, imageBase64?: string): Pro
 
 export async function optimizeDailyEnergyAPI(
   userProfile: UserProfile,
-  currentSeason: Season,
   outdoorTemp: number,
   spotPrices: SpotPricePoint[]
 ): Promise<DailyEnergyPlan> {
   try {
-    return await postJson(API_ROUTES.aiOptimizeEnergy, { userProfile, currentSeason, outdoorTemp, spotPrices });
+    return await postJson(API_ROUTES.aiOptimizeEnergy, { userProfile, outdoorTemp, spotPrices });
   } catch (error) {
     console.error("Energy optimizer API client error:", error);
     return {
-      currentSeason,
       outdoorTempCelsius: outdoorTemp,
       peakSaunaWindow: {
         recommendedTime: "21:30 - 23:00",
@@ -185,13 +181,9 @@ export async function compareCommuteAPI(origin: string, destination: string): Pr
   }
 }
 
-export async function projectWhatIfScenarioAPI(
-  question: string,
-  userProfile: UserProfile,
-  currentSeason: Season = "winter"
-): Promise<WhatIfProjection> {
+export async function projectWhatIfScenarioAPI(question: string, userProfile: UserProfile): Promise<WhatIfProjection> {
   try {
-    return await postJson(API_ROUTES.aiWhatIf, { question, userProfile, currentSeason });
+    return await postJson(API_ROUTES.aiWhatIf, { question, userProfile });
   } catch (error) {
     console.error("What-if API client error:", error);
     return {
@@ -215,13 +207,9 @@ export async function scanReceiptAPI(imageBase64: string): Promise<GroceryReceip
   }
 }
 
-export async function getTodaysActionAPI(
-  userProfile: UserProfile,
-  currentSeason: Season,
-  outdoorTempCelsius: number
-): Promise<TodaysActionResult> {
+export async function getTodaysActionAPI(userProfile: UserProfile, outdoorTempCelsius: number): Promise<TodaysActionResult> {
   try {
-    return await postJson(API_ROUTES.aiTodaysAction, { userProfile, currentSeason, outdoorTempCelsius });
+    return await postJson(API_ROUTES.aiTodaysAction, { userProfile, outdoorTempCelsius });
   } catch (error) {
     console.error("Today's action API client error:", error);
     return {

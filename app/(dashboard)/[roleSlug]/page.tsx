@@ -2,9 +2,9 @@ import { redirect } from "next/navigation";
 import { getUser, getProfile } from "@/lib/supabase/auth";
 import { createServerComponentClient } from "@/lib/supabase/server";
 import { loadUserProfile, displayNameFromUser } from "@/lib/ecopilot/queries";
-import { currentSeason, fetchCurrentEspooTemperatureCelsius } from "@/lib/ecopilot/weather";
+import { fetchCurrentEspooTemperatureCelsius, FALLBACK_OUTDOOR_TEMP_CELSIUS } from "@/lib/ecopilot/weather";
 import { fetchTodaySpotPricesCentsPerKwh, applyLivePrices } from "@/lib/ecopilot/gridPrice";
-import { SEASONAL_PRESETS, MOCK_HOURLY_SPOT_PRICES } from "@/lib/ecopilot/data";
+import { MOCK_HOURLY_SPOT_PRICES } from "@/lib/ecopilot/data";
 import { EcopilotApp } from "@/components/ecopilot/EcopilotApp";
 import { ROUTES, ROLES, ROLE_ROUTE_SLUGS } from "@/lib/constants";
 
@@ -36,17 +36,14 @@ export default async function RoleDashboardPage({ params }: RoleDashboardPagePro
   ]);
   if (!ecopilotProfile) redirect(ROUTES.unauthorized);
 
-  const initialSeason = currentSeason(new Date());
-  const initialOutdoorTempCelsius = liveTemperatureCelsius ?? SEASONAL_PRESETS[initialSeason].typicalTemp;
+  const initialOutdoorTempCelsius = liveTemperatureCelsius ?? FALLBACK_OUTDOOR_TEMP_CELSIUS;
   const spotPrices = applyLivePrices(MOCK_HOURLY_SPOT_PRICES, liveSpotPrices);
 
   return (
     <EcopilotApp
       initialProfile={ecopilotProfile}
       accountEmail={user.email}
-      initialSeason={initialSeason}
       initialOutdoorTempCelsius={initialOutdoorTempCelsius}
-      isLiveWeather={liveTemperatureCelsius !== null}
       spotPrices={spotPrices}
       isLiveSpotPrices={liveSpotPrices !== null}
     />
