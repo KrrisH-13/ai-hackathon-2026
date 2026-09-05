@@ -79,8 +79,6 @@ export interface UserProfile {
   carType: CarType | null;
   carCo2GramsPerKm: number | null;
   wasteManagementSystem: WasteManagementSystem;
-  /** Other measures already in place (solar panels, smart thermostat, etc). */
-  energySavingMeasures: string[];
   estimatedFootprintTonnes: number; // e.g., 4.8 t CO2e/year
   targetFootprintTonnes: number; // e.g., 2.5 t CO2e/year by 2030
   /** Derived from the CO2 ledger (lib/ecopilot/queries.ts), not stored directly. */

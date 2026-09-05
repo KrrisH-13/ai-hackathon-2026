@@ -127,7 +127,6 @@ export function mapProfileRowToUserProfile(row: EcopilotProfile, displayName: st
     carType: row.car_type,
     carCo2GramsPerKm: row.car_co2_grams_per_km,
     wasteManagementSystem: row.waste_management_system,
-    energySavingMeasures: row.energy_saving_measures,
     estimatedFootprintTonnes: row.estimated_footprint_tonnes,
     targetFootprintTonnes: row.target_footprint_tonnes,
     savedCo2Kg,
@@ -150,7 +149,6 @@ export function mapUserProfileToUpdate(patch: Partial<UserProfile>): EcopilotPro
   if (patch.carType !== undefined) update.car_type = patch.carType;
   if (patch.carCo2GramsPerKm !== undefined) update.car_co2_grams_per_km = patch.carCo2GramsPerKm;
   if (patch.wasteManagementSystem !== undefined) update.waste_management_system = patch.wasteManagementSystem;
-  if (patch.energySavingMeasures !== undefined) update.energy_saving_measures = patch.energySavingMeasures;
   if (patch.estimatedFootprintTonnes !== undefined) update.estimated_footprint_tonnes = patch.estimatedFootprintTonnes;
   if (patch.targetFootprintTonnes !== undefined) update.target_footprint_tonnes = patch.targetFootprintTonnes;
 

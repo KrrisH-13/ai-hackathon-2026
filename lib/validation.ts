@@ -25,7 +25,6 @@ export const ecopilotProfileUpdateSchema = z.object({
   carType: z.enum(CAR_TYPES).nullable().optional(),
   carCo2GramsPerKm: z.number().min(0).max(1000).nullable().optional(),
   wasteManagementSystem: z.enum(WASTE_MANAGEMENT_SYSTEMS).optional(),
-  energySavingMeasures: z.array(z.string()).optional(),
   estimatedFootprintTonnes: z.number().min(0).optional(),
   targetFootprintTonnes: z.number().min(0).optional(),
 });

@@ -79,7 +79,6 @@ export type EcopilotProfile = {
   car_type: CarType | null;
   car_co2_grams_per_km: number | null;
   waste_management_system: WasteManagementSystem;
-  energy_saving_measures: string[];
   estimated_footprint_tonnes: number;
   target_footprint_tonnes: number;
   created_at: string;

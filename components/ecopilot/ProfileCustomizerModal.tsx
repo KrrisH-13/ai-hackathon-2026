@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { X, Save } from "lucide-react";
 import type { UserProfile, HousingType, EspooDistrict, HeatingSystem, ElectricityContract, CommuteHabit, CarType, WasteManagementSystem } from "@/lib/ecopilot/types";
 import { ESPOO_DISTRICTS, HEATING_SYSTEMS, ELECTRICITY_CONTRACTS, COMMUTE_HABITS } from "@/lib/ecopilot/types";
-import { CAR_TYPE_OPTIONS, CAR_TYPE_DEFAULT_CO2_G_PER_KM, WASTE_MANAGEMENT_OPTIONS, COMMON_ENERGY_SAVING_MEASURES } from "@/lib/ecopilot/data";
+import { CAR_TYPE_OPTIONS, CAR_TYPE_DEFAULT_CO2_G_PER_KM, WASTE_MANAGEMENT_OPTIONS } from "@/lib/ecopilot/data";
 import { InfoHint } from "@/components/ecopilot/InfoHint";
 import { NumberStepperInput } from "@/components/ecopilot/NumberStepperInput";
 
@@ -55,15 +55,6 @@ export function ProfileCustomizerModal({
   };
 
   const isDrivingCommute = formData.commuteHabit === "Car";
-
-  const toggleEnergyMeasure = (measure: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      energySavingMeasures: prev.energySavingMeasures.includes(measure)
-        ? prev.energySavingMeasures.filter((m) => m !== measure)
-        : [...prev.energySavingMeasures, measure],
-    }));
-  };
 
   const toggleHeatingSystem = (system: HeatingSystem) => {
     setFormData((prev) => {
@@ -372,28 +363,6 @@ export function ProfileCustomizerModal({
               </div>
             </div>
           )}
-
-          <div className="space-y-1.5">
-            <label className="font-bold text-slate-700 block">
-              {isFinnish ? "Käytössä olevat säästötoimet:" : "Other Energy-Saving Measures:"}
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-              {COMMON_ENERGY_SAVING_MEASURES.map((measure) => (
-                <label
-                  key={measure}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 cursor-pointer hover:bg-slate-100"
-                >
-                  <input
-                    type="checkbox"
-                    checked={formData.energySavingMeasures.includes(measure)}
-                    onChange={() => toggleEnergyMeasure(measure)}
-                    className="accent-emerald-600"
-                  />
-                  <span className="text-slate-700 font-medium">{measure}</span>
-                </label>
-              ))}
-            </div>
-          </div>
 
           <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
             <button
