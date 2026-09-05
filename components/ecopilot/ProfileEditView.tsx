@@ -22,7 +22,7 @@ const ELECTRICITY_CONTRACT_LABELS: Record<ElectricityContract, string> = {
 
 interface ProfileEditViewProps {
   userProfile: UserProfile;
-  /** Seeded from the ?lang= query param the profile link was opened with — see EcopilotTopBar. */
+  /** Seeded from the ?lang= query param the profile link was opened with — see EcopilotSidebar. */
   initialIsFinnish: boolean;
   /** Where Cancel and a successful Save navigate back to, e.g. "/dashboard". */
   backHref: string;
