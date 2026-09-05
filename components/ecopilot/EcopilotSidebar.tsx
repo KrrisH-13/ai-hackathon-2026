@@ -6,7 +6,6 @@ import {
   RotateCw,
   Compass,
   NotebookPen,
-  Receipt,
   Lightbulb,
   Activity,
   BookOpen,
@@ -20,19 +19,17 @@ interface EcopilotSidebarProps {
 }
 
 /**
- * Every ecopilot tab, in display order — including the placeholder tabs
- * (activityLog/receiptScanner/whatIf), whose views currently
- * just render layout with sample data; the AI/data wiring for those lands
- * separately. A vertical list scales to far more tabs than a horizontal
- * row ever could, without needing a scroll strip.
+ * Every ecopilot tab, in display order. The Activity Log tab covers both
+ * natural-language trip logging and grocery-receipt scanning (see
+ * ActivityLoggerView). A vertical list scales to far more tabs than a
+ * horizontal row ever could, without needing a scroll strip.
  */
 const TABS: { id: EcopilotTab; icon: typeof Sparkles; iconClass: string; fi: string; en: string }[] = [
   { id: "chat", icon: Sparkles, iconClass: "text-emerald-600", fi: "eCopilot-chatti", en: "eCopilot Chat" },
   { id: "energy", icon: Zap, iconClass: "text-amber-500", fi: "Pörssisähkö & Sauna", en: "Nord Pool & Energy" },
   { id: "recycling", icon: RotateCw, iconClass: "text-teal-600", fi: "HSY-Lajittelu", en: "HSY Recycling" },
   { id: "transit", icon: Compass, iconClass: "text-blue-600", fi: "HSL & Matkat", en: "HSL Transit" },
-  { id: "activityLog", icon: NotebookPen, iconClass: "text-fuchsia-600", fi: "Päiväkirja", en: "Activity Log" },
-  { id: "receiptScanner", icon: Receipt, iconClass: "text-orange-600", fi: "Kuitti-skanneri", en: "Receipt Scanner" },
+  { id: "activityLog", icon: NotebookPen, iconClass: "text-fuchsia-600", fi: "Päiväkirja & Kuitit", en: "Activity Log & Receipts" },
   { id: "whatIf", icon: Lightbulb, iconClass: "text-cyan-600", fi: "Entä jos...?", en: "What If?" },
   { id: "trackerRewards", icon: Activity, iconClass: "text-rose-600", fi: "Seuranta & Palkinnot", en: "Tracker & Rewards" },
   { id: "guide", icon: BookOpen, iconClass: "text-slate-500", fi: "Ohjeet & Aloitus", en: "Guide & Getting Started" },

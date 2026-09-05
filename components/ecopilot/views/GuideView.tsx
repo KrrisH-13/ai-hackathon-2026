@@ -7,7 +7,6 @@ import {
   Compass,
   Building2,
   NotebookPen,
-  Receipt,
   Lightbulb,
   Activity,
   ArrowRight,
@@ -147,42 +146,21 @@ const FEATURES: FeatureGuide[] = [
     tab: "activityLog",
     icon: NotebookPen,
     iconClass: "text-fuchsia-600",
-    titleEn: "Activity Log",
-    titleFi: "Päiväkirja",
+    titleEn: "Activity Log & Receipts",
+    titleFi: "Päiväkirja & Kuitit",
     blurbEn:
-      "Type a trip in plain language — “drove to Turku today” — and AI extracts the mode, distance and country-aware CO2 estimate.",
+      "One page, two ways to log: type a trip in plain language — “drove to Turku today” — or snap a grocery receipt. AI does the CO2 math either way.",
     blurbFi:
-      "Kirjoita matka omin sanoin — ”ajoin tänään Turkuun” — ja tekoäly poimii kulkutavan, matkan ja maakohtaisen CO2-arvion.",
+      "Yksi sivu, kaksi tapaa kirjata: kirjoita matka omin sanoin — ”ajoin tänään Turkuun” — tai kuvaa ruokakuitti. Tekoäly laskee CO2:n kummallakin tavalla.",
     pointsEn: [
-      "Review the extracted trip and the emission factor used before saving",
-      "Saved entries go to your shared CO2 ledger",
-      "Recent entries are listed underneath for quick edits",
+      "Trip mode: AI extracts the mode, distance and country-aware emission factor — review it before saving",
+      "Receipt mode: Gemini Vision reads each line item, estimates a per-item footprint and suggests lower-carbon swaps",
+      "Everything you save lands in your shared CO2 ledger and the recent-entries list below",
     ],
     pointsFi: [
-      "Tarkista poimittu matka ja käytetty päästökerroin ennen tallennusta",
-      "Tallennetut merkinnät menevät yhteiseen CO2-kirjanpitoosi",
-      "Viimeisimmät merkinnät näkyvät alla nopeaa muokkausta varten",
-    ],
-  },
-  {
-    tab: "receiptScanner",
-    icon: Receipt,
-    iconClass: "text-orange-600",
-    titleEn: "Receipt Scanner",
-    titleFi: "Kuitti-skanneri",
-    blurbEn:
-      "Upload a photo of a grocery receipt. AI reads the items and estimates the CO2 and euro footprint of each, with lower-carbon swaps.",
-    blurbFi:
-      "Lataa kuva ruokakuitista. Tekoäly lukee tuotteet ja arvioi kunkin CO2- ja eurojalanjäljen sekä ehdottaa vähähiilisempää.",
-    pointsEn: [
-      "Per-item CO2 kg and euro estimate from a single photo",
-      "Swap suggestions for the highest-impact items",
-      "Add any item straight to your CO2 ledger",
-    ],
-    pointsFi: [
-      "Tuotekohtainen CO2- ja euroarvio yhdestä kuvasta",
-      "Vaihtoehdot suurimman vaikutuksen tuotteille",
-      "Lisää mikä tahansa tuote suoraan CO2-kirjanpitoon",
+      "Matkatila: tekoäly poimii kulkutavan, matkan ja maakohtaisen päästökertoimen — tarkista ennen tallennusta",
+      "Kuittitila: Gemini Vision lukee jokaisen rivin, arvioi tuotekohtaisen jalanjäljen ja ehdottaa vähähiilisempiä vaihtoja",
+      "Kaikki tallentamasi menee yhteiseen CO2-kirjanpitoon ja alla olevaan merkintälistaan",
     ],
   },
   {
@@ -217,12 +195,12 @@ const FEATURES: FeatureGuide[] = [
     blurbFi:
       "CO2-kirjanpitosi viimeiseltä 30 päivältä: nettosäästö kategorioittain, putket ja avatut palkintotasot.",
     pointsEn: [
-      "Every entry from Chat, Activity Log, Receipt Scanner and What If lands here",
+      "Every entry from Chat, the Activity Log (trips and receipts) and What If lands here",
       "Trend chart, category breakdown and current streak",
       "Redeem reward tiers as your total saved grows (prototype rewards)",
     ],
     pointsFi: [
-      "Kaikki merkinnät chatista, päiväkirjasta, kuittiskannerista ja ”entä jos” näkyvät täällä",
+      "Kaikki merkinnät chatista, päiväkirjasta (matkat ja kuitit) ja ”entä jos” näkyvät täällä",
       "Trendikäyrä, kategoriajako ja nykyinen putki",
       "Lunasta palkintotasoja kun säästösi kasvaa (prototyyppipalkinnot)",
     ],
@@ -270,9 +248,9 @@ const START_STEPS: StartStep[] = [
     titleEn: "Log actions and track progress",
     titleFi: "Kirjaa tekoja ja seuraa edistymistä",
     bodyEn:
-      "Add entries through the Activity Log, Receipt Scanner or What If, then watch Tracker & Rewards for your 30-day trend, streaks and reward tiers.",
+      "Add entries through the Activity Log (log a trip or scan a grocery receipt) or What If, then watch Tracker & Rewards for your 30-day trend, streaks and reward tiers.",
     bodyFi:
-      "Lisää merkintöjä päiväkirjan, kuittiskannerin tai ”entä jos” kautta, ja seuraa Seuranta & Palkinnot -välilehdeltä 30 päivän trendiä, putkia ja palkintotasoja.",
+      "Lisää merkintöjä päiväkirjan (kirjaa matka tai skannaa ruokakuitti) tai ”entä jos” kautta, ja seuraa Seuranta & Palkinnot -välilehdeltä 30 päivän trendiä, putkia ja palkintotasoja.",
   },
 ];
 

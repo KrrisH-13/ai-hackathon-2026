@@ -12,7 +12,6 @@ import { HsyRecyclingScannerView } from "@/components/ecopilot/views/HsyRecyclin
 import { HslTransitCommuteView } from "@/components/ecopilot/views/HslTransitCommuteView";
 import { EspooClimateWatch2030View } from "@/components/ecopilot/views/EspooClimateWatch2030View";
 import { ActivityLoggerView } from "@/components/ecopilot/views/ActivityLoggerView";
-import { ReceiptScannerView } from "@/components/ecopilot/views/ReceiptScannerView";
 import { WhatIfView } from "@/components/ecopilot/views/WhatIfView";
 import { TrackerRewardsView } from "@/components/ecopilot/views/TrackerRewardsView";
 import { SharePledgeModal } from "@/components/ecopilot/SharePledgeModal";
@@ -109,8 +108,6 @@ export function EcopilotApp({
           {currentTab === "roadmap" && <EspooClimateWatch2030View isFinnish={isFinnish} />}
 
           {currentTab === "activityLog" && <ActivityLoggerView isFinnish={isFinnish} />}
-
-          {currentTab === "receiptScanner" && <ReceiptScannerView isFinnish={isFinnish} />}
 
           {currentTab === "whatIf" && <WhatIfView userProfile={profile} isFinnish={isFinnish} />}
 
