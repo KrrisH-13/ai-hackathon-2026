@@ -7,7 +7,7 @@ import { ROUTES, ROLES, ROLE_ROUTE_SLUGS } from "@/lib/constants";
 
 interface ProfileEditPageProps {
   params: Promise<{ roleSlug: string }>;
-  /** ?lang=fi carries the language the user had toggled on the dashboard — see EcopilotTopBar's profile link. */
+  /** ?lang=fi carries the language the user had toggled on the dashboard — see EcopilotSidebar's profile link. */
   searchParams: Promise<{ lang?: string }>;
 }
 

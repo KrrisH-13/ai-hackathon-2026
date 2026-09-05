@@ -66,17 +66,21 @@ export function EcopilotApp({
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50 text-slate-800">
-      <EcopilotSidebar currentTab={currentTab} onSelectTab={setCurrentTab} isFinnish={isFinnish} />
+      <EcopilotSidebar
+        currentTab={currentTab}
+        onSelectTab={setCurrentTab}
+        isFinnish={isFinnish}
+        userProfile={profile}
+        profileHref={profileHref}
+        accountEmail={accountEmail}
+      />
 
       <div className="flex-1 min-w-0 min-h-0 flex flex-col">
         <EcopilotTopBar
-          userProfile={profile}
-          profileHref={profileHref}
           onOpenRoadmap={() => setCurrentTab("roadmap")}
           isFinnish={isFinnish}
           onToggleLanguage={() => setIsFinnish((prev) => !prev)}
           onOpenShareModal={() => setIsShareModalOpen(true)}
-          accountEmail={accountEmail}
         />
 
         <main className="flex-1 min-h-0 overflow-y-auto">
