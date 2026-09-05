@@ -8,6 +8,15 @@ import { CAR_TYPE_OPTIONS, CAR_TYPE_DEFAULT_CO2_G_PER_KM, WASTE_MANAGEMENT_OPTIO
 import { InfoHint } from "@/components/ecopilot/InfoHint";
 import { NumberStepperInput } from "@/components/ecopilot/NumberStepperInput";
 
+// Display-only labels for the Electricity Contract dropdown — the stored
+// ElectricityContract values stay unchanged (used elsewhere in AI prompts and
+// persisted profile data), only how they're shown here is simplified.
+const ELECTRICITY_CONTRACT_LABELS: Record<ElectricityContract, string> = {
+  "Nord Pool Hourly Spot Price": "Hourly Spot Price",
+  "Fixed-Price Contract": "Fixed-Price Contract",
+  "Renewable / Certified Green (100%)": "Renewable / Certified Green (100%)",
+};
+
 interface ProfileCustomizerModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -54,6 +63,20 @@ export function ProfileCustomizerModal({
         ? prev.energySavingMeasures.filter((m) => m !== measure)
         : [...prev.energySavingMeasures, measure],
     }));
+  };
+
+  const toggleHeatingSystem = (system: HeatingSystem) => {
+    setFormData((prev) => {
+      const isSelected = prev.heatingSystems.includes(system);
+      // At least one heating system must stay selected.
+      if (isSelected && prev.heatingSystems.length === 1) return prev;
+      return {
+        ...prev,
+        heatingSystems: isSelected
+          ? prev.heatingSystems.filter((s) => s !== system)
+          : [...prev.heatingSystems, system],
+      };
+    });
   };
 
   return (
@@ -172,67 +195,63 @@ export function ProfileCustomizerModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="font-bold text-slate-700 flex items-center gap-1.5">
-                {isFinnish ? "Pääasiallinen Lämmitys:" : "Heating System:"}
-                <InfoHint
-                  isFinnish={isFinnish}
-                  label={isFinnish ? "Lämmitys" : "Heating System"}
-                  instruction={
-                    isFinnish
-                      ? "Kodin pääasiallinen lämmitystapa. Espoon kerrostaloissa kaukolämpö on yleisin."
-                      : "The main way your home is heated. District heating is the norm in Espoo apartments."
-                  }
-                  example={
-                    isFinnish
-                      ? "District Heating (Fortum Clean Heat)"
-                      : "District Heating (Fortum Clean Heat)"
-                  }
-                />
-              </label>
-              <select
-                value={formData.heatingSystem}
-                onChange={(e) => setFormData({ ...formData, heatingSystem: e.target.value as HeatingSystem })}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
-              >
-                {HEATING_SYSTEMS.map((h) => (
-                  <option key={h} value={h}>
-                    {h}
-                  </option>
-                ))}
-              </select>
+          <div className="space-y-1.5">
+            <label className="font-bold text-slate-700 flex items-center gap-1.5">
+              {isFinnish ? "Lämmitysjärjestelmät:" : "Heating Systems:"}
+              <InfoHint
+                isFinnish={isFinnish}
+                label={isFinnish ? "Lämmitys" : "Heating Systems"}
+                instruction={
+                  isFinnish
+                    ? "Kodin lämmitystavat — valitse kaikki käytössä olevat. Espoon kerrostaloissa kaukolämpö on yleisin."
+                    : "How your home is heated — select all that apply. District heating is the norm in Espoo apartments."
+                }
+                example={isFinnish ? "District Heating" : "District Heating"}
+              />
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+              {HEATING_SYSTEMS.map((h) => (
+                <label
+                  key={h}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 cursor-pointer hover:bg-slate-100"
+                >
+                  <input
+                    type="checkbox"
+                    checked={formData.heatingSystems.includes(h)}
+                    onChange={() => toggleHeatingSystem(h)}
+                    className="accent-emerald-600"
+                  />
+                  <span className="text-slate-700 font-medium">{h}</span>
+                </label>
+              ))}
             </div>
+          </div>
 
-            <div className="space-y-1">
-              <label className="font-bold text-slate-700 flex items-center gap-1.5">
-                {isFinnish ? "Sähkösopimus:" : "Electricity Contract:"}
-                <InfoHint
-                  isFinnish={isFinnish}
-                  align="right"
-                  label={isFinnish ? "Sähkösopimus" : "Electricity Contract"}
-                  instruction={
-                    isFinnish
-                      ? "Sähkön hinnoittelutapasi. ”Nord Pool -tuntihinta” tarkoittaa, että hinta muuttuu joka tunti — silloin ajoituksesta on eniten hyötyä."
-                      : "How your electricity is priced. 'Nord Pool Hourly Spot' means your price changes every hour — that's when timing loads pays off most."
-                  }
-                  example={
-                    isFinnish ? "Nord Pool Hourly Spot Price" : "Nord Pool Hourly Spot Price"
-                  }
-                />
-              </label>
-              <select
-                value={formData.electricityContract}
-                onChange={(e) => setFormData({ ...formData, electricityContract: e.target.value as ElectricityContract })}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
-              >
-                {ELECTRICITY_CONTRACTS.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <div className="space-y-1">
+            <label className="font-bold text-slate-700 flex items-center gap-1.5">
+              {isFinnish ? "Sähkösopimus:" : "Electricity Contract:"}
+              <InfoHint
+                isFinnish={isFinnish}
+                label={isFinnish ? "Sähkösopimus" : "Electricity Contract"}
+                instruction={
+                  isFinnish
+                    ? "Sähkön hinnoittelutapasi. ”Tuntihinta” tarkoittaa, että hinta muuttuu joka tunti — silloin ajoituksesta on eniten hyötyä."
+                    : "How your electricity is priced. 'Hourly Spot Price' means your price changes every hour — that's when timing loads pays off most."
+                }
+                example={isFinnish ? "Tuntihinta" : "Hourly Spot Price"}
+              />
+            </label>
+            <select
+              value={formData.electricityContract}
+              onChange={(e) => setFormData({ ...formData, electricityContract: e.target.value as ElectricityContract })}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
+            >
+              {ELECTRICITY_CONTRACTS.map((c) => (
+                <option key={c} value={c}>
+                  {ELECTRICITY_CONTRACT_LABELS[c]}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

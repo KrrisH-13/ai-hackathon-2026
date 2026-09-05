@@ -119,7 +119,7 @@ export function mapProfileRowToUserProfile(row: EcopilotProfile, displayName: st
     housingType: row.housing_type,
     householdSize: row.household_size,
     livingAreaSqM: row.living_area_sq_m,
-    heatingSystem: row.heating_system,
+    heatingSystems: row.heating_systems,
     electricityContract: row.electricity_contract,
     saunaType: row.sauna_type,
     saunaTimesPerWeek: row.sauna_times_per_week,
@@ -142,7 +142,7 @@ export function mapUserProfileToUpdate(patch: Partial<UserProfile>): EcopilotPro
   if (patch.housingType !== undefined) update.housing_type = patch.housingType;
   if (patch.householdSize !== undefined) update.household_size = patch.householdSize;
   if (patch.livingAreaSqM !== undefined) update.living_area_sq_m = patch.livingAreaSqM;
-  if (patch.heatingSystem !== undefined) update.heating_system = patch.heatingSystem;
+  if (patch.heatingSystems !== undefined) update.heating_systems = patch.heatingSystems;
   if (patch.electricityContract !== undefined) update.electricity_contract = patch.electricityContract;
   if (patch.saunaType !== undefined) update.sauna_type = patch.saunaType;
   if (patch.saunaTimesPerWeek !== undefined) update.sauna_times_per_week = patch.saunaTimesPerWeek;

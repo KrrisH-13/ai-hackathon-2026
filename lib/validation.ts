@@ -17,7 +17,7 @@ export const ecopilotProfileUpdateSchema = z.object({
   housingType: z.enum(HOUSING_TYPES).optional(),
   householdSize: z.number().int().min(1).max(12).optional(),
   livingAreaSqM: z.number().min(15).max(500).optional(),
-  heatingSystem: z.enum(HEATING_SYSTEMS).optional(),
+  heatingSystems: z.array(z.enum(HEATING_SYSTEMS)).min(1).optional(),
   electricityContract: z.enum(ELECTRICITY_CONTRACTS).optional(),
   saunaType: z.enum(SAUNA_TYPES).optional(),
   saunaTimesPerWeek: z.number().int().min(0).max(7).optional(),
