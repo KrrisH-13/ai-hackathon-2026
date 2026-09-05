@@ -1,7 +1,8 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Share2, LogOut } from "lucide-react";
+import { Share2, LogOut, ChevronDown, Settings } from "lucide-react";
 import type { UserProfile } from "@/lib/ecopilot/types";
 import { signOut } from "@/app/(auth)/logout/action";
 
@@ -28,6 +29,18 @@ export function EcopilotTopBar({
   onOpenShareModal,
   accountEmail,
 }: EcopilotTopBarProps) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setIsMenuOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isMenuOpen]);
+
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
       {/* Top Banner / Municipal Roadmap Context */}
@@ -51,36 +64,55 @@ export function EcopilotTopBar({
             {isFinnish ? "FI / EN" : "EN / FI"}
           </button>
 
-          <Link
-            href={profileHref}
-            className="hidden sm:flex items-center gap-1.5 bg-slate-800 border border-slate-700 rounded-lg px-2 py-0.5 hover:bg-slate-700 transition"
-            title={isFinnish ? "Muokkaa profiilia" : "Edit profile"}
-          >
-            <span className="text-[10px] font-bold text-slate-200">
-              {userProfile.name} ({userProfile.district.split(" ")[0]})
-            </span>
-            <span className="text-slate-400">⚙️</span>
-          </Link>
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setIsMenuOpen((prev) => !prev)}
+              className="flex items-center gap-1.5 bg-slate-800 border border-slate-700 rounded-lg px-2 py-0.5 hover:bg-slate-700 transition"
+              title={isFinnish ? "Tili" : "Account"}
+            >
+              <span className="hidden sm:inline text-[10px] font-bold text-slate-200">
+                {userProfile.name} ({userProfile.district.split(" ")[0]})
+              </span>
+              <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${isMenuOpen ? "rotate-180" : ""}`} />
+            </button>
 
-          <button
-            onClick={onOpenShareModal}
-            className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
-            title="Export / Share Climate Commitment"
-          >
-            <Share2 className="w-3.5 h-3.5" />
-          </button>
+            {isMenuOpen && (
+              <div className="absolute right-0 top-full mt-1.5 w-48 rounded-xl bg-white border border-slate-200 shadow-lg py-1 text-slate-800 z-50">
+                <Link
+                  href={profileHref}
+                  onClick={() => setIsMenuOpen(false)}
+                  className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold hover:bg-slate-50 transition"
+                >
+                  <Settings className="w-3.5 h-3.5 text-slate-500" />
+                  <span>{isFinnish ? "Muokkaa profiilia" : "Edit profile"}</span>
+                </Link>
 
-          {accountEmail && (
-            <form action={signOut}>
-              <button
-                type="submit"
-                className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
-                title={`Log out (${accountEmail})`}
-              >
-                <LogOut className="w-3.5 h-3.5" />
-              </button>
-            </form>
-          )}
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    onOpenShareModal();
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold hover:bg-slate-50 transition text-left"
+                >
+                  <Share2 className="w-3.5 h-3.5 text-slate-500" />
+                  <span>{isFinnish ? "Jaa sitoumus" : "Share commitment"}</span>
+                </button>
+
+                {accountEmail && (
+                  <form action={signOut}>
+                    <button
+                      type="submit"
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold hover:bg-slate-50 transition text-left border-t border-slate-100"
+                      title={accountEmail}
+                    >
+                      <LogOut className="w-3.5 h-3.5 text-slate-500" />
+                      <span>{isFinnish ? "Kirjaudu ulos" : "Logout"}</span>
+                    </button>
+                  </form>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>
