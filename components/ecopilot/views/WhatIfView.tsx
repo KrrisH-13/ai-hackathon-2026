@@ -124,7 +124,7 @@ export function WhatIfView({ userProfile, isFinnish }: WhatIfViewProps) {
             onKeyDown={(e) => e.key === "Enter" && handleAsk()}
             placeholder={prompts[0]}
             disabled={isLoading}
-            className="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-cyan-500 shadow-xs disabled:opacity-60"
+            className="visible-text-cursor flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-cyan-500 shadow-xs disabled:opacity-60"
           />
           <button
             onClick={handleAsk}

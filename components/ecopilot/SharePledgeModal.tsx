@@ -83,7 +83,7 @@ export function SharePledgeModal({ isOpen, onClose, userProfile, isFinnish }: Sh
               value={shareText}
               readOnly
               rows={4}
-              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none resize-none"
+              className="visible-text-cursor w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none resize-none"
             />
           </div>
 
