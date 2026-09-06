@@ -86,6 +86,7 @@ export type FrequentPlaceIconKey = (typeof FREQUENT_PLACE_ICON_KEYS)[number];
  * can hand the value straight to the activity logger.
  */
 export const FREQUENT_PLACE_TRANSPORT_MODES = ['car', 'ev', 'bus', 'train', 'bike', 'walk'] as const;
+export type FrequentPlaceTransportMode = (typeof FREQUENT_PLACE_TRANSPORT_MODES)[number];
 
 /**
  * A place the user visits often (work, grocery store, a child's day care, a
@@ -99,8 +100,8 @@ export interface FrequentPlace {
   label: string;
   /** Quick-select icon (see FREQUENT_PLACE_ICON_KEYS). */
   icon: FrequentPlaceIconKey;
-  /** Optional usual way the user travels there; null when unset. */
-  transportMode: ActivityMode | null;
+  /** Optional usual way the user travels there; null when unset. Seeded from the profile's preferred transport when a place is added. */
+  transportMode: FrequentPlaceTransportMode | null;
   /** Street address (currently Finland-only lookup); null when not set. */
   address: string | null;
   /** Latitude captured when the address was picked from autocomplete; null for a hand-typed address. */
@@ -244,16 +245,18 @@ export interface ChatMessage {
   actionLinks?: { label: string; action: string }[];
 }
 
-export type EcopilotTab =
-  | 'chat'
-  | 'guide'
-  | 'energy'
-  | 'recycling'
-  | 'transit'
-  | 'roadmap'
-  | 'activityLog'
-  | 'whatIf'
-  | 'trackerRewards';
+export const ECOPILOT_TABS = [
+  'chat',
+  'guide',
+  'energy',
+  'recycling',
+  'transit',
+  'roadmap',
+  'activityLog',
+  'whatIf',
+  'trackerRewards',
+] as const;
+export type EcopilotTab = (typeof ECOPILOT_TABS)[number];
 
 export const CO2_LOG_CATEGORIES = ['heating', 'transport', 'waste', 'energy', 'food', 'other'] as const;
 export type Co2LogCategory = (typeof CO2_LOG_CATEGORIES)[number];

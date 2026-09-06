@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import type { UserProfile, EcopilotTab, SpotPricePoint } from "@/lib/ecopilot/types";
+import { ECOPILOT_TABS } from "@/lib/ecopilot/types";
 import { EcopilotSidebar } from "@/components/ecopilot/EcopilotSidebar";
 import { EcopilotTopBar } from "@/components/ecopilot/EcopilotTopBar";
 import { AiClimateCopilotView } from "@/components/ecopilot/views/AiClimateCopilotView";
@@ -46,8 +47,16 @@ export function EcopilotApp({
   isLiveSpotPrices,
 }: EcopilotAppProps) {
   const [profile] = useState<UserProfile>(initialProfile);
-  const [currentTab, setCurrentTab] = useState<EcopilotTab>("chat");
-  const [isFinnish, setIsFinnish] = useState<boolean>(false);
+  // EcopilotPageShell (Profile, Favourite Locations) can't flip this state
+  // directly — those are separate routes with none of it — so it instead
+  // navigates back here with `?tab=`/`?lang=` and this seeds from that once.
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const initialTab: EcopilotTab = (ECOPILOT_TABS as readonly string[]).includes(requestedTab ?? "")
+    ? (requestedTab as EcopilotTab)
+    : "chat";
+  const [currentTab, setCurrentTab] = useState<EcopilotTab>(initialTab);
+  const [isFinnish, setIsFinnish] = useState<boolean>(searchParams.get("lang") === "fi");
 
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
 
@@ -59,10 +68,13 @@ export function EcopilotApp({
   }, [currentTab]);
 
   const pathname = usePathname();
-  // The profile editor is a separate page (app/(dashboard)/[roleSlug]/profile)
-  // rather than a modal — carry the current language over via query param
-  // since it's otherwise only kept in this component's local state.
-  const profileHref = `${pathname}/profile?lang=${isFinnish ? "fi" : "en"}`;
+  // The profile editor and the frequently-visited-places editor are both
+  // separate pages (app/(dashboard)/[roleSlug]/profile, .../places) rather
+  // than modals — carry the current language over via query param since it's
+  // otherwise only kept in this component's local state.
+  const langQuery = `?lang=${isFinnish ? "fi" : "en"}`;
+  const profileHref = `${pathname}/profile${langQuery}`;
+  const placesHref = `${pathname}/places${langQuery}`;
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50 text-slate-800">
@@ -72,6 +84,7 @@ export function EcopilotApp({
         isFinnish={isFinnish}
         userProfile={profile}
         profileHref={profileHref}
+        placesHref={placesHref}
         accountEmail={accountEmail}
       />
 
@@ -93,7 +106,9 @@ export function EcopilotApp({
             />
           )}
 
-          {currentTab === "guide" && <GuideView isFinnish={isFinnish} onNavigateTab={setCurrentTab} />}
+          {currentTab === "guide" && (
+            <GuideView isFinnish={isFinnish} onNavigateTab={setCurrentTab} placesHref={placesHref} />
+          )}
 
           {currentTab === "energy" && (
             <NordPoolEnergyOptimizerView
@@ -111,7 +126,9 @@ export function EcopilotApp({
 
           {currentTab === "roadmap" && <EspooClimateWatch2030View isFinnish={isFinnish} />}
 
-          {currentTab === "activityLog" && <ActivityLoggerView isFinnish={isFinnish} />}
+          {currentTab === "activityLog" && (
+            <ActivityLoggerView isFinnish={isFinnish} userProfile={profile} profileHref={profileHref} placesHref={placesHref} />
+          )}
 
           {currentTab === "whatIf" && <WhatIfView userProfile={profile} isFinnish={isFinnish} />}
 
