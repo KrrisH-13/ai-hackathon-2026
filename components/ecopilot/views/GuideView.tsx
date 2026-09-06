@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   Sparkles,
   Zap,
@@ -22,10 +23,13 @@ import type { EcopilotTab } from "@/lib/ecopilot/types";
 interface GuideViewProps {
   isFinnish: boolean;
   onNavigateTab: (tab: EcopilotTab) => void;
+  /** Link to the Favourite Locations editor — that feature is its own page, not an EcopilotTab, so its walkthrough card links out instead of calling onNavigateTab. */
+  placesHref: string;
 }
 
 interface FeatureGuide {
-  tab: EcopilotTab;
+  /** Most features switch the in-app tab; Favourite Locations ("places") is a separate page, so its card renders a Link to placesHref instead. */
+  tab: EcopilotTab | "places";
   icon: typeof Sparkles;
   iconClass: string;
   titleEn: string;
@@ -36,7 +40,7 @@ interface FeatureGuide {
   pointsFi: string[];
 }
 
-/** Walkthrough content for every eCopilot tab, in sidebar order (minus this one). */
+/** Walkthrough content for every eCopilot feature (minus this guide itself) — most are tabs, Favourite Locations is its own page. */
 const FEATURES: FeatureGuide[] = [
   {
     tab: "chat",
@@ -155,13 +159,36 @@ const FEATURES: FeatureGuide[] = [
       "Yksi sivu, kaksi tapaa kirjata: kirjoita mikä tahansa toiminto omin sanoin — ”ajoin Turkuun”, ”naudanlihapihvi lounaaksi” — tai kuvaa ruokakuitti. Tekoäly laskee CO2:n kummallakin tavalla.",
     pointsEn: [
       "Trips get a country-aware emission factor; meals, home energy, heating and waste get a lifecycle estimate",
+      "Quick Log: tap a saved favourite location to log a home trip in one click, using its distance and transport mode",
       "Receipt mode: Gemini Vision reads each line item, estimates a per-item footprint and suggests lower-carbon swaps",
-      "Review the estimate before saving — everything you keep lands in your shared CO2 ledger and the recent-entries list below",
+      "Review the estimate before saving — kept entries land in your shared CO2 ledger, grouped by day below with a delete option",
     ],
     pointsFi: [
       "Matkoille lasketaan maakohtainen päästökerroin; aterioille, kodin energialle, lämmitykselle ja jätteelle elinkaariarvio",
+      "Pikakirjaus: napauta tallennettua suosikkipaikkaa kirjataksesi kotimatkan yhdellä napautuksella sen matkan ja kulkutavan mukaan",
       "Kuittitila: Gemini Vision lukee jokaisen rivin, arvioi tuotekohtaisen jalanjäljen ja ehdottaa vähähiilisempiä vaihtoja",
-      "Tarkista arvio ennen tallennusta — kaikki tallentamasi menee yhteiseen CO2-kirjanpitoon ja alla olevaan merkintälistaan",
+      "Tarkista arvio ennen tallennusta — tallentamasi merkinnät menevät yhteiseen CO2-kirjanpitoon, ryhmiteltynä päivittäin ja poistettavissa",
+    ],
+  },
+  {
+    tab: "places",
+    icon: MapPin,
+    iconClass: "text-indigo-600",
+    titleEn: "Favourite Locations",
+    titleFi: "Suosikkipaikat",
+    blurbEn:
+      "Save the places you travel to often — work, the grocery store, a child's day care — so the Activity Log's Quick Log can log a trip there in one tap.",
+    blurbFi:
+      "Tallenna paikat joissa käyt usein — työ, ruokakauppa, lapsen päiväkoti — jotta päiväkirjan pikakirjaus voi kirjata matkan sinne yhdellä napautuksella.",
+    pointsEn: [
+      "Pick a quick-select icon and look up the address (Finland) for each location",
+      "A new location starts with your profile's preferred transport — editable per location",
+      "Distance is estimated from your saved home address, so set that in your profile too",
+    ],
+    pointsFi: [
+      "Valitse kuvake ja hae osoite (Suomi) jokaiselle paikalle",
+      "Uusi paikka saa oletukseksi profiilisi ensisijaisen kulkutavan — muokattavissa paikkakohtaisesti",
+      "Matka arvioidaan tallennetusta kotiosoitteestasi, joten aseta sekin profiilissa",
     ],
   },
   {
@@ -228,12 +255,12 @@ const START_STEPS: StartStep[] = [
   },
   {
     icon: MapPin,
-    titleEn: "Add your frequent places",
-    titleFi: "Lisää usein käydyt paikat",
+    titleEn: "Save your favourite locations",
+    titleFi: "Tallenna suosikkipaikkasi",
     bodyEn:
-      "Under Commuting in the profile, list the places you travel to often — work, the grocery store, a child's day care, a hobby class. Give each a quick-select icon, look up its address (Finland), and optionally how you usually get there. These will power fast trip logging in a later update.",
+      "Open Favourite Locations from the left sidebar and list the places you travel to often — work, the grocery store, a child's day care, a hobby class. Give each a quick-select icon, look up its address (Finland), and optionally how you usually get there. These power one-tap Quick Log trip logging in the Activity Log.",
     bodyFi:
-      "Lisää profiilin Liikkuminen-osiossa paikat joihin matkustat usein — työ, ruokakauppa, lapsen päiväkoti, harrastus. Anna jokaiselle kuvake, hae osoite (Suomi) ja halutessasi tavallisin kulkutapa. Näitä käytetään myöhemmin matkojen nopeaan kirjaamiseen.",
+      "Avaa Suosikkipaikat vasemmasta sivupalkista ja lisää paikat joihin matkustat usein — työ, ruokakauppa, lapsen päiväkoti, harrastus. Anna jokaiselle kuvake, hae osoite (Suomi) ja halutessasi tavallisin kulkutapa. Näitä käytetään päiväkirjan pikakirjauksessa.",
   },
   {
     icon: CalendarClock,
@@ -258,9 +285,9 @@ const START_STEPS: StartStep[] = [
     titleEn: "Log actions and track progress",
     titleFi: "Kirjaa tekoja ja seuraa edistymistä",
     bodyEn:
-      "Add entries through the Activity Log (log a trip or scan a grocery receipt) or What If, then watch Tracker & Rewards for your 30-day trend, streaks and reward tiers.",
+      "Add entries through the Activity Log — type a trip, tap a Quick Log favourite location, or scan a grocery receipt — or What If, then watch Tracker & Rewards for your 30-day trend, streaks and reward tiers.",
     bodyFi:
-      "Lisää merkintöjä päiväkirjan (kirjaa matka tai skannaa ruokakuitti) tai ”entä jos” kautta, ja seuraa Seuranta & Palkinnot -välilehdeltä 30 päivän trendiä, putkia ja palkintotasoja.",
+      "Lisää merkintöjä päiväkirjan kautta — kirjoita matka, napauta pikakirjauksen suosikkipaikkaa tai skannaa ruokakuitti — tai ”entä jos”, ja seuraa Seuranta & Palkinnot -välilehdeltä 30 päivän trendiä, putkia ja palkintotasoja.",
   },
 ];
 
@@ -303,7 +330,7 @@ const TOP_BAR_TIPS: TopBarTip[] = [
   },
 ];
 
-export function GuideView({ isFinnish, onNavigateTab }: GuideViewProps) {
+export function GuideView({ isFinnish, onNavigateTab, placesHref }: GuideViewProps) {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 space-y-8 animate-fadeIn">
       {/* Intro */}
@@ -408,13 +435,26 @@ export function GuideView({ isFinnish, onNavigateTab }: GuideViewProps) {
                   ))}
                 </ul>
 
-                <button
-                  onClick={() => onNavigateTab(f.tab)}
-                  className="mt-4 self-start px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-1.5"
-                >
-                  <span>{isFinnish ? "Avaa" : "Open"}</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
+                {f.tab === "places" ? (
+                  <Link
+                    href={placesHref}
+                    className="mt-4 self-start px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-1.5"
+                  >
+                    <span>{isFinnish ? "Avaa" : "Open"}</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </Link>
+                ) : (
+                  <button
+                    // Safe: the `f.tab === "places"` branch above already handled the one
+                    // non-EcopilotTab case — TS just can't narrow a union field through the
+                    // closure captured here.
+                    onClick={() => onNavigateTab(f.tab as EcopilotTab)}
+                    className="mt-4 self-start px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-1.5"
+                  >
+                    <span>{isFinnish ? "Avaa" : "Open"}</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                )}
               </div>
             );
           })}

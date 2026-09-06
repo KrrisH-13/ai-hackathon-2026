@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Save, Plus, X } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Save } from "lucide-react";
 import type {
   UserProfile,
   HousingType,
@@ -13,22 +13,14 @@ import type {
   CommuteHabit,
   CarType,
   WasteManagementSystem,
-  ActivityMode,
-  FrequentPlace,
 } from "@/lib/ecopilot/types";
-import {
-  ESPOO_DISTRICTS,
-  HEATING_SYSTEMS,
-  ELECTRICITY_CONTRACTS,
-  COMMUTE_HABITS,
-  FREQUENT_PLACE_TRANSPORT_MODES,
-} from "@/lib/ecopilot/types";
+import { ESPOO_DISTRICTS, HEATING_SYSTEMS, ELECTRICITY_CONTRACTS, COMMUTE_HABITS } from "@/lib/ecopilot/types";
 import { CAR_TYPE_OPTIONS, CAR_TYPE_DEFAULT_CO2_G_PER_KM, WASTE_MANAGEMENT_OPTIONS } from "@/lib/ecopilot/data";
-import { FREQUENT_PLACE_ICONS, FREQUENT_PLACE_ICON_META } from "@/components/ecopilot/frequentPlaceIcons";
 import { AddressAutocomplete } from "@/components/ecopilot/AddressAutocomplete";
 import { updateEcopilotProfileAPI } from "@/lib/ecopilot/profileClient";
 import { InfoHint } from "@/components/ecopilot/InfoHint";
 import { NumberStepperInput } from "@/components/ecopilot/NumberStepperInput";
+import { EcopilotPageShell } from "@/components/ecopilot/EcopilotPageShell";
 
 // Display-only labels for the Electricity Contract dropdown — the stored
 // ElectricityContract values stay unchanged (used elsewhere in AI prompts and
@@ -39,24 +31,16 @@ const ELECTRICITY_CONTRACT_LABELS: Record<ElectricityContract, string> = {
   "Renewable / Certified Green (100%)": "Renewable / Certified Green (100%)",
 };
 
-/** Short bilingual labels for the per-place transport dropdown. */
-const PLACE_MODE_LABEL: Record<(typeof FREQUENT_PLACE_TRANSPORT_MODES)[number], { en: string; fi: string }> = {
-  car: { en: "Car", fi: "Auto" },
-  ev: { en: "EV", fi: "Sähköauto" },
-  bus: { en: "Bus", fi: "Bussi" },
-  train: { en: "Train / metro", fi: "Juna / metro" },
-  bike: { en: "Bike", fi: "Pyörä" },
-  walk: { en: "Walk", fi: "Kävely" },
-};
-
-const MAX_FREQUENT_PLACES = 12;
-
 interface ProfileEditViewProps {
   userProfile: UserProfile;
   /** Seeded from the ?lang= query param the profile link was opened with — see EcopilotSidebar. */
   initialIsFinnish: boolean;
   /** Where Cancel and a successful Save navigate back to, e.g. "/dashboard". */
   backHref: string;
+  /** Link to the dedicated frequently-visited-places editor (see FrequentPlacesView) — this page only points to it. */
+  placesHref: string;
+  /** Signed-in account's email, threaded to the persistent sidebar's logout control. */
+  accountEmail?: string;
 }
 
 function SectionHeading({ icon, title, subtitle }: { icon: string; title: string; subtitle: string }) {
@@ -72,12 +56,23 @@ function SectionHeading({ icon, title, subtitle }: { icon: string; title: string
 }
 
 /** Full-page climate profile editor at /[roleSlug]/profile — replaces the old ProfileCustomizerModal overlay. */
-export function ProfileEditView({ userProfile, initialIsFinnish, backHref }: ProfileEditViewProps) {
+export function ProfileEditView({
+  userProfile,
+  initialIsFinnish,
+  backHref,
+  placesHref,
+  accountEmail,
+}: ProfileEditViewProps) {
   const router = useRouter();
   const [formData, setFormData] = useState<UserProfile>({ ...userProfile });
   const [isFinnish, setIsFinnish] = useState(initialIsFinnish);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  // This page's own URL — the persistent sidebar's account menu needs it for
+  // the "Edit profile" link. Only reflects the language the page loaded
+  // with, same as the placesHref prop above.
+  const selfProfileHref = `${backHref}/profile?lang=${initialIsFinnish ? "fi" : "en"}`;
 
   const isDrivingCommute = formData.commuteHabit === "Car";
 
@@ -95,52 +90,20 @@ export function ProfileEditView({ userProfile, initialIsFinnish, backHref }: Pro
     });
   };
 
-  const addPlace = () => {
-    setFormData((prev) => {
-      if (prev.frequentPlaces.length >= MAX_FREQUENT_PLACES) return prev;
-      const place: FrequentPlace = {
-        id: crypto.randomUUID(),
-        label: "",
-        icon: "other",
-        transportMode: null,
-        address: null,
-        lat: null,
-        lon: null,
-      };
-      return { ...prev, frequentPlaces: [...prev.frequentPlaces, place] };
-    });
-  };
-
-  const updatePlace = (id: string, patch: Partial<FrequentPlace>) => {
-    setFormData((prev) => ({
-      ...prev,
-      frequentPlaces: prev.frequentPlaces.map((p) => (p.id === id ? { ...p, ...patch } : p)),
-    }));
-  };
-
-  const removePlace = (id: string) => {
-    setFormData((prev) => ({ ...prev, frequentPlaces: prev.frequentPlaces.filter((p) => p.id !== id) }));
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaveError(null);
     setIsSaving(true);
     try {
-      // Normalise a blank home address (and any stale coords) to null, and drop
-      // half-added places with no name, before persisting.
+      // Normalise a blank home address (and any stale coords) to null before
+      // persisting. frequentPlaces rides along unchanged — it's edited on its
+      // own page (FrequentPlacesView) now, not here.
       const homeAddress = formData.homeAddress?.trim() ? formData.homeAddress.trim() : null;
       const payload: UserProfile = {
         ...formData,
         homeAddress,
         homeLat: homeAddress ? formData.homeLat : null,
         homeLon: homeAddress ? formData.homeLon : null,
-        frequentPlaces: formData.frequentPlaces
-          .map((p) => {
-            const address = p.address?.trim() ? p.address.trim() : null;
-            return { ...p, label: p.label.trim(), address, lat: address ? p.lat : null, lon: address ? p.lon : null };
-          })
-          .filter((p) => p.label.length > 0),
       };
       await updateEcopilotProfileAPI(payload);
       router.push(backHref);
@@ -151,7 +114,15 @@ export function ProfileEditView({ userProfile, initialIsFinnish, backHref }: Pro
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800">
+    <EcopilotPageShell
+      currentTab={null}
+      isFinnish={isFinnish}
+      userProfile={userProfile}
+      dashboardHref={backHref}
+      profileHref={selfProfileHref}
+      placesHref={placesHref}
+      accountEmail={accountEmail}
+    >
       <header className="sticky top-0 z-10 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 sm:px-8 py-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <Link
@@ -439,11 +410,7 @@ export function ProfileEditView({ userProfile, initialIsFinnish, backHref }: Pro
             <SectionHeading
               icon="🚆"
               title={isFinnish ? "Liikkuminen" : "Commuting"}
-              subtitle={
-                isFinnish
-                  ? "Kulkutavat ja usein käydyt paikat"
-                  : "How you get around and where you go often"
-              }
+              subtitle={isFinnish ? "Ensisijainen kulkutapasi" : "How you usually get around"}
             />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -512,130 +479,23 @@ export function ProfileEditView({ userProfile, initialIsFinnish, backHref }: Pro
               </div>
             )}
 
-            {/* Frequently visited places */}
-            <div className="space-y-2.5">
-              <label className="font-bold text-slate-700 flex items-center gap-1.5">
-                {isFinnish ? "Usein käydyt paikat:" : "Frequently visited places:"}
-                <InfoHint
-                  isFinnish={isFinnish}
-                  label={isFinnish ? "Usein käydyt paikat" : "Frequently visited places"}
-                  instruction={
-                    isFinnish
-                      ? "Lisää paikkoja joihin matkustat säännöllisesti — työ, ruokakauppa, lapsen päiväkoti, harrastus. Valitse kuvake, hae osoite (Suomi) ja halutessasi tavallisin kulkutapa. Näitä käytetään myöhemmin matkojen nopeaan kirjaamiseen."
-                      : "Add places you travel to regularly — work, the grocery store, a child's day care, a hobby class. Pick an icon, look up the address (Finland), and optionally how you usually get there. These will power quick trip logging later."
-                  }
-                  example={
-                    isFinnish
-                      ? "Työ · Piispansilta 11, Espoo · Bussi"
-                      : "Work · Piispansilta 11, Espoo · Bus"
-                  }
-                />
-              </label>
-
-              {formData.frequentPlaces.length === 0 && (
-                <p className="text-[12px] text-slate-400">
-                  {isFinnish
-                    ? "Ei paikkoja vielä. Lisää ensimmäinen alta."
-                    : "No places yet. Add your first one below."}
+            {/* Frequently visited places now live on their own page (FrequentPlacesView) — linked from the sidebar. */}
+            <Link
+              href={placesHref}
+              className="flex items-center justify-between gap-3 p-3.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-emerald-50 hover:border-emerald-200 transition group"
+            >
+              <div className="min-w-0">
+                <p className="font-bold text-slate-800 group-hover:text-emerald-800">
+                  {isFinnish ? "📍 Suosikkipaikat" : "📍 Favourite Locations"}
                 </p>
-              )}
-
-              <div className="space-y-2">
-                {formData.frequentPlaces.map((place) => (
-                  <div key={place.id} className="rounded-xl border border-slate-200 bg-slate-50/60 p-3 space-y-2.5">
-                    <div className="flex flex-wrap gap-1.5">
-                      {FREQUENT_PLACE_ICON_META.map(({ key, en, fi }) => {
-                        const Icon = FREQUENT_PLACE_ICONS[key];
-                        const selected = place.icon === key;
-                        return (
-                          <button
-                            key={key}
-                            type="button"
-                            onClick={() => updatePlace(place.id, { icon: key })}
-                            title={isFinnish ? fi : en}
-                            aria-label={isFinnish ? fi : en}
-                            aria-pressed={selected}
-                            className={`w-8 h-8 rounded-lg flex items-center justify-center border transition ${
-                              selected
-                                ? "bg-emerald-600 border-emerald-600 text-white"
-                                : "bg-white border-slate-200 text-slate-500 hover:border-emerald-300 hover:text-emerald-700"
-                            }`}
-                          >
-                            <Icon className="w-4 h-4" />
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <input
-                        type="text"
-                        value={place.label}
-                        onChange={(e) => updatePlace(place.id, { label: e.target.value })}
-                        maxLength={60}
-                        placeholder={
-                          isFinnish ? "esim. Työ, Ruokakauppa, Päiväkoti" : "e.g. Work, Grocery store, Day care"
-                        }
-                        className="flex-1 min-w-0 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
-                      />
-                      <select
-                        value={place.transportMode ?? ""}
-                        onChange={(e) =>
-                          updatePlace(place.id, { transportMode: (e.target.value || null) as ActivityMode | null })
-                        }
-                        className="sm:w-44 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
-                      >
-                        <option value="">{isFinnish ? "Kulkutapa (valinn.)" : "Transport (optional)"}</option>
-                        {FREQUENT_PLACE_TRANSPORT_MODES.map((m) => (
-                          <option key={m} value={m}>
-                            {isFinnish ? PLACE_MODE_LABEL[m].fi : PLACE_MODE_LABEL[m].en}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        type="button"
-                        onClick={() => removePlace(place.id)}
-                        title={isFinnish ? "Poista" : "Remove"}
-                        aria-label={isFinnish ? "Poista paikka" : "Remove place"}
-                        className="px-2.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-200 transition shrink-0 self-start"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-
-                    <AddressAutocomplete
-                      isFinnish={isFinnish}
-                      value={place.address ?? ""}
-                      onChange={(address, coords) =>
-                        updatePlace(place.id, {
-                          address: address || null,
-                          lat: coords?.lat ?? null,
-                          lon: coords?.lon ?? null,
-                        })
-                      }
-                    />
-                  </div>
-                ))}
+                <p className="text-[12px] text-slate-500 mt-0.5">
+                  {isFinnish
+                    ? `${formData.frequentPlaces.length} tallennettua paikkaa — hallitse työtä, kauppaa, päiväkotia ja muita.`
+                    : `${formData.frequentPlaces.length} saved ${formData.frequentPlaces.length === 1 ? "location" : "locations"} — manage work, groceries, day care and more.`}
+                </p>
               </div>
-
-              <button
-                type="button"
-                onClick={addPlace}
-                disabled={formData.frequentPlaces.length >= MAX_FREQUENT_PLACES}
-                className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-dashed border-slate-300 text-slate-600 hover:border-emerald-400 hover:text-emerald-700 disabled:opacity-40 disabled:hover:border-slate-300 disabled:hover:text-slate-600 text-xs font-bold transition"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>
-                  {formData.frequentPlaces.length >= MAX_FREQUENT_PLACES
-                    ? isFinnish
-                      ? `Enintään ${MAX_FREQUENT_PLACES} paikkaa`
-                      : `Up to ${MAX_FREQUENT_PLACES} places`
-                    : isFinnish
-                      ? "Lisää paikka"
-                      : "Add a place"}
-                </span>
-              </button>
-            </div>
+              <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 shrink-0" />
+            </Link>
           </section>
 
           {saveError && (
@@ -665,6 +525,6 @@ export function ProfileEditView({ userProfile, initialIsFinnish, backHref }: Pro
           </div>
         </form>
       </div>
-    </div>
+    </EcopilotPageShell>
   );
 }

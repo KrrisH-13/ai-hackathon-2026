@@ -1,6 +1,7 @@
 "use client";
 
 import { API_ROUTES } from "@/lib/constants";
+import type { Co2Log } from "@/lib/db/types";
 import type { UserProfile, Co2LogEntry, Co2DailyTotal, Co2LogCategory } from "./types";
 
 /**
@@ -39,7 +40,8 @@ export function addCo2LogAPI(entry: {
   occurredOn?: string;
   /** Tags the entry for the CO2 tracker chart and any feature (e.g. rewards) that reads it later. Defaults server-side to "manual". */
   source?: "manual" | "activity-logger" | "what-if";
-}) {
+}): Promise<Co2Log> {
+  // Returns the inserted row — callers that offer an "undo" need its id.
   return request(API_ROUTES.ecopilotCo2Logs, { method: "POST", body: JSON.stringify(entry) });
 }
 

@@ -11,6 +11,7 @@ import {
   Lightbulb,
   Activity,
   BookOpen,
+  MapPin,
   Settings,
   LogOut,
   ChevronUp,
@@ -21,18 +22,26 @@ import type { EcopilotTab, UserProfile } from "@/lib/ecopilot/types";
 import { signOut } from "@/app/(auth)/logout/action";
 
 interface EcopilotSidebarProps {
-  currentTab: EcopilotTab;
+  /**
+   * Which nav row is highlighted — an EcopilotTab on the main dashboard,
+   * "places" on the standalone Favourite Locations page, or null when the
+   * sidebar is rendered from a page with no matching row (e.g. Profile).
+   */
+  currentTab: EcopilotTab | "places" | null;
   onSelectTab: (tab: EcopilotTab) => void;
   isFinnish: boolean;
   /** Logged-in user's climate profile — powers the account block pinned at the sidebar's foot. */
   userProfile: UserProfile;
   /** Link to the full-page profile editor (app/(dashboard)/[roleSlug]/profile) — see EcopilotApp. */
   profileHref: string;
+  /** Link to the frequently-visited-places editor (app/(dashboard)/[roleSlug]/places) — see EcopilotApp. */
+  placesHref: string;
   /** Signed-in account's email; renders the log out control when present. */
   accountEmail?: string;
 }
 
-interface SidebarTab {
+interface SidebarTabItem {
+  kind: "tab";
   id: EcopilotTab;
   icon: typeof Sparkles;
   iconClass: string;
@@ -40,37 +49,73 @@ interface SidebarTab {
   en: string;
 }
 
+/**
+ * A nav row that navigates to its own page/URL instead of switching the
+ * EcopilotApp tab — e.g. the Places editor. `href` is left out here (rather
+ * than hardcoded) because it depends on the current pathname/language, which
+ * only EcopilotApp knows — the component below fills it in from its
+ * `placesHref` prop at render time.
+ */
+interface SidebarLinkItem {
+  kind: "link";
+  /** Matched against `currentTab` to highlight this row from a standalone page — see EcopilotSidebarProps.currentTab. */
+  id: "places";
+  icon: typeof Sparkles;
+  iconClass: string;
+  fi: string;
+  en: string;
+}
+
+type SidebarItem = SidebarTabItem | SidebarLinkItem;
+
 interface SidebarSection {
   /** Optional heading shown above the group (hidden on the mobile / collapsed icon rail). */
   titleFi?: string;
   titleEn?: string;
-  tabs: SidebarTab[];
+  items: SidebarItem[];
 }
 
 /**
- * Every ecopilot tab, grouped into sidebar sections in display order. The
- * Activity Log tab covers both natural-language trip logging and
- * grocery-receipt scanning (see ActivityLoggerView). The "Useful links"
- * section holds the guide plus the HSY / HSL reference tools. A vertical list scales to far
- * more tabs than a horizontal row ever could, without needing a scroll strip.
+ * Every ecopilot nav row, grouped into sidebar sections in display order —
+ * most switch the current EcopilotApp tab, a few (Places) navigate to their
+ * own page instead. The Activity Log tab covers both natural-language trip
+ * logging and grocery-receipt scanning (see ActivityLoggerView). The "Useful
+ * links" section holds the guide plus the HSY / HSL reference tools. A
+ * vertical list scales to far more rows than a horizontal row ever could,
+ * without needing a scroll strip.
  */
 const SECTIONS: SidebarSection[] = [
   {
-    tabs: [
-      { id: "chat", icon: Sparkles, iconClass: "text-emerald-600", fi: "eCopilot-chatti", en: "eCopilot Chat" },
-      { id: "energy", icon: Zap, iconClass: "text-amber-500", fi: "Pörssisähkö & Sauna", en: "Nord Pool & Energy" },
-      { id: "activityLog", icon: NotebookPen, iconClass: "text-fuchsia-600", fi: "Päiväkirja & Kuitit", en: "Activity Log & Receipts" },
-      { id: "whatIf", icon: Lightbulb, iconClass: "text-cyan-600", fi: "Entä jos...?", en: "What If?" },
-      { id: "trackerRewards", icon: Activity, iconClass: "text-rose-600", fi: "Seuranta & Palkinnot", en: "Tracker & Rewards" },
+    items: [
+      { kind: "tab", id: "chat", icon: Sparkles, iconClass: "text-emerald-600", fi: "eCopilot-chatti", en: "eCopilot Chat" },
+      { kind: "tab", id: "energy", icon: Zap, iconClass: "text-amber-500", fi: "Pörssisähkö & Sauna", en: "Nord Pool & Energy" },
+      {
+        kind: "tab",
+        id: "activityLog",
+        icon: NotebookPen,
+        iconClass: "text-fuchsia-600",
+        fi: "Päiväkirja & Kuitit",
+        en: "Activity Log & Receipts",
+      },
+      {
+        kind: "link",
+        id: "places",
+        icon: MapPin,
+        iconClass: "text-indigo-600",
+        fi: "Suosikkipaikat",
+        en: "Favourite Locations",
+      },
+      { kind: "tab", id: "whatIf", icon: Lightbulb, iconClass: "text-cyan-600", fi: "Entä jos...?", en: "What If?" },
+      { kind: "tab", id: "trackerRewards", icon: Activity, iconClass: "text-rose-600", fi: "Seuranta & Palkinnot", en: "Tracker & Rewards" },
     ],
   },
   {
     titleFi: "Hyödyllisiä linkkejä",
     titleEn: "Useful links",
-    tabs: [
-      { id: "guide", icon: BookOpen, iconClass: "text-slate-500", fi: "Ohjeet & Aloitus", en: "Guide & Getting Started" },
-      { id: "recycling", icon: RotateCw, iconClass: "text-teal-600", fi: "HSY-Lajittelu", en: "HSY Recycling" },
-      { id: "transit", icon: Compass, iconClass: "text-blue-600", fi: "HSL & Matkat", en: "HSL Transit" },
+    items: [
+      { kind: "tab", id: "guide", icon: BookOpen, iconClass: "text-slate-500", fi: "Ohjeet & Aloitus", en: "Guide & Getting Started" },
+      { kind: "tab", id: "recycling", icon: RotateCw, iconClass: "text-teal-600", fi: "HSY-Lajittelu", en: "HSY Recycling" },
+      { kind: "tab", id: "transit", icon: Compass, iconClass: "text-blue-600", fi: "HSL & Matkat", en: "HSL Transit" },
     ],
   },
 ];
@@ -90,6 +135,7 @@ export function EcopilotSidebar({
   isFinnish,
   userProfile,
   profileHref,
+  placesHref,
   accountEmail,
 }: EcopilotSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -190,21 +236,35 @@ export function EcopilotSidebar({
                 {isFinnish ? section.titleFi : section.titleEn}
               </p>
             )}
-            {section.tabs.map(({ id, icon: Icon, iconClass, fi, en }) => (
-              <button
-                key={id}
-                onClick={() => onSelectTab(id)}
-                title={isFinnish ? fi : en}
-                className={`w-full flex items-center gap-3 justify-center ${
-                  expanded ? "sm:justify-start px-2.5 sm:px-3" : "px-2.5"
-                } py-2.5 rounded-xl text-xs font-bold transition ${
-                  currentTab === id ? "bg-emerald-50 text-emerald-700" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                }`}
-              >
-                <Icon className={`w-4 h-4 shrink-0 ${iconClass}`} />
-                <span className={`hidden ${expanded ? "sm:inline" : ""} truncate`}>{isFinnish ? fi : en}</span>
-              </button>
-            ))}
+            {section.items.map((item) => {
+              const { icon: Icon, iconClass, fi, en } = item;
+              const isActive = currentTab === item.id;
+              const rowClassName = `w-full flex items-center gap-3 justify-center ${
+                expanded ? "sm:justify-start px-2.5 sm:px-3" : "px-2.5"
+              } py-2.5 rounded-xl text-xs font-bold transition ${
+                isActive ? "bg-emerald-50 text-emerald-700" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+              }`;
+              const content = (
+                <>
+                  <Icon className={`w-4 h-4 shrink-0 ${iconClass}`} />
+                  <span className={`hidden ${expanded ? "sm:inline" : ""} truncate`}>{isFinnish ? fi : en}</span>
+                </>
+              );
+
+              if (item.kind === "link") {
+                return (
+                  <Link key={item.id} href={placesHref} title={isFinnish ? fi : en} className={rowClassName}>
+                    {content}
+                  </Link>
+                );
+              }
+
+              return (
+                <button key={item.id} onClick={() => onSelectTab(item.id)} title={isFinnish ? fi : en} className={rowClassName}>
+                  {content}
+                </button>
+              );
+            })}
           </div>
         ))}
       </nav>
