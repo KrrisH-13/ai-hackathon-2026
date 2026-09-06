@@ -131,7 +131,7 @@ export function HsyRecyclingScannerView({ isFinnish }: HsyRecyclingScannerViewPr
                   ? "Kirjoita esine (esim. maitotölkki muovikorkilla, rasvainen pizzalaatikko, rikkinäinen LED-lamppu)..."
                   : "Type item (e.g. oat milk carton with plastic spout, greasy pizza box, broken LED bulb)..."
               }
-              className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-800 focus:outline-none focus:border-teal-500 shadow-xs"
+              className="visible-text-cursor w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-800 focus:outline-none focus:border-teal-500 shadow-xs"
             />
           </div>
 

@@ -123,6 +123,9 @@ export function mapProfileRowToUserProfile(row: EcopilotProfile, displayName: st
     id: row.user_id,
     name: displayName,
     district: row.district,
+    homeAddress: row.home_address ?? null,
+    homeLat: row.home_lat ?? null,
+    homeLon: row.home_lon ?? null,
     housingType: row.housing_type,
     householdSize: row.household_size,
     livingAreaSqM: row.living_area_sq_m,
@@ -133,6 +136,16 @@ export function mapProfileRowToUserProfile(row: EcopilotProfile, displayName: st
     commuteHabit: row.commute_habit,
     carType: row.car_type,
     carCo2GramsPerKm: row.car_co2_grams_per_km,
+    // Normalise each place so keys added after a row was first written still come back defined.
+    frequentPlaces: (row.frequent_places ?? []).map((p) => ({
+      id: p.id,
+      label: p.label,
+      icon: p.icon,
+      transportMode: p.transportMode ?? null,
+      address: p.address ?? null,
+      lat: p.lat ?? null,
+      lon: p.lon ?? null,
+    })),
     wasteManagementSystem: row.waste_management_system,
     estimatedFootprintTonnes: row.estimated_footprint_tonnes,
     targetFootprintTonnes: row.target_footprint_tonnes,
@@ -145,6 +158,9 @@ export function mapUserProfileToUpdate(patch: Partial<UserProfile>): EcopilotPro
   const update: EcopilotProfileUpdate = {};
 
   if (patch.district !== undefined) update.district = patch.district;
+  if (patch.homeAddress !== undefined) update.home_address = patch.homeAddress;
+  if (patch.homeLat !== undefined) update.home_lat = patch.homeLat;
+  if (patch.homeLon !== undefined) update.home_lon = patch.homeLon;
   if (patch.housingType !== undefined) update.housing_type = patch.housingType;
   if (patch.householdSize !== undefined) update.household_size = patch.householdSize;
   if (patch.livingAreaSqM !== undefined) update.living_area_sq_m = patch.livingAreaSqM;
@@ -155,6 +171,7 @@ export function mapUserProfileToUpdate(patch: Partial<UserProfile>): EcopilotPro
   if (patch.commuteHabit !== undefined) update.commute_habit = patch.commuteHabit;
   if (patch.carType !== undefined) update.car_type = patch.carType;
   if (patch.carCo2GramsPerKm !== undefined) update.car_co2_grams_per_km = patch.carCo2GramsPerKm;
+  if (patch.frequentPlaces !== undefined) update.frequent_places = patch.frequentPlaces;
   if (patch.wasteManagementSystem !== undefined) update.waste_management_system = patch.wasteManagementSystem;
   if (patch.estimatedFootprintTonnes !== undefined) update.estimated_footprint_tonnes = patch.estimatedFootprintTonnes;
   if (patch.targetFootprintTonnes !== undefined) update.target_footprint_tonnes = patch.targetFootprintTonnes;

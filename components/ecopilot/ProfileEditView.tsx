@@ -3,13 +3,24 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Save } from "lucide-react";
-import type { UserProfile, HousingType, EspooDistrict, HeatingSystem, ElectricityContract, CommuteHabit, CarType, WasteManagementSystem } from "@/lib/ecopilot/types";
+import { ArrowLeft, ArrowUpRight, Save } from "lucide-react";
+import type {
+  UserProfile,
+  HousingType,
+  EspooDistrict,
+  HeatingSystem,
+  ElectricityContract,
+  CommuteHabit,
+  CarType,
+  WasteManagementSystem,
+} from "@/lib/ecopilot/types";
 import { ESPOO_DISTRICTS, HEATING_SYSTEMS, ELECTRICITY_CONTRACTS, COMMUTE_HABITS } from "@/lib/ecopilot/types";
 import { CAR_TYPE_OPTIONS, CAR_TYPE_DEFAULT_CO2_G_PER_KM, WASTE_MANAGEMENT_OPTIONS } from "@/lib/ecopilot/data";
+import { AddressAutocomplete } from "@/components/ecopilot/AddressAutocomplete";
 import { updateEcopilotProfileAPI } from "@/lib/ecopilot/profileClient";
 import { InfoHint } from "@/components/ecopilot/InfoHint";
 import { NumberStepperInput } from "@/components/ecopilot/NumberStepperInput";
+import { EcopilotPageShell } from "@/components/ecopilot/EcopilotPageShell";
 
 // Display-only labels for the Electricity Contract dropdown — the stored
 // ElectricityContract values stay unchanged (used elsewhere in AI prompts and
@@ -26,15 +37,42 @@ interface ProfileEditViewProps {
   initialIsFinnish: boolean;
   /** Where Cancel and a successful Save navigate back to, e.g. "/dashboard". */
   backHref: string;
+  /** Link to the dedicated frequently-visited-places editor (see FrequentPlacesView) — this page only points to it. */
+  placesHref: string;
+  /** Signed-in account's email, threaded to the persistent sidebar's logout control. */
+  accountEmail?: string;
+}
+
+function SectionHeading({ icon, title, subtitle }: { icon: string; title: string; subtitle: string }) {
+  return (
+    <div className="flex items-start gap-2">
+      <span className="text-lg leading-none">{icon}</span>
+      <div className="min-w-0">
+        <h2 className="text-xs font-black text-slate-900 uppercase tracking-wide leading-tight">{title}</h2>
+        <p className="text-[12px] text-slate-500 leading-tight mt-0.5">{subtitle}</p>
+      </div>
+    </div>
+  );
 }
 
 /** Full-page climate profile editor at /[roleSlug]/profile — replaces the old ProfileCustomizerModal overlay. */
-export function ProfileEditView({ userProfile, initialIsFinnish, backHref }: ProfileEditViewProps) {
+export function ProfileEditView({
+  userProfile,
+  initialIsFinnish,
+  backHref,
+  placesHref,
+  accountEmail,
+}: ProfileEditViewProps) {
   const router = useRouter();
   const [formData, setFormData] = useState<UserProfile>({ ...userProfile });
   const [isFinnish, setIsFinnish] = useState(initialIsFinnish);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  // This page's own URL — the persistent sidebar's account menu needs it for
+  // the "Edit profile" link. Only reflects the language the page loaded
+  // with, same as the placesHref prop above.
+  const selfProfileHref = `${backHref}/profile?lang=${initialIsFinnish ? "fi" : "en"}`;
 
   const isDrivingCommute = formData.commuteHabit === "Car";
 
@@ -57,7 +95,17 @@ export function ProfileEditView({ userProfile, initialIsFinnish, backHref }: Pro
     setSaveError(null);
     setIsSaving(true);
     try {
-      await updateEcopilotProfileAPI(formData);
+      // Normalise a blank home address (and any stale coords) to null before
+      // persisting. frequentPlaces rides along unchanged — it's edited on its
+      // own page (FrequentPlacesView) now, not here.
+      const homeAddress = formData.homeAddress?.trim() ? formData.homeAddress.trim() : null;
+      const payload: UserProfile = {
+        ...formData,
+        homeAddress,
+        homeLat: homeAddress ? formData.homeLat : null,
+        homeLon: homeAddress ? formData.homeLon : null,
+      };
+      await updateEcopilotProfileAPI(payload);
       router.push(backHref);
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Failed to save profile");
@@ -66,7 +114,15 @@ export function ProfileEditView({ userProfile, initialIsFinnish, backHref }: Pro
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800">
+    <EcopilotPageShell
+      currentTab={null}
+      isFinnish={isFinnish}
+      userProfile={userProfile}
+      dashboardHref={backHref}
+      profileHref={selfProfileHref}
+      placesHref={placesHref}
+      accountEmail={accountEmail}
+    >
       <header className="sticky top-0 z-10 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 sm:px-8 py-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <Link
@@ -103,274 +159,344 @@ export function ProfileEditView({ userProfile, initialIsFinnish, backHref }: Pro
       <div className="max-w-3xl mx-auto p-4 sm:p-8">
         <form
           onSubmit={handleSubmit}
-          className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4 text-xs animate-fadeIn"
+          className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-5 text-xs animate-fadeIn"
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="font-bold text-slate-700">{isFinnish ? "Nimi (Googlesta):" : "Name (from Google):"}</label>
-              <div className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600">
-                {formData.name}
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <label className="font-bold text-slate-700 flex items-center gap-1.5">
-                {isFinnish ? "Espoon Suuralue:" : "Espoo District:"}
-                <InfoHint
-                  isFinnish={isFinnish}
-                  align="right"
-                  label={isFinnish ? "Espoon Suuralue" : "Espoo District"}
-                  instruction={
-                    isFinnish
-                      ? "Espoon suuralue, jolla asut. Käytetään paikallisiin sähköverkko-, joukkoliikenne- ja Sortti-asemavinkkeihin."
-                      : "The Espoo major district (suuralue) you live in. Used for local grid, transit, and Sortti-station tips."
-                  }
-                  example={
-                    isFinnish
-                      ? "Suur-Matinkylä (Matinkylä, Olari, Henttaa)"
-                      : "Suur-Matinkylä (Matinkylä, Olari, Henttaa)"
-                  }
-                />
-              </label>
-              <select
-                value={formData.district}
-                onChange={(e) => setFormData({ ...formData, district: e.target.value as EspooDistrict })}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
-              >
-                {ESPOO_DISTRICTS.map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="space-y-1">
-              <label className="font-bold text-slate-700">{isFinnish ? "Talotyyppi:" : "Housing Type:"}</label>
-              <select
-                value={formData.housingType}
-                onChange={(e) => setFormData({ ...formData, housingType: e.target.value as HousingType })}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500 capitalize"
-              >
-                <option value="kerrostalo">Apartment</option>
-                <option value="rivitalo">Terraced House</option>
-                <option value="omakotitalo">Detached House</option>
-                <option value="paritalo">Semi-detached House</option>
-              </select>
-            </div>
-
-            <div className="space-y-1">
-              <label className="font-bold text-slate-700 flex items-center gap-1.5">
-                {isFinnish ? "Pinta-ala (m²):" : "Area (m²):"}
-                <InfoHint
-                  isFinnish={isFinnish}
-                  label={isFinnish ? "Pinta-ala" : "Area"}
-                  instruction={
-                    isFinnish
-                      ? "Kodin lämmitetty asuinpinta-ala neliömetreinä. Löytyy vuokrasopimuksesta tai asunnon myynti-ilmoituksesta."
-                      : "Your home's heated living area in square metres. Check your rental contract or apartment listing if unsure."
-                  }
-                  example={isFinnish ? "72" : "72"}
-                />
-              </label>
-              <NumberStepperInput
-                value={formData.livingAreaSqM}
-                onChange={(v) => setFormData({ ...formData, livingAreaSqM: v })}
-                min={15}
-                max={500}
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="font-bold text-slate-700">{isFinnish ? "Henkilömäärä:" : "Persons:"}</label>
-              <NumberStepperInput
-                value={formData.householdSize}
-                onChange={(v) => setFormData({ ...formData, householdSize: v })}
-                min={1}
-                max={12}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="font-bold text-slate-700 flex items-center gap-1.5">
-              {isFinnish ? "Lämmitysjärjestelmät:" : "Heating Systems:"}
-              <InfoHint
-                isFinnish={isFinnish}
-                label={isFinnish ? "Lämmitys" : "Heating Systems"}
-                instruction={
-                  isFinnish
-                    ? "Kodin lämmitystavat — valitse kaikki käytössä olevat. Espoon kerrostaloissa kaukolämpö on yleisin."
-                    : "How your home is heated — select all that apply. District heating is the norm in Espoo apartments."
-                }
-                example={isFinnish ? "District Heating" : "District Heating"}
-              />
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-              {HEATING_SYSTEMS.map((h) => (
-                <label
-                  key={h}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 cursor-pointer hover:bg-slate-100"
-                >
-                  <input
-                    type="checkbox"
-                    checked={formData.heatingSystems.includes(h)}
-                    onChange={() => toggleHeatingSystem(h)}
-                    className="accent-emerald-600"
-                  />
-                  <span className="text-slate-700 font-medium">{h}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
           <div className="space-y-1">
-            <label className="font-bold text-slate-700 flex items-center gap-1.5">
-              {isFinnish ? "Sähkösopimus:" : "Electricity Contract:"}
-              <InfoHint
-                isFinnish={isFinnish}
-                label={isFinnish ? "Sähkösopimus" : "Electricity Contract"}
-                instruction={
-                  isFinnish
-                    ? "Sähkön hinnoittelutapasi. ”Tuntihinta” tarkoittaa, että hinta muuttuu joka tunti — silloin ajoituksesta on eniten hyötyä."
-                    : "How your electricity is priced. 'Hourly Spot Price' means your price changes every hour — that's when timing loads pays off most."
-                }
-                example={isFinnish ? "Tuntihinta" : "Hourly Spot Price"}
-              />
-            </label>
-            <select
-              value={formData.electricityContract}
-              onChange={(e) => setFormData({ ...formData, electricityContract: e.target.value as ElectricityContract })}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
-            >
-              {ELECTRICITY_CONTRACTS.map((c) => (
-                <option key={c} value={c}>
-                  {ELECTRICITY_CONTRACT_LABELS[c]}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="font-bold text-slate-700">{isFinnish ? "Saunatyyppi:" : "Sauna Type:"}</label>
-              <select
-                value={formData.saunaType}
-                onChange={(e) => setFormData({ ...formData, saunaType: e.target.value as "electric" | "wood" | "none" })}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
-              >
-                <option value="electric">Electric</option>
-                <option value="wood">Wood-burning</option>
-                <option value="none">No sauna</option>
-              </select>
-            </div>
-
-            <div className="space-y-1">
-              <label className="font-bold text-slate-700 flex items-center gap-1.5">
-                {isFinnish ? "Saunakerrat / vko:" : "Saunas / week:"}
-                <InfoHint
-                  isFinnish={isFinnish}
-                  align="right"
-                  label={isFinnish ? "Saunakerrat" : "Saunas per week"}
-                  instruction={
-                    isFinnish
-                      ? "Kuinka monta kertaa viikossa sauna lämmitetään koko taloudessa yhteensä. Laita 0, jos saunaa ei ole."
-                      : "How many times a week the sauna is heated across the whole household. Enter 0 if you have none."
-                  }
-                  example={isFinnish ? "2" : "2"}
-                />
-              </label>
-              <NumberStepperInput
-                value={formData.saunaTimesPerWeek}
-                onChange={(v) => setFormData({ ...formData, saunaTimesPerWeek: v })}
-                min={0}
-                max={7}
-              />
+            <label className="font-bold text-slate-700">{isFinnish ? "Nimi (Googlesta):" : "Name (from Google):"}</label>
+            <div className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600">
+              {formData.name}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="font-bold text-slate-700">{isFinnish ? "Ensisijainen kulkutapa:" : "Preferred Transport:"}</label>
-              <select
-                value={formData.commuteHabit}
-                onChange={(e) => setFormData({ ...formData, commuteHabit: e.target.value as CommuteHabit })}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
-              >
-                {COMMUTE_HABITS.map((cm) => (
-                  <option key={cm} value={cm}>
-                    {cm}
-                  </option>
-                ))}
-              </select>
-            </div>
+          {/* ============ HOUSING ============ */}
+          <section className="space-y-4 pt-4 border-t border-slate-100">
+            <SectionHeading
+              icon="🏠"
+              title={isFinnish ? "Asuminen" : "Housing"}
+              subtitle={
+                isFinnish
+                  ? "Koti, lämmitys, sähkö, sauna ja jätehuolto"
+                  : "Your home, heating, electricity, sauna and waste"
+              }
+            />
 
-            <div className="space-y-1">
-              <label className="font-bold text-slate-700">{isFinnish ? "Jätehuolto:" : "Waste Management:"}</label>
-              <select
-                value={formData.wasteManagementSystem}
-                onChange={(e) => setFormData({ ...formData, wasteManagementSystem: e.target.value as WasteManagementSystem })}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
-              >
-                {WASTE_MANAGEMENT_OPTIONS.map((w) => (
-                  <option key={w} value={w}>
-                    {w}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {isDrivingCommute && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-xl bg-amber-50 border border-amber-100">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="font-bold text-slate-700">{isFinnish ? "Auton tyyppi:" : "Car Type:"}</label>
+                <label className="font-bold text-slate-700 flex items-center gap-1.5">
+                  {isFinnish ? "Espoon Suuralue:" : "Espoo District:"}
+                  <InfoHint
+                    isFinnish={isFinnish}
+                    align="right"
+                    label={isFinnish ? "Espoon Suuralue" : "Espoo District"}
+                    instruction={
+                      isFinnish
+                        ? "Espoon suuralue, jolla asut. Käytetään paikallisiin sähköverkko-, joukkoliikenne- ja Sortti-asemavinkkeihin."
+                        : "The Espoo major district (suuralue) you live in. Used for local grid, transit, and Sortti-station tips."
+                    }
+                    example={
+                      isFinnish
+                        ? "Suur-Matinkylä (Matinkylä, Olari, Henttaa)"
+                        : "Suur-Matinkylä (Matinkylä, Olari, Henttaa)"
+                    }
+                  />
+                </label>
                 <select
-                  value={formData.carType ?? "none"}
-                  onChange={(e) => {
-                    const carType = e.target.value as CarType;
-                    setFormData({
-                      ...formData,
-                      carType,
-                      carCo2GramsPerKm: CAR_TYPE_DEFAULT_CO2_G_PER_KM[carType],
-                    });
-                  }}
-                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
+                  value={formData.district}
+                  onChange={(e) => setFormData({ ...formData, district: e.target.value as EspooDistrict })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
                 >
-                  {CAR_TYPE_OPTIONS.map((c) => (
-                    <option key={c.value} value={c.value}>
-                      {c.label}
+                  {ESPOO_DISTRICTS.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
                     </option>
                   ))}
                 </select>
               </div>
 
               <div className="space-y-1">
+                <label className="font-bold text-slate-700">{isFinnish ? "Talotyyppi:" : "Housing Type:"}</label>
+                <select
+                  value={formData.housingType}
+                  onChange={(e) => setFormData({ ...formData, housingType: e.target.value as HousingType })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500 capitalize"
+                >
+                  <option value="kerrostalo">Apartment</option>
+                  <option value="rivitalo">Terraced House</option>
+                  <option value="omakotitalo">Detached House</option>
+                  <option value="paritalo">Semi-detached House</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="font-bold text-slate-700 flex items-center gap-1.5">
+                {isFinnish ? "Kotiosoite:" : "Home address:"}
+                <InfoHint
+                  isFinnish={isFinnish}
+                  label={isFinnish ? "Kotiosoite" : "Home address"}
+                  instruction={
+                    isFinnish
+                      ? "Kotisi osoite. Hae ja valitse ehdotuksista, niin sijainti tallentuu. Käytetään lähtöpisteenä matkojen nopeaan kirjaamiseen; ei näytetä muille."
+                      : "Your home's street address. Search and pick a suggestion so the location is saved. Used as the starting point for quick trip logging; never shown to anyone else."
+                  }
+                  example={isFinnish ? "Piispansilta 11, Espoo" : "Piispansilta 11, Espoo"}
+                />
+              </label>
+              <AddressAutocomplete
+                isFinnish={isFinnish}
+                value={formData.homeAddress ?? ""}
+                onChange={(address, coords) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    homeAddress: address || null,
+                    homeLat: coords?.lat ?? null,
+                    homeLon: coords?.lon ?? null,
+                  }))
+                }
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
                 <label className="font-bold text-slate-700 flex items-center gap-1.5">
-                  {isFinnish ? "Auton CO2-päästöt (g/km):" : "Car CO2 Emissions (g/km):"}
+                  {isFinnish ? "Pinta-ala (m²):" : "Area (m²):"}
                   <InfoHint
                     isFinnish={isFinnish}
-                    align="right"
-                    label={isFinnish ? "Auton CO2-päästöt" : "Car CO2 emissions"}
+                    label={isFinnish ? "Pinta-ala" : "Area"}
                     instruction={
                       isFinnish
-                        ? "Auton pakokaasujen CO2 rekisteriotteesta tai valmistajan tiedoista. Jätä automaattinen arvio, jos et tiedä tarkkaa lukua."
-                        : "Tailpipe CO2 from your car's registration papers or the maker's spec. Leave the auto-filled estimate if you don't know."
+                        ? "Kodin lämmitetty asuinpinta-ala neliömetreinä. Löytyy vuokrasopimuksesta tai asunnon myynti-ilmoituksesta."
+                        : "Your home's heated living area in square metres. Check your rental contract or apartment listing if unsure."
                     }
-                    example={isFinnish ? "118" : "118"}
+                    example={isFinnish ? "72" : "72"}
                   />
                 </label>
                 <NumberStepperInput
-                  value={formData.carCo2GramsPerKm ?? 0}
-                  onChange={(v) => setFormData({ ...formData, carCo2GramsPerKm: v })}
-                  min={0}
-                  max={1000}
+                  value={formData.livingAreaSqM}
+                  onChange={(v) => setFormData({ ...formData, livingAreaSqM: v })}
+                  min={15}
+                  max={500}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700">{isFinnish ? "Henkilömäärä:" : "Persons:"}</label>
+                <NumberStepperInput
+                  value={formData.householdSize}
+                  onChange={(v) => setFormData({ ...formData, householdSize: v })}
+                  min={1}
+                  max={12}
                 />
               </div>
             </div>
-          )}
+
+            <div className="space-y-1.5">
+              <label className="font-bold text-slate-700 flex items-center gap-1.5">
+                {isFinnish ? "Lämmitysjärjestelmät:" : "Heating Systems:"}
+                <InfoHint
+                  isFinnish={isFinnish}
+                  label={isFinnish ? "Lämmitys" : "Heating Systems"}
+                  instruction={
+                    isFinnish
+                      ? "Kodin lämmitystavat — valitse kaikki käytössä olevat. Espoon kerrostaloissa kaukolämpö on yleisin."
+                      : "How your home is heated — select all that apply. District heating is the norm in Espoo apartments."
+                  }
+                  example={isFinnish ? "District Heating" : "District Heating"}
+                />
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                {HEATING_SYSTEMS.map((h) => (
+                  <label
+                    key={h}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 cursor-pointer hover:bg-slate-100"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={formData.heatingSystems.includes(h)}
+                      onChange={() => toggleHeatingSystem(h)}
+                      className="accent-emerald-600"
+                    />
+                    <span className="text-slate-700 font-medium">{h}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700 flex items-center gap-1.5">
+                  {isFinnish ? "Sähkösopimus:" : "Electricity Contract:"}
+                  <InfoHint
+                    isFinnish={isFinnish}
+                    label={isFinnish ? "Sähkösopimus" : "Electricity Contract"}
+                    instruction={
+                      isFinnish
+                        ? "Sähkön hinnoittelutapasi. ”Tuntihinta” tarkoittaa, että hinta muuttuu joka tunti — silloin ajoituksesta on eniten hyötyä."
+                        : "How your electricity is priced. 'Hourly Spot Price' means your price changes every hour — that's when timing loads pays off most."
+                    }
+                    example={isFinnish ? "Tuntihinta" : "Hourly Spot Price"}
+                  />
+                </label>
+                <select
+                  value={formData.electricityContract}
+                  onChange={(e) => setFormData({ ...formData, electricityContract: e.target.value as ElectricityContract })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
+                >
+                  {ELECTRICITY_CONTRACTS.map((c) => (
+                    <option key={c} value={c}>
+                      {ELECTRICITY_CONTRACT_LABELS[c]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700">{isFinnish ? "Jätehuolto:" : "Waste Management:"}</label>
+                <select
+                  value={formData.wasteManagementSystem}
+                  onChange={(e) => setFormData({ ...formData, wasteManagementSystem: e.target.value as WasteManagementSystem })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
+                >
+                  {WASTE_MANAGEMENT_OPTIONS.map((w) => (
+                    <option key={w} value={w}>
+                      {w}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700">{isFinnish ? "Saunatyyppi:" : "Sauna Type:"}</label>
+                <select
+                  value={formData.saunaType}
+                  onChange={(e) => setFormData({ ...formData, saunaType: e.target.value as "electric" | "wood" | "none" })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
+                >
+                  <option value="electric">Electric</option>
+                  <option value="wood">Wood-burning</option>
+                  <option value="none">No sauna</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700 flex items-center gap-1.5">
+                  {isFinnish ? "Saunakerrat / vko:" : "Saunas / week:"}
+                  <InfoHint
+                    isFinnish={isFinnish}
+                    align="right"
+                    label={isFinnish ? "Saunakerrat" : "Saunas per week"}
+                    instruction={
+                      isFinnish
+                        ? "Kuinka monta kertaa viikossa sauna lämmitetään koko taloudessa yhteensä. Laita 0, jos saunaa ei ole."
+                        : "How many times a week the sauna is heated across the whole household. Enter 0 if you have none."
+                    }
+                    example={isFinnish ? "2" : "2"}
+                  />
+                </label>
+                <NumberStepperInput
+                  value={formData.saunaTimesPerWeek}
+                  onChange={(v) => setFormData({ ...formData, saunaTimesPerWeek: v })}
+                  min={0}
+                  max={7}
+                />
+              </div>
+            </div>
+          </section>
+
+          {/* ============ COMMUTING ============ */}
+          <section className="space-y-4 pt-4 border-t border-slate-100">
+            <SectionHeading
+              icon="🚆"
+              title={isFinnish ? "Liikkuminen" : "Commuting"}
+              subtitle={isFinnish ? "Ensisijainen kulkutapasi" : "How you usually get around"}
+            />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700">{isFinnish ? "Ensisijainen kulkutapa:" : "Preferred Transport:"}</label>
+                <select
+                  value={formData.commuteHabit}
+                  onChange={(e) => setFormData({ ...formData, commuteHabit: e.target.value as CommuteHabit })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
+                >
+                  {COMMUTE_HABITS.map((cm) => (
+                    <option key={cm} value={cm}>
+                      {cm}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {isDrivingCommute && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-xl bg-amber-50 border border-amber-100">
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700">{isFinnish ? "Auton tyyppi:" : "Car Type:"}</label>
+                  <select
+                    value={formData.carType ?? "none"}
+                    onChange={(e) => {
+                      const carType = e.target.value as CarType;
+                      setFormData({
+                        ...formData,
+                        carType,
+                        carCo2GramsPerKm: CAR_TYPE_DEFAULT_CO2_G_PER_KM[carType],
+                      });
+                    }}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
+                  >
+                    {CAR_TYPE_OPTIONS.map((c) => (
+                      <option key={c.value} value={c.value}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 flex items-center gap-1.5">
+                    {isFinnish ? "Auton CO2-päästöt (g/km):" : "Car CO2 Emissions (g/km):"}
+                    <InfoHint
+                      isFinnish={isFinnish}
+                      align="right"
+                      label={isFinnish ? "Auton CO2-päästöt" : "Car CO2 emissions"}
+                      instruction={
+                        isFinnish
+                          ? "Auton pakokaasujen CO2 rekisteriotteesta tai valmistajan tiedoista. Jätä automaattinen arvio, jos et tiedä tarkkaa lukua."
+                          : "Tailpipe CO2 from your car's registration papers or the maker's spec. Leave the auto-filled estimate if you don't know."
+                      }
+                      example={isFinnish ? "118" : "118"}
+                    />
+                  </label>
+                  <NumberStepperInput
+                    value={formData.carCo2GramsPerKm ?? 0}
+                    onChange={(v) => setFormData({ ...formData, carCo2GramsPerKm: v })}
+                    min={0}
+                    max={1000}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Frequently visited places now live on their own page (FrequentPlacesView) — linked from the sidebar. */}
+            <Link
+              href={placesHref}
+              className="flex items-center justify-between gap-3 p-3.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-emerald-50 hover:border-emerald-200 transition group"
+            >
+              <div className="min-w-0">
+                <p className="font-bold text-slate-800 group-hover:text-emerald-800">
+                  {isFinnish ? "📍 Suosikkipaikat" : "📍 Favourite Locations"}
+                </p>
+                <p className="text-[12px] text-slate-500 mt-0.5">
+                  {isFinnish
+                    ? `${formData.frequentPlaces.length} tallennettua paikkaa — hallitse työtä, kauppaa, päiväkotia ja muita.`
+                    : `${formData.frequentPlaces.length} saved ${formData.frequentPlaces.length === 1 ? "location" : "locations"} — manage work, groceries, day care and more.`}
+                </p>
+              </div>
+              <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 shrink-0" />
+            </Link>
+          </section>
 
           {saveError && (
             <div className="px-3 py-2 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">
@@ -399,6 +525,6 @@ export function ProfileEditView({ userProfile, initialIsFinnish, backHref }: Pro
           </div>
         </form>
       </div>
-    </div>
+    </EcopilotPageShell>
   );
 }

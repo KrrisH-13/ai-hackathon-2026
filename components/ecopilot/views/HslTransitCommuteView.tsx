@@ -167,7 +167,7 @@ export function HslTransitCommuteView({ isFinnish }: HslTransitCommuteViewProps)
               type="text"
               value={origin}
               onChange={(e) => setOrigin(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-blue-500 shadow-xs"
+              className="visible-text-cursor w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-blue-500 shadow-xs"
               placeholder={
                 isFinnish
                   ? "esim. Matinkylä, Tapiola, Leppävaara..."
@@ -198,7 +198,7 @@ export function HslTransitCommuteView({ isFinnish }: HslTransitCommuteViewProps)
               type="text"
               value={destination}
               onChange={(e) => setDestination(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-blue-500 shadow-xs"
+              className="visible-text-cursor w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-blue-500 shadow-xs"
               placeholder={
                 isFinnish
                   ? "esim. Otaniemi, Keilaniemi, Kamppi..."

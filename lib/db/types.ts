@@ -9,6 +9,7 @@ import type {
   WasteManagementSystem,
   SaunaType,
   Co2LogCategory,
+  FrequentPlace,
 } from "@/lib/ecopilot/types";
 
 /**
@@ -67,6 +68,10 @@ export type JobUpdate = Partial<Pick<Job, "status" | "last_error">>;
 export type EcopilotProfile = {
   user_id: string;
   district: EspooDistrict;
+  /** Home address + optional coordinates (see 20260906130000_*.sql). */
+  home_address: string | null;
+  home_lat: number | null;
+  home_lon: number | null;
   housing_type: HousingType;
   living_area_sq_m: number;
   household_size: number;
@@ -78,6 +83,8 @@ export type EcopilotProfile = {
   /** Only meaningful when commute_habit involves driving. */
   car_type: CarType | null;
   car_co2_grams_per_km: number | null;
+  /** jsonb array of the user's frequently-visited places (see 20260906120000_*.sql). */
+  frequent_places: FrequentPlace[];
   waste_management_system: WasteManagementSystem;
   estimated_footprint_tonnes: number;
   target_footprint_tonnes: number;
