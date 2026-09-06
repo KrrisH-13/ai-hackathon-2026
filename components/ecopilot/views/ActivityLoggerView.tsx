@@ -1,18 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { NotebookPen, Receipt, Globe2, Sparkles, Trash2, X, RotateCw as Spinner } from "lucide-react";
-import type { ActivityLogEstimate, Co2LogEntry, UserProfile } from "@/lib/ecopilot/types";
-import { extractActivityAPI } from "@/lib/ecopilot/client";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { NotebookPen, Receipt, Globe2, Plus, Sparkles, Trash2, X, RotateCw as Spinner } from "lucide-react";
+import type { ActivityLogEstimate, Co2LogEntry, GroceryReceiptItem, UserProfile } from "@/lib/ecopilot/types";
+import { extractActivityAPI, scanReceiptAPI } from "@/lib/ecopilot/client";
 import { fetchCo2LogsAPI, addCo2LogAPI, deleteCo2LogAPI } from "@/lib/ecopilot/profileClient";
 import { ACTIVITY_MODE_ICONS, CO2_CATEGORY_ICONS } from "@/components/ecopilot/activityIcons";
 import { InfoHint } from "@/components/ecopilot/InfoHint";
 import { ViewHero } from "@/components/ecopilot/ViewHero";
-import { ReceiptScannerPanel } from "@/components/ecopilot/views/ReceiptScannerPanel";
 import { QuickTripPanel } from "@/components/ecopilot/views/QuickTripPanel";
-
-/** Which input mode the page is showing — a free-text trip, or a scanned grocery receipt. */
-type InputMode = "trip" | "receipt";
 
 interface ActivityLoggerViewProps {
   isFinnish: boolean;
@@ -63,6 +59,15 @@ function groupEntriesByDay(entries: Co2LogEntry[], isFinnish: boolean): EntryDay
   return groups;
 }
 
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 /** Flattens the extraction context into the ledger's single description string so it survives the round trip through Supabase. */
 function buildLogDescription(estimate: ActivityLogEstimate): string {
   const { extraction } = estimate;
@@ -76,7 +81,6 @@ function buildLogDescription(estimate: ActivityLogEstimate): string {
 }
 
 export function ActivityLoggerView({ isFinnish, userProfile, profileHref, placesHref }: ActivityLoggerViewProps) {
-  const [inputMode, setInputMode] = useState<InputMode>("trip");
   const [draft, setDraft] = useState("");
   const [isExtracting, setIsExtracting] = useState(false);
   const [estimate, setEstimate] = useState<ActivityLogEstimate | null>(null);
@@ -85,6 +89,16 @@ export function ActivityLoggerView({ isFinnish, userProfile, profileHref, places
   const [entries, setEntries] = useState<Co2LogEntry[]>([]);
   const [isLoadingEntries, setIsLoadingEntries] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Receipt scanning — a second way to add to the same log, triggered by the
+  // "Scan a receipt" button next to the text input rather than a separate tab.
+  const receiptFileInputRef = useRef<HTMLInputElement>(null);
+  const [receiptPreviewUrl, setReceiptPreviewUrl] = useState<string | null>(null);
+  const [isScanningReceipt, setIsScanningReceipt] = useState(false);
+  const [receiptItems, setReceiptItems] = useState<GroceryReceiptItem[]>([]);
+  const [receiptSwapSuggestions, setReceiptSwapSuggestions] = useState<string[]>([]);
+  const [loggedReceiptItemNames, setLoggedReceiptItemNames] = useState<Set<string>>(new Set());
+  const [receiptErrorMessage, setReceiptErrorMessage] = useState<string | null>(null);
 
   const loadEntries = async () => {
     setIsLoadingEntries(true);
@@ -138,6 +152,51 @@ export function ActivityLoggerView({ isFinnish, userProfile, profileHref, places
     }
   };
 
+  const handleReceiptFileSelect = async (file: File) => {
+    setReceiptErrorMessage(null);
+    setIsScanningReceipt(true);
+    setReceiptItems([]);
+    setReceiptSwapSuggestions([]);
+    setLoggedReceiptItemNames(new Set());
+    try {
+      const base64 = await fileToBase64(file);
+      setReceiptPreviewUrl(base64);
+      const result = await scanReceiptAPI(base64);
+      if (result.items.length === 0) {
+        setReceiptErrorMessage(
+          isFinnish
+            ? "Kuittia ei tunnistettu — kokeile selkeämpää valokuvaa."
+            : "Couldn't read that receipt — try a clearer photo."
+        );
+      }
+      setReceiptItems(result.items);
+      setReceiptSwapSuggestions(result.swapSuggestions);
+    } catch (err) {
+      setReceiptErrorMessage(err instanceof Error ? err.message : "Failed to scan receipt");
+    } finally {
+      setIsScanningReceipt(false);
+    }
+  };
+
+  const handleLogReceiptItem = async (item: GroceryReceiptItem) => {
+    try {
+      await addCo2LogAPI({ category: "food", description: item.name, co2Kg: item.estimatedCo2Kg, source: ACTIVITY_LOGGER_SOURCE });
+      setLoggedReceiptItemNames((prev) => new Set(prev).add(item.name));
+      await loadEntries();
+    } catch (err) {
+      setReceiptErrorMessage(err instanceof Error ? err.message : "Failed to save that item");
+    }
+  };
+
+  const handleDiscardReceipt = () => {
+    setReceiptPreviewUrl(null);
+    setReceiptItems([]);
+    setReceiptSwapSuggestions([]);
+    setLoggedReceiptItemNames(new Set());
+    setReceiptErrorMessage(null);
+    if (receiptFileInputRef.current) receiptFileInputRef.current.value = "";
+  };
+
   const handleDeleteEntry = async (id: string) => {
     if (deletingId) return;
     setDeletingId(id);
@@ -160,6 +219,11 @@ export function ActivityLoggerView({ isFinnish, userProfile, profileHref, places
     [entries, isFinnish]
   );
 
+  const receiptTotalCo2Kg = useMemo(
+    () => receiptItems.reduce((sum, item) => sum + item.estimatedCo2Kg, 0),
+    [receiptItems]
+  );
+
   const EstimateIcon = estimate
     ? estimate.extraction.kind === "trip"
       ? ACTIVITY_MODE_ICONS[estimate.extraction.mode]
@@ -172,73 +236,24 @@ export function ActivityLoggerView({ isFinnish, userProfile, profileHref, places
         accent="fuchsia"
         isFinnish={isFinnish}
         storageKey="activity-log"
-        badge={
-          inputMode === "trip"
-            ? `📝 ${isFinnish ? "Luonnollisen kielen päiväkirja" : "Natural-language Activity Log"}`
-            : `🧾 ${isFinnish ? "Kuitin hiilijalanjälkiarvio" : "Receipt Carbon Estimator"}`
-        }
-        title={
-          inputMode === "trip"
-            ? isFinnish
-              ? "Kirjoita mitä teit — me hoidamme laskennan"
-              : "Just type what you did — we'll do the math"
-            : isFinnish
-              ? "Kuvaa kuitti, saat karkean päästöarvion"
-              : "Snap a receipt, get a rough footprint estimate"
-        }
+        badge={`📝 ${isFinnish ? "Luonnollisen kielen päiväkirja" : "Natural-language Activity Log"}`}
+        title={isFinnish ? "Kirjoita mitä teit — tai skannaa kuitti" : "Type what you did — or scan a receipt"}
         description={
-          inputMode === "trip"
-            ? isFinnish
-              ? '"Ajoin Turkuun tänään", "söin naudanlihapihvin" tai "lämmitin saunan tunniksi" — matkoille lasketaan maakohtainen päästökerroin (sähköauto Norjassa ≈ lähes päästötön, sama Puolassa ei), muut saavat elinkaariarvion.'
-              : `"Drove to Turku today", "beef burger for lunch" or "ran the sauna for an hour" — trips get a country-aware emission factor (an EV in Norway ≈ near-zero; in Poland it isn't), everything else gets a lifecycle estimate.`
-            : isFinnish
-              ? "Gemini Vision lukee ostoskuitin rivit ja arvioi hiilijalanjäljen tuotteittain. Lisää haluamasi rivit samaan päiväkirjaan."
-              : "Gemini Vision reads the grocery receipt's line items and estimates a rough footprint per item. Add the ones you want to the same activity log."
-        }
-        // The two input modes ride along in the hero row rather than costing
-        // their own band of vertical space above the first real control.
-        actions={
-          <div className="flex gap-1 p-1 rounded-xl bg-white/70 border border-slate-200">
-            <button
-              onClick={() => setInputMode("trip")}
-              aria-pressed={inputMode === "trip"}
-              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-bold transition ${
-                inputMode === "trip" ? "bg-white text-fuchsia-700 shadow-xs" : "text-slate-500 hover:text-slate-800"
-              }`}
-            >
-              <NotebookPen className="w-3.5 h-3.5" />
-              <span>{isFinnish ? "Kirjaa matka" : "Log a trip"}</span>
-            </button>
-            <button
-              onClick={() => setInputMode("receipt")}
-              aria-pressed={inputMode === "receipt"}
-              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-bold transition ${
-                inputMode === "receipt" ? "bg-white text-orange-700 shadow-xs" : "text-slate-500 hover:text-slate-800"
-              }`}
-            >
-              <Receipt className="w-3.5 h-3.5" />
-              <span>{isFinnish ? "Skannaa kuitti" : "Scan a receipt"}</span>
-            </button>
-          </div>
+          isFinnish
+            ? '"Ajoin Turkuun tänään", "söin naudanlihapihvin" tai "lämmitin saunan tunniksi" — matkoille lasketaan maakohtainen päästökerroin (sähköauto Norjassa ≈ lähes päästötön, sama Puolassa ei), muut saavat elinkaariarvion. Kuitin kohdalla Gemini Vision lukee rivit ja arvioi jalanjäljen tuotteittain, sekä ehdottaa vähäpäästöisempiä vaihtoja.'
+            : "\"Drove to Turku today\", \"beef burger for lunch\" or \"ran the sauna for an hour\" — trips get a country-aware emission factor (an EV in Norway ≈ near-zero; in Poland it isn't), everything else gets a lifecycle estimate. For a receipt, Gemini Vision reads each line, estimates a per-item footprint, and suggests lower-carbon swaps."
         }
       />
 
-      {inputMode === "receipt" && (
-        <ReceiptScannerPanel isFinnish={isFinnish} source={ACTIVITY_LOGGER_SOURCE} onLogged={loadEntries} />
-      )}
+      <QuickTripPanel
+        isFinnish={isFinnish}
+        userProfile={userProfile}
+        profileHref={profileHref}
+        placesHref={placesHref}
+        source={ACTIVITY_LOGGER_SOURCE}
+        onLogged={loadEntries}
+      />
 
-      {inputMode === "trip" && (
-        <QuickTripPanel
-          isFinnish={isFinnish}
-          userProfile={userProfile}
-          profileHref={profileHref}
-          placesHref={placesHref}
-          source={ACTIVITY_LOGGER_SOURCE}
-          onLogged={loadEntries}
-        />
-      )}
-
-      {inputMode === "trip" && (
       <div className="rounded-3xl bg-white border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4">
         <label className="text-xs font-bold text-slate-700 flex items-center gap-2">
           <NotebookPen className="w-4 h-4 text-fuchsia-600" />
@@ -248,8 +263,8 @@ export function ActivityLoggerView({ isFinnish, userProfile, profileHref, places
             label={isFinnish ? "Toiminto" : "Activity"}
             instruction={
               isFinnish
-                ? "Kirjoita yksi toiminto tavallisena lauseena. Matkoista kerro kulkutapa ja suunnilleen matka tai paikannimet (ja maa jos et ollut Suomessa); muista, kuten aterioista, lämmityksestä tai pyykinpesusta, riittää lyhyt kuvaus. Tekoäly arvioi CO2:n."
-                : "Write one activity as a normal sentence. For trips, say how you travelled plus a rough distance or place names (and the country if it wasn't Finland); for anything else — a meal, heating, laundry — a short description is enough. AI estimates the CO2."
+                ? "Kirjoita yksi toiminto tavallisena lauseena. Matkoista kerro kulkutapa ja suunnilleen matka tai paikannimet (ja maa jos et ollut Suomessa); muista, kuten aterioista, lämmityksestä tai pyykinpesusta, riittää lyhyt kuvaus. Tekoäly arvioi CO2:n. Voit myös skannata ruokakuitin alla olevasta painikkeesta — se lukee rivit ja arvioi jalanjäljen tuotteittain."
+                : "Write one activity as a normal sentence. For trips, say how you travelled plus a rough distance or place names (and the country if it wasn't Finland); for anything else — a meal, heating, laundry — a short description is enough. AI estimates the CO2. Or scan a grocery receipt with the button below — it reads each line and estimates a per-item footprint."
             }
             example={
               isFinnish
@@ -267,7 +282,7 @@ export function ActivityLoggerView({ isFinnish, userProfile, profileHref, places
             placeholder={
               isFinnish ? "esim. Ajoin Turkuun · Naudanlihapihvi lounaaksi" : "e.g. Drove to Turku · Beef burger for lunch"
             }
-            className="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-fuchsia-500 shadow-xs"
+            className="visible-text-cursor flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-fuchsia-500 shadow-xs"
           />
           <button
             onClick={handleExtract}
@@ -276,6 +291,29 @@ export function ActivityLoggerView({ isFinnish, userProfile, profileHref, places
           >
             {isExtracting ? <Spinner className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
             <span>{isFinnish ? "Kirjaa" : "Log it"}</span>
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-[12px] text-slate-400 font-semibold">{isFinnish ? "tai" : "or"}</span>
+          <input
+            ref={receiptFileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) void handleReceiptFileSelect(file);
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => receiptFileInputRef.current?.click()}
+            disabled={isScanningReceipt}
+            className="flex items-center gap-1.5 text-xs font-bold text-orange-700 hover:text-orange-800 disabled:opacity-50 transition"
+          >
+            {isScanningReceipt ? <Spinner className="w-3.5 h-3.5 animate-spin" /> : <Receipt className="w-3.5 h-3.5" />}
+            <span>{isFinnish ? "Skannaa kuitti" : "Scan a receipt"}</span>
           </button>
         </div>
 
@@ -329,8 +367,97 @@ export function ActivityLoggerView({ isFinnish, userProfile, profileHref, places
             </div>
           </div>
         )}
+
+        {(receiptPreviewUrl || isScanningReceipt || receiptItems.length > 0) && (
+          <div className="rounded-2xl bg-orange-50/60 border border-orange-200 p-4 space-y-3">
+            <div className="flex items-center gap-3">
+              {receiptPreviewUrl && (
+                /* eslint-disable-next-line @next/next/no-img-element -- user-uploaded data: URI preview, not an optimizable static asset */
+                <img
+                  src={receiptPreviewUrl}
+                  alt={isFinnish ? "Kuittikuva" : "Receipt preview"}
+                  className="w-12 h-12 object-cover rounded-lg border border-orange-200 shrink-0"
+                />
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                  <Receipt className="w-3.5 h-3.5 text-orange-600 shrink-0" />
+                  <span className="truncate">
+                    {isScanningReceipt
+                      ? isFinnish
+                        ? "Luetaan kuittia..."
+                        : "Reading receipt..."
+                      : isFinnish
+                        ? "Tunnistetut tuotteet"
+                        : "Extracted items"}
+                  </span>
+                </p>
+                {!isScanningReceipt && receiptItems.length > 0 && (
+                  <p className="text-[12px] text-slate-500">
+                    {receiptItems.length} {isFinnish ? "tuotetta" : "items"} · {receiptTotalCo2Kg.toFixed(1)} kg CO2e{" "}
+                    {isFinnish ? "yhteensä" : "total"}
+                  </p>
+                )}
+              </div>
+              {isScanningReceipt ? (
+                <Spinner className="w-4 h-4 text-orange-600 animate-spin shrink-0" />
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleDiscardReceipt}
+                  title={isFinnish ? "Hylkää" : "Discard"}
+                  aria-label={isFinnish ? "Hylkää kuitti" : "Discard receipt"}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition shrink-0"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {receiptErrorMessage && <p className="text-xs text-rose-600 font-medium">{receiptErrorMessage}</p>}
+
+            {receiptItems.length > 0 && (
+              <div className="space-y-2">
+                {receiptItems.map((item, idx) => (
+                  <div
+                    key={`${item.name}-${idx}`}
+                    className="flex items-center justify-between gap-3 p-3 rounded-xl bg-white border border-orange-100"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="shrink-0 px-1.5 py-0.5 rounded-md text-[11px] font-bold border bg-slate-100 text-slate-700 border-slate-200">
+                        {item.category}
+                      </span>
+                      <span className="text-xs font-bold text-slate-900 truncate">{item.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-xs font-black text-slate-700">{item.estimatedCo2Kg.toFixed(1)} kg</span>
+                      <button
+                        type="button"
+                        onClick={() => handleLogReceiptItem(item)}
+                        disabled={loggedReceiptItemNames.has(item.name)}
+                        title={isFinnish ? "Kirjaa" : "Log it"}
+                        className="p-1.5 rounded-lg bg-orange-100 border border-orange-200 text-orange-700 hover:bg-orange-200 disabled:opacity-40 transition"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {receiptSwapSuggestions.length > 0 && (
+              <ul className="space-y-1">
+                {receiptSwapSuggestions.map((s, i) => (
+                  <li key={i} className="text-[12px] text-emerald-800 leading-relaxed">
+                    🌱 {s}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </div>
-      )}
 
       <div className="rounded-3xl bg-white border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4">
         <h3 className="text-base font-extrabold text-slate-900">{isFinnish ? "Viimeisimmät merkinnät" : "Recent entries"}</h3>

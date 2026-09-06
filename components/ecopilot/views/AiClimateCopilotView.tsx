@@ -414,7 +414,7 @@ How can I help power your climate choices today?`,
                       : "Ask about sauna electricity windows, HSY waste rules, HSL transit savings, or housing grants..."
                   }
                   rows={1}
-                  className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500 resize-none shadow-xs"
+                  className="visible-text-cursor flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500 resize-none shadow-xs"
                 />
 
                 <button

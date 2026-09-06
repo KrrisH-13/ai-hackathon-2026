@@ -160,13 +160,13 @@ const FEATURES: FeatureGuide[] = [
     pointsEn: [
       "Trips get a country-aware emission factor; meals, home energy, heating and waste get a lifecycle estimate",
       "Quick Log: tap a saved favourite location to log a home trip in one click, using its distance and transport mode",
-      "Receipt mode: Gemini Vision reads each line item, estimates a per-item footprint and suggests lower-carbon swaps",
+      "Scan a receipt with the button next to the text field: Gemini Vision reads each line item, estimates a per-item footprint and suggests lower-carbon swaps",
       "Review the estimate before saving — kept entries land in your shared CO2 ledger, grouped by day below with a delete option",
     ],
     pointsFi: [
       "Matkoille lasketaan maakohtainen päästökerroin; aterioille, kodin energialle, lämmitykselle ja jätteelle elinkaariarvio",
       "Pikakirjaus: napauta tallennettua suosikkipaikkaa kirjataksesi kotimatkan yhdellä napautuksella sen matkan ja kulkutavan mukaan",
-      "Kuittitila: Gemini Vision lukee jokaisen rivin, arvioi tuotekohtaisen jalanjäljen ja ehdottaa vähähiilisempiä vaihtoja",
+      "Skannaa kuitti tekstikentän vieressä olevasta painikkeesta: Gemini Vision lukee jokaisen rivin, arvioi tuotekohtaisen jalanjäljen ja ehdottaa vähähiilisempiä vaihtoja",
       "Tarkista arvio ennen tallennusta — tallentamasi merkinnät menevät yhteiseen CO2-kirjanpitoon, ryhmiteltynä päivittäin ja poistettavissa",
     ],
   },

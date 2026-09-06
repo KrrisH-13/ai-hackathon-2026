@@ -132,7 +132,7 @@ export function AddressAutocomplete({ value, onChange, isFinnish, placeholder, c
             }
           }}
           placeholder={placeholder ?? (isFinnish ? "Hae osoitetta (Suomi)…" : "Search for an address (Finland)…")}
-          className="w-full pl-8 pr-7 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
+          className="visible-text-cursor w-full pl-8 pr-7 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
           role="combobox"
           aria-expanded={isOpen}
           aria-controls={listId}
