@@ -6,7 +6,7 @@ import { Home } from "lucide-react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "@/components/map/leaflet-icon-fix";
-import { MINIMAL_TILE_LAYER_URL, MINIMAL_TILE_LAYER_ATTRIBUTION } from "./tile-config";
+import { TILE_LAYER_URL, TILE_LAYER_ATTRIBUTION } from "./tile-config";
 import { cn } from "@/lib/utils";
 import { FREQUENT_PLACE_ICONS } from "@/components/ecopilot/frequentPlaceIcons";
 import type { FrequentPlaceIconKey } from "@/lib/ecopilot/types";
@@ -101,7 +101,13 @@ export default function FavouritePlacesMapImpl({ home, places, isFinnish, classN
       scrollWheelZoom
       className={cn("h-full w-full", className)}
     >
-      <TileLayer url={MINIMAL_TILE_LAYER_URL} attribution={MINIMAL_TILE_LAYER_ATTRIBUTION} />
+      {/*
+        Plain OpenStreetMap tiles — always free, never gated behind a key.
+        `className` is applied by Leaflet to each tile <img>, so the muting
+        filter (defined in globals.css) softens the busy default style
+        without depending on a different, key-requiring tile provider.
+      */}
+      <TileLayer url={TILE_LAYER_URL} attribution={TILE_LAYER_ATTRIBUTION} className="muted-basemap-tiles" />
       <FitToMarkers points={points} />
 
       {home && (
