@@ -11,6 +11,7 @@ import {
   Activity,
   ArrowRight,
   UserCog,
+  MapPin,
   CalendarClock,
   Languages,
   Share2,
@@ -221,9 +222,18 @@ const START_STEPS: StartStep[] = [
     titleEn: "Set up your climate profile",
     titleFi: "Luo ilmastoprofiilisi",
     bodyEn:
-      "Click your name (or the ⚙️) in the top bar to open the profile editor. District, housing, heating system, sauna, commute and car type — every recommendation in the app personalizes from this.",
+      "Open it from your name at the foot of the left sidebar. It has two parts — Housing (district, home address, heating, sauna, waste) and Commuting (transport and car). Every recommendation in the app personalizes from this, and your saved home address becomes the starting point for quick trip logging.",
     bodyFi:
-      "Klikkaa nimeäsi (tai ⚙️) yläpalkista ja avaa profiilieditori. Alue, asumismuoto, lämmitys, sauna, työmatka ja auto — kaikki suositukset räätälöityvät näiden pohjalta.",
+      "Avaa se nimestäsi vasemman palkin alalaidasta. Siinä on kaksi osaa — Asuminen (alue, kotiosoite, lämmitys, sauna, jäte) ja Liikkuminen (kulkutavat ja auto). Suositukset räätälöityvät näiden pohjalta, ja tallennettu kotiosoite toimii lähtöpisteenä matkojen nopeaan kirjaamiseen.",
+  },
+  {
+    icon: MapPin,
+    titleEn: "Add your frequent places",
+    titleFi: "Lisää usein käydyt paikat",
+    bodyEn:
+      "Under Commuting in the profile, list the places you travel to often — work, the grocery store, a child's day care, a hobby class. Give each a quick-select icon, look up its address (Finland), and optionally how you usually get there. These will power fast trip logging in a later update.",
+    bodyFi:
+      "Lisää profiilin Liikkuminen-osiossa paikat joihin matkustat usein — työ, ruokakauppa, lapsen päiväkoti, harrastus. Anna jokaiselle kuvake, hae osoite (Suomi) ja halutessasi tavallisin kulkutapa. Näitä käytetään myöhemmin matkojen nopeaan kirjaamiseen.",
   },
   {
     icon: CalendarClock,
@@ -279,10 +289,10 @@ const TOP_BAR_TIPS: TopBarTip[] = [
   },
   {
     icon: UserCog,
-    labelEn: "Profile ⚙️",
-    labelFi: "Profiili ⚙️",
-    bodyEn: "Update your home, heating, commute and car any time — recommendations follow.",
-    bodyFi: "Päivitä koti, lämmitys, työmatka ja auto milloin vain — suositukset seuraavat.",
+    labelEn: "Your account",
+    labelFi: "Tili",
+    bodyEn: "Your name at the foot of the sidebar opens the profile editor; the chevron beside it has log out.",
+    bodyFi: "Nimesi vasemman palkin alalaidassa avaa profiilieditorin; vieressä oleva nuoli sisältää uloskirjautumisen.",
   },
   {
     icon: Share2,
@@ -322,7 +332,7 @@ export function GuideView({ isFinnish, onNavigateTab }: GuideViewProps) {
             {isFinnish ? "Näin pääset alkuun" : "Getting started"}
           </h3>
           <p className="text-xs text-slate-500 mt-0.5">
-            {isFinnish ? "Neljä askelta ensimmäiseen ilmastotekoosi." : "Four steps to your first logged climate action."}
+            {isFinnish ? "Muutama askel ensimmäiseen ilmastotekoosi." : "A few steps to your first logged climate action."}
           </p>
         </div>
 
@@ -415,7 +425,7 @@ export function GuideView({ isFinnish, onNavigateTab }: GuideViewProps) {
       <section className="space-y-4">
         <div>
           <h3 className="text-sm font-black text-slate-900 uppercase tracking-wide">
-            {isFinnish ? "Yläpalkin säätimet" : "Controls in the top bar"}
+            {isFinnish ? "Aina käytettävissä olevat säätimet" : "Always-on controls"}
           </h3>
           <p className="text-xs text-slate-500 mt-0.5">
             {isFinnish ? "Aina käsillä, joka välilehdellä." : "Always available, on every tab."}

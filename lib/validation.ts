@@ -9,11 +9,27 @@ import {
   WASTE_MANAGEMENT_SYSTEMS,
   SAUNA_TYPES,
   CO2_LOG_CATEGORIES,
+  FREQUENT_PLACE_ICON_KEYS,
+  FREQUENT_PLACE_TRANSPORT_MODES,
 } from "@/lib/ecopilot/types";
+
+/** One frequently-visited place on the profile — see FrequentPlace in types.ts. */
+export const frequentPlaceSchema = z.object({
+  id: z.string().min(1).max(64),
+  label: z.string().trim().min(1).max(60),
+  icon: z.enum(FREQUENT_PLACE_ICON_KEYS),
+  transportMode: z.enum(FREQUENT_PLACE_TRANSPORT_MODES).nullable(),
+  address: z.string().trim().max(200).nullable(),
+  lat: z.number().min(-90).max(90).nullable(),
+  lon: z.number().min(-180).max(180).nullable(),
+});
 
 /** PATCH /api/ecopilot/profile body — all fields optional, only known columns validated. */
 export const ecopilotProfileUpdateSchema = z.object({
   district: z.enum(ESPOO_DISTRICTS).optional(),
+  homeAddress: z.string().trim().max(200).nullable().optional(),
+  homeLat: z.number().min(-90).max(90).nullable().optional(),
+  homeLon: z.number().min(-180).max(180).nullable().optional(),
   housingType: z.enum(HOUSING_TYPES).optional(),
   householdSize: z.number().int().min(1).max(12).optional(),
   livingAreaSqM: z.number().min(15).max(500).optional(),
@@ -24,6 +40,7 @@ export const ecopilotProfileUpdateSchema = z.object({
   commuteHabit: z.enum(COMMUTE_HABITS).optional(),
   carType: z.enum(CAR_TYPES).nullable().optional(),
   carCo2GramsPerKm: z.number().min(0).max(1000).nullable().optional(),
+  frequentPlaces: z.array(frequentPlaceSchema).max(12).optional(),
   wasteManagementSystem: z.enum(WASTE_MANAGEMENT_SYSTEMS).optional(),
   estimatedFootprintTonnes: z.number().min(0).optional(),
   targetFootprintTonnes: z.number().min(0).optional(),
