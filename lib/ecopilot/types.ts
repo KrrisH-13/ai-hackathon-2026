@@ -60,11 +60,65 @@ export type WasteManagementSystem = (typeof WASTE_MANAGEMENT_SYSTEMS)[number];
 export const SAUNA_TYPES = ['electric', 'wood', 'none'] as const;
 export type SaunaType = (typeof SAUNA_TYPES)[number];
 
+/**
+ * Quick-select icon keys for a frequently-visited place. Kept as opaque
+ * strings here (the string → lucide component map lives in
+ * components/ecopilot/frequentPlaceIcons.tsx) so this file stays UI-free and
+ * lib/validation.ts can reuse the list.
+ */
+export const FREQUENT_PLACE_ICON_KEYS = [
+  'work',
+  'grocery',
+  'daycare',
+  'school',
+  'gym',
+  'health',
+  'family',
+  'transit',
+  'home',
+  'other',
+] as const;
+export type FrequentPlaceIconKey = (typeof FREQUENT_PLACE_ICON_KEYS)[number];
+
+/**
+ * Local transport modes offered per frequent place — a curated subset of
+ * ActivityMode (no plane/ferry) so a later "log a trip to this place" feature
+ * can hand the value straight to the activity logger.
+ */
+export const FREQUENT_PLACE_TRANSPORT_MODES = ['car', 'ev', 'bus', 'train', 'bike', 'walk'] as const;
+
+/**
+ * A place the user visits often (work, grocery store, a child's day care, a
+ * hobby class…). Stored on the profile as a small list; other features
+ * reference an entry by its stable `id`.
+ */
+export interface FrequentPlace {
+  /** Stable client-generated id — the key other features use to refer to this place. */
+  id: string;
+  /** User-facing name, e.g. "Work" or "Iso Omena". */
+  label: string;
+  /** Quick-select icon (see FREQUENT_PLACE_ICON_KEYS). */
+  icon: FrequentPlaceIconKey;
+  /** Optional usual way the user travels there; null when unset. */
+  transportMode: ActivityMode | null;
+  /** Street address (currently Finland-only lookup); null when not set. */
+  address: string | null;
+  /** Latitude captured when the address was picked from autocomplete; null for a hand-typed address. */
+  lat: number | null;
+  /** Longitude, paired with `lat`. */
+  lon: number | null;
+}
+
 export interface UserProfile {
   /** The Supabase auth user id this profile belongs to. */
   id: string;
   name: string;
   district: EspooDistrict;
+  /** Home street address (Finland lookup); null when not set. */
+  homeAddress: string | null;
+  /** Coordinates captured when the home address was picked from autocomplete; null otherwise. */
+  homeLat: number | null;
+  homeLon: number | null;
   housingType: HousingType;
   householdSize: number;
   livingAreaSqM: number;
@@ -78,6 +132,8 @@ export interface UserProfile {
   /** Only meaningful when commuteHabit involves driving. */
   carType: CarType | null;
   carCo2GramsPerKm: number | null;
+  /** Places the user visits often — used here for context and by later trip-logging features. */
+  frequentPlaces: FrequentPlace[];
   wasteManagementSystem: WasteManagementSystem;
   estimatedFootprintTonnes: number; // e.g., 4.8 t CO2e/year
   targetFootprintTonnes: number; // e.g., 2.5 t CO2e/year by 2030
