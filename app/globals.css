@@ -82,3 +82,15 @@
       4 9,
     text;
 }
+
+/*
+ * Softens the default OpenStreetMap tile style for maps that plot a handful
+ * of custom pins (see FavouritePlacesMapImpl.tsx) — desaturating and
+ * brightening the busy default colors/road-and-path overlays lets the pins
+ * read as the focal point without switching to a different tile provider
+ * (some, like CARTO's basemaps, now require an API key we don't have).
+ * Applied by Leaflet to each tile <img> via TileLayer's `className` prop.
+ */
+.muted-basemap-tiles {
+  filter: saturate(0.45) brightness(1.08) contrast(0.92);
+}
