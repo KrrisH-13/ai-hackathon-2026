@@ -1,11 +1,62 @@
 "use client";
 
-import { useState } from "react";
-import { Lightbulb, Sparkles, ArrowRight, AlertTriangle, Plus, CheckCircle2, ListChecks, Activity } from "lucide-react";
-import type { UserProfile, WhatIfProjection } from "@/lib/ecopilot/types";
-import { projectWhatIfScenarioAPI } from "@/lib/ecopilot/client";
+import { useEffect, useState } from "react";
+import {
+  Lightbulb,
+  Sparkles,
+  ArrowRight,
+  AlertTriangle,
+  Plus,
+  CheckCircle2,
+  ListChecks,
+  Activity,
+  Bike,
+  Flame,
+  Shuffle,
+  RotateCw as Spinner,
+} from "lucide-react";
+import type { CommuteComparison, FrequentPlace, UserProfile, WhatIfProjection } from "@/lib/ecopilot/types";
+import { compareCommuteAPI, projectWhatIfScenarioAPI, suggestHeatingOptimizationsAPI } from "@/lib/ecopilot/client";
 import { addCo2LogAPI } from "@/lib/ecopilot/profileClient";
 import { InfoHint } from "@/components/ecopilot/InfoHint";
+
+/** A personalized card, one click away from the same full projection panel a manually-typed question produces. */
+type Suggestion = WhatIfProjection & { kind: "transport" | "heating" };
+
+/** Gemini's `icon` field is unreliable (e.g. both EV and petrol car often come back "car" — see HslTransitCommuteView's own comment on this), so bike is the only mode matched by keyword; the car figure is just the highest-emission mode returned, which is always the fossil car per the prompt in compareCommuteEmissions. */
+function findBikeCo2Grams(modes: CommuteComparison["modes"]): number | null {
+  const mode = modes.find((m) => /bike|bicycle|cycl|pyör/.test(`${m.icon} ${m.name}`.toLowerCase()));
+  return mode ? mode.co2Grams : null;
+}
+
+/** Turns one HSL comparator result for a saved frequent place into a suggestion card — the concrete "bike/HSL beats car" callout. */
+function buildTransportSuggestion(place: FrequentPlace, comparison: CommuteComparison, isFinnish: boolean): Suggestion {
+  const bikeCo2 = findBikeCo2Grams(comparison.modes);
+  const carCo2 = comparison.modes.length > 0 ? Math.max(...comparison.modes.map((m) => m.co2Grams)) : null;
+  const advantage =
+    bikeCo2 != null && carCo2 != null && carCo2 > 0
+      ? isFinnish
+        ? ` Pyöräily päästäisi ${bikeCo2} g CO2/matka autoilun ${carCo2} g sijaan — ${Math.round((1 - bikeCo2 / carCo2) * 100)}% vähemmän.`
+        : ` Biking would emit ${bikeCo2} g CO2/trip vs ${carCo2} g by car — ${Math.round((1 - bikeCo2 / carCo2) * 100)}% less.`
+      : "";
+
+  return {
+    kind: "transport",
+    question: isFinnish
+      ? `Entä jos vaihtaisit kulkutavan reitillä Koti → ${place.label} HSL:ään tai pyörään?`
+      : `What if you switched Home → ${place.label} trips to HSL transit or biking?`,
+    narrative:
+      (isFinnish
+        ? `HSL-vertailu reitille ${comparison.origin} → ${comparison.destination} (${comparison.distanceKm} km).`
+        : `HSL comparison for ${comparison.origin} → ${comparison.destination} (${comparison.distanceKm} km).`) + advantage,
+    co2SavedKgPerYear: comparison.yearlySavingIfSwitchingToTransit.co2Kg,
+    moneySavedEurPerYear: comparison.yearlySavingIfSwitchingToTransit.moneyEur,
+    assumption: isFinnish
+      ? "Perustuu HSL-vertailuun juuri tälle reitille, olettaen 220 työpäivää vuodessa joukkoliikenteellä."
+      : "Based on the HSL comparator for this exact route, assuming 220 workdays/year switched to transit.",
+    confidence: "high",
+  };
+}
 
 interface WhatIfViewProps {
   userProfile: UserProfile;
@@ -16,12 +67,16 @@ const EXAMPLE_PROMPTS_EN = [
   "What if I biked instead of driving 3x/week?",
   "What if I switched to district heating?",
   "What if I took the train to Turku instead of driving?",
+  "What if I sorted all my waste per HSY guidelines instead of mixed waste?",
+  "What if I ran my sauna during off-peak electricity hours?",
 ];
 
 const EXAMPLE_PROMPTS_FI = [
   "Entä jos pyöräilisin autoilun sijaan 3x/viikossa?",
   "Entä jos vaihtaisin kaukolämpöön?",
   "Entä jos ottaisin junan Turkuun auton sijaan?",
+  "Entä jos lajittelisin kaiken jätteeni HSY:n ohjeiden mukaan sekajätteen sijaan?",
+  "Entä jos lämmittäisin saunan halvimman sähkön aikaan?",
 ];
 
 const CONFIDENCE_LABEL: Record<WhatIfProjection["confidence"], { en: string; fi: string; className: string }> = {
@@ -39,7 +94,45 @@ export function WhatIfView({ userProfile, isFinnish }: WhatIfViewProps) {
   const [isLogging, setIsLogging] = useState(false);
   const [loggedKeys, setLoggedKeys] = useState<Set<string>>(new Set());
   const [logError, setLogError] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(true);
   const prompts = isFinnish ? EXAMPLE_PROMPTS_FI : EXAMPLE_PROMPTS_EN;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSuggestions() {
+      // Only places with an already-driven/transit mode are worth an HSL alternative — bike/walk places are already optimal.
+      const eligiblePlaces = userProfile.homeAddress
+        ? userProfile.frequentPlaces
+            .filter((p) => p.address && p.transportMode !== "bike" && p.transportMode !== "walk")
+            .slice(0, 3)
+        : [];
+
+      const [transportSuggestions, heatingSuggestions] = await Promise.all([
+        Promise.all(
+          eligiblePlaces.map(async (place) => {
+            const comparison = await compareCommuteAPI(userProfile.homeAddress as string, place.address as string);
+            return buildTransportSuggestion(place, comparison, isFinnish);
+          })
+        ),
+        suggestHeatingOptimizationsAPI(userProfile).then((list) =>
+          list.map((s): Suggestion => ({ ...s, kind: "heating" }))
+        ),
+      ]);
+
+      if (!cancelled) {
+        setSuggestions([...transportSuggestions, ...heatingSuggestions]);
+        setIsLoadingSuggestions(false);
+      }
+    }
+
+    loadSuggestions();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one personalized batch per profile snapshot, mirrors ActivityLoggerView's mount-only load
+  }, []);
 
   const isCurrentAdded = projection ? planItems.includes(projection) : false;
   const projectionKey = projection ? projection.question + projection.narrative : null;
@@ -66,20 +159,27 @@ export function WhatIfView({ userProfile, isFinnish }: WhatIfViewProps) {
     }
   };
 
-  const handleAsk = async () => {
-    const question = draft.trim();
+  const handleAsk = async (questionOverride?: string) => {
+    const question = (questionOverride ?? draft).trim();
     if (!question || isLoading) return;
 
     setIsLoading(true);
     setErrorMessage(null);
     try {
       const result = await projectWhatIfScenarioAPI(question, userProfile);
+      setDraft(question);
       setProjection(result);
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Failed to generate a projection");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  /** Picks a random CO2-saving topic and asks it immediately — a one-click alternative to typing or picking a personalized suggestion. */
+  const handleRandomAsk = () => {
+    const pool = isFinnish ? EXAMPLE_PROMPTS_FI : EXAMPLE_PROMPTS_EN;
+    handleAsk(pool[Math.floor(Math.random() * pool.length)]);
   };
 
   return (
@@ -96,65 +196,6 @@ export function WhatIfView({ userProfile, isFinnish }: WhatIfViewProps) {
             ? "Kysy esimerkiksi mitä tapahtuisi, jos vaihtaisit kulkutapaa — arvio perustuu päiväkirjaan kirjattuihin matkoihisi."
             : "Ask something like what would happen if you changed a habit — the projection reasons over your logged activity."}
         </p>
-      </div>
-
-      <div className="rounded-3xl bg-white border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4">
-        <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-          {isFinnish ? "Kuvaile muutos, jonka haluat arvioida:" : "Describe the change you want to project:"}
-          <InfoHint
-            isFinnish={isFinnish}
-            label={isFinnish ? "Skenaario" : "Scenario"}
-            instruction={
-              isFinnish
-                ? "Kysy ”entä jos” yhden tavan muuttamisesta. Kerro kuinka usein ja mistä mihin vaihtaisit."
-                : "Ask a 'what if' about changing one habit. Include how often, and what you'd switch from and to."
-            }
-            example={
-              isFinnish
-                ? "Entä jos pyöräilisin töihin 3 päivänä viikossa autoilun sijaan?"
-                : "What if I biked to work 3 days a week instead of driving?"
-            }
-          />
-        </label>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <input
-            type="text"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleAsk()}
-            placeholder={prompts[0]}
-            disabled={isLoading}
-            className="visible-text-cursor flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-cyan-500 shadow-xs disabled:opacity-60"
-          />
-          <button
-            onClick={handleAsk}
-            disabled={!draft.trim() || isLoading}
-            className="px-4 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 text-white font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-sm shadow-cyan-600/20"
-          >
-            <Sparkles className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
-            <span>{isLoading ? (isFinnish ? "Lasketaan…" : "Thinking…") : isFinnish ? "Kysy" : "Ask"}</span>
-          </button>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          {prompts.map((p) => (
-            <button
-              key={p}
-              onClick={() => setDraft(p)}
-              disabled={isLoading}
-              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-cyan-50 hover:text-cyan-900 text-slate-700 text-xs font-medium border border-slate-200 transition disabled:opacity-60"
-            >
-              {p}
-            </button>
-          ))}
-        </div>
-
-        {errorMessage && (
-          <p className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2 flex items-center gap-1.5">
-            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-            <span>{errorMessage}</span>
-          </p>
-        )}
       </div>
 
       {projection && (
@@ -254,6 +295,120 @@ export function WhatIfView({ userProfile, isFinnish }: WhatIfViewProps) {
           </p>
         </div>
       )}
+
+      <div className="rounded-3xl bg-white border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4">
+        <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+          {isFinnish ? "Kuvaile muutos, jonka haluat arvioida:" : "Describe the change you want to project:"}
+          <InfoHint
+            isFinnish={isFinnish}
+            label={isFinnish ? "Skenaario" : "Scenario"}
+            instruction={
+              isFinnish
+                ? "Kysy ”entä jos” yhden tavan muuttamisesta. Kerro kuinka usein ja mistä mihin vaihtaisit."
+                : "Ask a 'what if' about changing one habit. Include how often, and what you'd switch from and to."
+            }
+            example={
+              isFinnish
+                ? "Entä jos pyöräilisin töihin 3 päivänä viikossa autoilun sijaan?"
+                : "What if I biked to work 3 days a week instead of driving?"
+            }
+          />
+        </label>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <input
+            type="text"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleAsk()}
+            placeholder={prompts[0]}
+            disabled={isLoading}
+            className="visible-text-cursor flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-cyan-500 shadow-xs disabled:opacity-60"
+          />
+          <button
+            onClick={() => handleAsk()}
+            disabled={!draft.trim() || isLoading}
+            className="px-4 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 text-white font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-sm shadow-cyan-600/20"
+          >
+            <Sparkles className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
+            <span>{isLoading ? (isFinnish ? "Lasketaan…" : "Thinking…") : isFinnish ? "Kysy" : "Ask"}</span>
+          </button>
+        </div>
+
+        {(isLoadingSuggestions || suggestions.length > 0) && (
+          <div className="space-y-1.5">
+            <span className="text-[12px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles className="w-3 h-3 text-cyan-600" />
+              {isFinnish ? "Sinulle räätälöityä" : "Personalized for you"}
+            </span>
+            {isLoadingSuggestions ? (
+              <div className="h-10 flex items-center gap-2 text-slate-400 text-xs">
+                <Spinner className="w-4 h-4 animate-spin" />
+                {isFinnish ? "Ladataan..." : "Loading..."}
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {suggestions.map((s, idx) => {
+                  const isActive = projection?.question === s.question;
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setProjection(s)}
+                      aria-pressed={isActive}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition ${
+                        isActive
+                          ? "bg-cyan-600 border-cyan-600 text-white"
+                          : "bg-slate-100 hover:bg-cyan-50 hover:text-cyan-900 text-slate-700 border-slate-200"
+                      }`}
+                    >
+                      {s.kind === "transport" ? (
+                        <Bike className="w-3.5 h-3.5 shrink-0" />
+                      ) : (
+                        <Flame className="w-3.5 h-3.5 shrink-0" />
+                      )}
+                      <span>{s.question}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="space-y-1.5">
+          <span className="text-[12px] font-bold text-slate-400 uppercase tracking-wider">
+            {isFinnish ? "Esimerkkejä" : "Examples"}
+          </span>
+          <div className="flex flex-wrap gap-2">
+            {prompts.map((p) => (
+              <button
+                key={p}
+                onClick={() => setDraft(p)}
+                disabled={isLoading}
+                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-cyan-50 hover:text-cyan-900 text-slate-700 text-xs font-medium border border-slate-200 transition disabled:opacity-60"
+              >
+                {p}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={handleRandomAsk}
+              disabled={isLoading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-50 hover:bg-cyan-100 text-cyan-900 text-xs font-bold border border-dashed border-cyan-300 transition disabled:opacity-60"
+            >
+              <Shuffle className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
+              <span>{isFinnish ? "Satunnainen aihe" : "Random topic"}</span>
+            </button>
+          </div>
+        </div>
+
+        {errorMessage && (
+          <p className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2 flex items-center gap-1.5">
+            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+            <span>{errorMessage}</span>
+          </p>
+        )}
+      </div>
 
       {planItems.length > 0 && (
         <div className="rounded-3xl bg-white border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4 animate-fadeIn">

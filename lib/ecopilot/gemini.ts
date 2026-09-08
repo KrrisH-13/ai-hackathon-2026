@@ -306,6 +306,61 @@ Project the annual impact of this change (CO2 kg saved/year and € saved/year),
 }
 
 /**
+ * 4c. Heating Optimization Suggestions — proposes concrete, structural
+ * changes for this specific home's heating system(s) (not the daily Nord
+ * Pool schedule optimizeDailyEnergy already covers), grounded in the
+ * resident's logged heating/energy CO2 entries where there are any.
+ */
+export async function suggestHeatingOptimizations(
+  userProfile: UserProfile,
+  recentLogs: Co2LogEntry[]
+): Promise<WhatIfProjection[]> {
+  const heatingLogs = recentLogs.filter((l) => l.category === "heating" || l.category === "energy");
+
+  const prompt = `A resident of Espoo, Finland wants ideas to cut both the cost and CO2 footprint of their home's heating, structurally — not just today's Nord Pool schedule.
+
+Home: ${userProfile.housingType}, ${userProfile.livingAreaSqM}m², ${userProfile.householdSize} person household, District: ${userProfile.district}.
+Heating system(s): ${userProfile.heatingSystems.join(", ") || "none set"}.
+Electricity contract: ${userProfile.electricityContract}.
+
+${heatingLogs.length > 0 ? `Their logged heating/energy CO2 entries:\n${summarizeCo2Logs(heatingLogs)}` : "No heating/energy entries logged yet — reason from the profile and typical Finnish housing data."}
+
+Suggest 2-3 distinct, concrete optimizations for THIS home's heating setup (e.g. a heating-curve/thermostat setback schedule, swapping a fossil element for a heat pump, improving insulation or ventilation heat recovery, or a housing-company energy renovation grant) — each phrased as a short "what if" question, with the projected annual CO2 kg saved and € saved, the assumption behind that number, and your confidence.`;
+
+  const response = await ai.models.generateContent({
+    model: MODEL_NAME,
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          suggestions: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                question: { type: Type.STRING },
+                narrative: { type: Type.STRING },
+                co2SavedKgPerYear: { type: Type.NUMBER },
+                moneySavedEurPerYear: { type: Type.NUMBER },
+                assumption: { type: Type.STRING },
+                confidence: { type: Type.STRING, enum: ["high", "medium", "low"] },
+              },
+              required: ["question", "narrative", "co2SavedKgPerYear", "moneySavedEurPerYear", "assumption", "confidence"],
+            },
+          },
+        },
+        required: ["suggestions"],
+      },
+    },
+  });
+
+  const parsed = JSON.parse(response.text || "{}");
+  return (parsed.suggestions ?? []) as WhatIfProjection[];
+}
+
+/**
  * 4. HSL Commute & Journey Carbon Analyzer (Espoo routes, Pikaratikka 15, Metro, E-bike, Car)
  */
 export async function compareCommuteEmissions(origin: string, destination: string): Promise<CommuteComparison> {
