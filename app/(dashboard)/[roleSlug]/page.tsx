@@ -3,7 +3,12 @@ import { getUser, getProfile } from "@/lib/supabase/auth";
 import { createServerComponentClient } from "@/lib/supabase/server";
 import { loadUserProfile, displayNameFromUser } from "@/lib/ecopilot/queries";
 import { fetchCurrentEspooTemperatureCelsius, FALLBACK_OUTDOOR_TEMP_CELSIUS } from "@/lib/ecopilot/weather";
-import { fetchTodaySpotPricesCentsPerKwh, applyLivePrices } from "@/lib/ecopilot/gridPrice";
+import {
+  fetchTodaySpotPricesCentsPerKwh,
+  applyLivePrices,
+  fetchTodayGridCo2IntensityGramsPerKwh,
+  applyLiveCo2Intensity,
+} from "@/lib/ecopilot/gridPrice";
 import { MOCK_HOURLY_SPOT_PRICES } from "@/lib/ecopilot/data";
 import { EcopilotApp } from "@/components/ecopilot/EcopilotApp";
 import { ROUTES, ROLES, ROLE_ROUTE_SLUGS } from "@/lib/constants";
@@ -29,15 +34,16 @@ export default async function RoleDashboardPage({ params }: RoleDashboardPagePro
   if (profile.role !== role) redirect(ROUTES.dashboard(profile.role));
 
   const supabase = await createServerComponentClient();
-  const [ecopilotProfile, liveTemperatureCelsius, liveSpotPrices] = await Promise.all([
+  const [ecopilotProfile, liveTemperatureCelsius, liveSpotPrices, liveCo2Intensity] = await Promise.all([
     loadUserProfile(user.id, displayNameFromUser(user), supabase),
     fetchCurrentEspooTemperatureCelsius(),
     fetchTodaySpotPricesCentsPerKwh(),
+    fetchTodayGridCo2IntensityGramsPerKwh(),
   ]);
   if (!ecopilotProfile) redirect(ROUTES.unauthorized);
 
   const initialOutdoorTempCelsius = liveTemperatureCelsius ?? FALLBACK_OUTDOOR_TEMP_CELSIUS;
-  const spotPrices = applyLivePrices(MOCK_HOURLY_SPOT_PRICES, liveSpotPrices);
+  const spotPrices = applyLiveCo2Intensity(applyLivePrices(MOCK_HOURLY_SPOT_PRICES, liveSpotPrices), liveCo2Intensity);
 
   return (
     <EcopilotApp
@@ -46,6 +52,7 @@ export default async function RoleDashboardPage({ params }: RoleDashboardPagePro
       initialOutdoorTempCelsius={initialOutdoorTempCelsius}
       spotPrices={spotPrices}
       isLiveSpotPrices={liveSpotPrices !== null}
+      isLiveCo2Intensity={liveCo2Intensity !== null}
     />
   );
 }

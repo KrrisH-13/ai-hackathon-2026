@@ -44,6 +44,7 @@ export const API_ROUTES = {
   aiOptimizeEnergy: "/api/ai/optimize-energy",
   aiCompareCommute: "/api/ai/compare-commute",
   aiWhatIf: "/api/ai/what-if",
+  aiSuggestHeating: "/api/ai/suggest-heating",
   aiExtractActivity: "/api/ai/extract-activity",
   ecopilotProfile: "/api/ecopilot/profile",
   ecopilotCo2Logs: "/api/ecopilot/co2-logs",

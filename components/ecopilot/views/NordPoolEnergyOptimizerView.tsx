@@ -3,10 +3,21 @@
 import { useState, useEffect } from "react";
 import { Zap, RotateCw, Sparkles, Clock, ShieldCheck } from "lucide-react";
 import type { UserProfile, DailyEnergyPlan, SpotPricePoint } from "@/lib/ecopilot/types";
-import { calculateDeterministicHeatingAdjustment } from "@/lib/ecopilot/calculations";
+import { calculateDeterministicHeatingAdjustment, calculateDeterministicSaunaImpact } from "@/lib/ecopilot/calculations";
 import { optimizeDailyEnergyAPI } from "@/lib/ecopilot/client";
-import { DataFreshnessBadge } from "@/components/ecopilot/DataFreshnessBadge";
 import { InfoHint } from "@/components/ecopilot/InfoHint";
+import { ViewHero } from "@/components/ecopilot/ViewHero";
+
+/** Finland's grid runs on nuclear + hydro + wind, so its typical CO2 range sits far below a generic European grid — these bands replace the old EU-generic 45/85 g thresholds. */
+const CO2_CLEAN_MAX_G = 20;
+const CO2_MODERATE_MAX_G = 40;
+
+/** Cheapest hour within a practical waking-hours window — a 03:00 price dip is the AI's cheapest slot, but nobody saunas at 3am. */
+function cheapestHourInRange(points: SpotPricePoint[], minHour: number, maxHour: number): SpotPricePoint | null {
+  const inRange = points.filter((p) => p.hour >= minHour && p.hour <= maxHour);
+  if (inRange.length === 0) return null;
+  return inRange.reduce((best, p) => (p.priceCentsKwh < best.priceCentsKwh ? p : best));
+}
 
 interface NordPoolEnergyOptimizerViewProps {
   userProfile: UserProfile;
@@ -16,6 +27,8 @@ interface NordPoolEnergyOptimizerViewProps {
   spotPrices: SpotPricePoint[];
   /** Whether the live spot-price fetch actually succeeded this page load. */
   isLiveSpotPrices: boolean;
+  /** Whether the live Fingrid grid CO2 intensity fetch actually succeeded this page load. */
+  isLiveCo2Intensity: boolean;
   isFinnish: boolean;
 }
 
@@ -23,13 +36,13 @@ export function NordPoolEnergyOptimizerView({
   userProfile,
   outdoorTempCelsius,
   spotPrices,
-  isLiveSpotPrices,
+  isLiveCo2Intensity,
   isFinnish,
 }: NordPoolEnergyOptimizerViewProps) {
   const [selectedHour, setSelectedHour] = useState<number>(21);
   const [aiEnergyPlan, setAiEnergyPlan] = useState<DailyEnergyPlan | null>(null);
   const [isComputingPlan, setIsComputingPlan] = useState<boolean>(false);
-  const [chartMode, setChartMode] = useState<"co2" | "price" | "dual">("co2");
+  const [chartMode, setChartMode] = useState<"co2" | "price" | "dual">("dual");
   const [hoveredHour, setHoveredHour] = useState<number | null>(null);
 
   const fetchDailyPlan = async () => {
@@ -57,47 +70,32 @@ export function NordPoolEnergyOptimizerView({
   // Every 1°C of thermostat reduction, computed deterministically from the profile's living area & current outdoor temperature.
   const heatingAdjustment = calculateDeterministicHeatingAdjustment(userProfile.livingAreaSqM, 1, outdoorTempCelsius);
 
+  // Best realistic sauna slot — cheapest/cleanest hour between 08:00-22:00, not just the cheapest hour of the whole day.
+  const bestSaunaSlot = cheapestHourInRange(spotPrices, 8, 22);
+  const saunaImpact = bestSaunaSlot
+    ? calculateDeterministicSaunaImpact(6.8, 75, bestSaunaSlot.priceCentsKwh, bestSaunaSlot.gridCo2IntensityGramsKwh)
+    : null;
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 space-y-8 animate-fadeIn">
       {/* Header Banner */}
-      <div className="rounded-3xl bg-gradient-to-r from-amber-50/80 via-white to-emerald-50/60 border border-amber-200/80 p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xs">
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-200">
-              ⚡ {isFinnish ? "Nord Pool Pörssisähkö & Lämpö" : "Nord Pool Spot Electricity & Heat"}
-            </span>
-            <span className="text-xs text-slate-500 font-medium">
-              {isFinnish ? `Espoo: ${outdoorTempCelsius}°C ulkona` : `Espoo: ${outdoorTempCelsius}°C outside`}
-            </span>
-          </div>
-          <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-            {isFinnish ? "Älykäs Sähkön ja Lämmityksen Arkioptimoija" : "Smart Energy & Heating Daily Optimizer"}
-          </h2>
-          <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
-            {isFinnish
-              ? "Yhdistää Nord Pool -tuntihinnat ja suomalaisen asunnon lämmitysjärjestelmän optimaaliseen arkeen."
-              : "Syncs hourly Nord Pool spot rates with your Finnish home's heating system for peak savings."}
-          </p>
-        </div>
-
-        <button
-          onClick={fetchDailyPlan}
-          disabled={isComputingPlan}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 disabled:opacity-50 transition shadow-sm shrink-0"
-        >
-          {isComputingPlan ? (
-            <>
-              <RotateCw className="w-4 h-4 animate-spin" />
-              <span>{isFinnish ? "Lasketaan..." : "Computing..."}</span>
-            </>
-          ) : (
-            <>
-              <Sparkles className="w-4 h-4 text-amber-400" />
-              <span>{isFinnish ? "Päivitä AI-Suositukset" : "Refresh AI Plan"}</span>
-            </>
-          )}
-        </button>
-      </div>
+      <ViewHero
+        accent="amber"
+        isFinnish={isFinnish}
+        storageKey="energy"
+        badge={`⚡ ${isFinnish ? "Nord Pool Pörssisähkö & Lämpö" : "Nord Pool Spot Electricity & Heat"}`}
+        title={isFinnish ? "Älykäs Sähkön ja Lämmityksen Arkioptimoija" : "Smart Energy & Heating Daily Optimizer"}
+        description={
+          isFinnish
+            ? "Yhdistää Nord Pool -tuntihinnat ja suomalaisen asunnon lämmitysjärjestelmän optimaaliseen arkeen."
+            : "Syncs hourly Nord Pool spot rates with your Finnish home's heating system for peak savings."
+        }
+        actions={
+          <span className="text-xs text-slate-500 font-medium px-2.5 py-1.5 rounded-xl bg-white/70 border border-slate-200 shrink-0">
+            {isFinnish ? `Espoo: ${outdoorTempCelsius}°C ulkona` : `Espoo: ${outdoorTempCelsius}°C outside`}
+          </span>
+        }
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left: 24-hour CO2 Intensity & Spot Price Interactive Graph */}
@@ -121,16 +119,15 @@ export function NordPoolEnergyOptimizerView({
                       : "Pick 02:00 to see overnight price and emissions"
                   }
                 />
-                <DataFreshnessBadge
-                  freshness={isLiveSpotPrices ? "live" : "reference"}
-                  sourceName="porssisahko.net (Finnish day-ahead spot price)"
-                  isFinnish={isFinnish}
-                />
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                {isFinnish
-                  ? "Hinta on Suomen pörssisähkön päivähinta. Päästökerroin on arvio, ei reaaliaikainen mittaus."
-                  : "Price is the real Finnish day-ahead spot rate. CO₂ intensity is a reference estimate, not a live grid measurement."}
+                {isLiveCo2Intensity
+                  ? isFinnish
+                    ? "Hinta on Suomen pörssisähkön päivähinta. Päästökerroin on Fingridin todellista dataa: kuluneilta tunneilta tämän päivän oma lukema, loppupäivälle eilisen toteuma samalta kellonajalta (Fingrid ei ennusta tulevaa)."
+                    : "Price is the real Finnish day-ahead spot rate. CO₂ intensity is real Fingrid data: today's own reading for hours already passed, yesterday's actual reading at that same hour for the rest of today (Fingrid's feed can't forecast)."
+                  : isFinnish
+                    ? "Hinta on Suomen pörssisähkön päivähinta. Päästökerroin on arvio, ei Fingridin dataa (aseta FINGRID_API_KEY ottaaksesi Fingridin datan käyttöön)."
+                    : "Price is the real Finnish day-ahead spot rate. CO₂ intensity is a reference estimate, not Fingrid data (set FINGRID_API_KEY to enable it)."}
               </p>
             </div>
 
@@ -162,32 +159,25 @@ export function NordPoolEnergyOptimizerView({
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-2 text-[12px] font-semibold bg-slate-50 p-2.5 rounded-xl border border-slate-200/80">
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="text-slate-500 font-bold">{isFinnish ? "Päästötasot:" : "Grid Zones:"}</span>
-              <span className="flex items-center gap-1 text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded-md">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                &lt; 45 g {isFinnish ? "(Puhdas)" : "(Clean)"}
-              </span>
-              <span className="flex items-center gap-1 text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-md">
-                <span className="w-2 h-2 rounded-full bg-amber-500" />
-                45 - 85 g {isFinnish ? "(Kohtalainen)" : "(Moderate)"}
-              </span>
-              <span className="flex items-center gap-1 text-rose-800 bg-rose-100/80 px-2 py-0.5 rounded-md">
-                <span className="w-2 h-2 rounded-full bg-rose-500" />
-                &gt; 85 g {isFinnish ? "(Huippukuorma)" : "(Peak)"}
-              </span>
-            </div>
-            <div className="text-slate-500 italic text-[12px]">
-              {isFinnish ? "💡 Klikkaa tuntia vaihtaaksesi laskurin aikaa" : "💡 Click any hour on the graph to select it"}
-            </div>
-          </div>
+          <p className="text-[12px] text-slate-500 italic bg-slate-50 px-2.5 py-2 rounded-xl border border-slate-200/80">
+            {isFinnish ? "💡 Klikkaa tuntia vaihtaaksesi laskurin aikaa" : "💡 Click any hour on the graph to select it"}
+          </p>
 
           {/* Interactive SVG chart */}
           <div className="relative pt-2 pb-1">
             {spotPrices.length > 0 &&
               (() => {
-                const maxCo2 = Math.max(160, ...spotPrices.map((p) => p.gridCo2IntensityGramsKwh)) + 15;
+                // Auto-scaled to today's actual data (with a little headroom) instead of a
+                // fixed ceiling — a genuinely clean day (single-digit g/kWh) shouldn't get
+                // squashed into a sliver at the bottom of a chart sized for a 140g worst case.
+                const co2DataMax = Math.max(...spotPrices.map((p) => p.gridCo2IntensityGramsKwh));
+                const maxCo2 = co2DataMax + Math.max(co2DataMax * 0.2, 5);
+                const co2Ticks = Array.from(
+                  new Set([0, Math.round(maxCo2 * 0.25), Math.round(maxCo2 * 0.5), Math.round(maxCo2 * 0.75), Math.round(maxCo2)])
+                );
+
+                const priceDataMax = Math.max(...spotPrices.map((p) => p.priceCentsKwh));
+                const maxPrice = priceDataMax + Math.max(priceDataMax * 0.15, 1);
 
                 const svgW = 680;
                 const svgH = 190;
@@ -200,10 +190,7 @@ export function NordPoolEnergyOptimizerView({
 
                 const getX = (hour: number) => padLeft + (hour / 23) * plotW;
                 const getYCo2 = (val: number) => padTop + (1 - Math.max(0, val) / maxCo2) * plotH;
-                const getYPrice = (val: number) => {
-                  const maxPrice = Math.max(22, ...spotPrices.map((p) => p.priceCentsKwh)) + 2;
-                  return padTop + (1 - Math.max(0, val) / maxPrice) * plotH;
-                };
+                const getYPrice = (val: number) => padTop + (1 - Math.max(0, val) / maxPrice) * plotH;
 
                 const points = spotPrices.map((p) => ({ x: getX(p.hour), y: getYCo2(p.gridCo2IntensityGramsKwh), p }));
 
@@ -218,7 +205,11 @@ export function NordPoolEnergyOptimizerView({
 
                 return (
                   <div className="relative">
-                    <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-full h-48 sm:h-56 overflow-visible select-none">
+                    <svg
+                      viewBox={`0 0 ${svgW} ${svgH}`}
+                      preserveAspectRatio="none"
+                      className="w-full h-48 sm:h-56 overflow-visible select-none"
+                    >
                       <defs>
                         <linearGradient id="co2AreaGradient" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="0%" stopColor="#10b981" stopOpacity="0.45" />
@@ -232,36 +223,7 @@ export function NordPoolEnergyOptimizerView({
                         </linearGradient>
                       </defs>
 
-                      {(chartMode === "co2" || chartMode === "dual") && (
-                        <>
-                          <rect
-                            x={padLeft}
-                            y={padTop}
-                            width={plotW}
-                            height={Math.max(0, getYCo2(85) - padTop)}
-                            fill="#fee2e2"
-                            fillOpacity="0.35"
-                          />
-                          <rect
-                            x={padLeft}
-                            y={getYCo2(85)}
-                            width={plotW}
-                            height={Math.max(0, getYCo2(45) - getYCo2(85))}
-                            fill="#fef3c7"
-                            fillOpacity="0.35"
-                          />
-                          <rect
-                            x={padLeft}
-                            y={getYCo2(45)}
-                            width={plotW}
-                            height={Math.max(0, padTop + plotH - getYCo2(45))}
-                            fill="#d1fae5"
-                            fillOpacity="0.45"
-                          />
-                        </>
-                      )}
-
-                      {[0, 45, 85, 130, Math.round(maxCo2 - 15)].map((tickVal) => {
+                      {co2Ticks.map((tickVal) => {
                         const yPos = getYCo2(tickVal);
                         if (yPos < padTop || yPos > padTop + plotH) return null;
                         return (
@@ -343,7 +305,13 @@ export function NordPoolEnergyOptimizerView({
                                 cx={cx}
                                 cy={cy}
                                 r={isSelected ? 6.5 : isHovered ? 5.5 : 3.5}
-                                fill={p.gridCo2IntensityGramsKwh < 45 ? "#10b981" : p.gridCo2IntensityGramsKwh < 85 ? "#f59e0b" : "#ef4444"}
+                                fill={
+                                  p.gridCo2IntensityGramsKwh < CO2_CLEAN_MAX_G
+                                    ? "#10b981"
+                                    : p.gridCo2IntensityGramsKwh < CO2_MODERATE_MAX_G
+                                      ? "#f59e0b"
+                                      : "#ef4444"
+                                }
                                 stroke="#ffffff"
                                 strokeWidth={isSelected || isHovered ? "2.5" : "1.5"}
                                 className="transition-all duration-150"
@@ -378,18 +346,18 @@ export function NordPoolEnergyOptimizerView({
                               <span>{activePoint.timeLabel}</span>
                               <span
                                 className={`px-2 py-0.5 rounded-md text-[12px] font-bold ${
-                                  activePoint.gridCo2IntensityGramsKwh < 45
+                                  activePoint.gridCo2IntensityGramsKwh < CO2_CLEAN_MAX_G
                                     ? "bg-emerald-500 text-slate-950"
-                                    : activePoint.gridCo2IntensityGramsKwh < 85
+                                    : activePoint.gridCo2IntensityGramsKwh < CO2_MODERATE_MAX_G
                                       ? "bg-amber-400 text-slate-950"
                                       : "bg-rose-500 text-white"
                                 }`}
                               >
-                                {activePoint.gridCo2IntensityGramsKwh < 45
+                                {activePoint.gridCo2IntensityGramsKwh < CO2_CLEAN_MAX_G
                                   ? isFinnish
                                     ? "🌱 Puhdas"
                                     : "🌱 Clean"
-                                  : activePoint.gridCo2IntensityGramsKwh < 85
+                                  : activePoint.gridCo2IntensityGramsKwh < CO2_MODERATE_MAX_G
                                     ? isFinnish
                                       ? "⚖️ Kohtalainen"
                                       : "⚖️ Moderate"
@@ -452,90 +420,92 @@ export function NordPoolEnergyOptimizerView({
                 </div>
               );
             })()}
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-100 text-xs space-y-1">
-              <div className="font-bold text-emerald-950 flex items-center gap-1">
-                <span>🧺 Pyykinpesu & Tiskari</span>
-              </div>
-              <p className="text-xs text-emerald-800">{aiEnergyPlan?.laundryWindow || "13:00 - 15:00 (Aurinkotuotannon huippu)"}</p>
-            </div>
-
-            <div className="p-3 rounded-xl bg-blue-50 border border-blue-100 text-xs space-y-1">
-              <div className="font-bold text-blue-950 flex items-center gap-1">
-                <span>🚗 Sähköauton Lataus</span>
-              </div>
-              <p className="text-xs text-blue-800">{aiEnergyPlan?.evChargingWindow || "01:00 - 05:00 (Hinta vain 1.2 c/kWh)"}</p>
-            </div>
-
-            <div className="p-3 rounded-xl bg-indigo-50 border border-indigo-100 text-xs space-y-1">
-              <div className="font-bold text-indigo-950 flex items-center gap-1">
-                <span>💨 LTO-Ilmanvaihto</span>
-              </div>
-              <p className="text-xs text-indigo-800">{aiEnergyPlan?.ventilationAdjustment || "Sulje kesäohitus pakkasella"}</p>
-            </div>
-          </div>
         </div>
 
         {/* Right: Today's Recommended Time Windows */}
-        <div className="lg:col-span-5 p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-4 flex flex-col justify-between">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center">
-                  <Clock className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-base font-extrabold text-slate-900">
-                    {isFinnish ? "Päivän Parhaat Ajankohdat" : "Today's Optimal Time Windows"}
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    {isFinnish ? "Pörssisähkön hinnan ja sään perusteella" : "Based on today's spot price & weather"}
-                  </p>
-                </div>
+        <div className="lg:col-span-5 p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center">
+                <Clock className="w-4 h-4" />
               </div>
-              {isComputingPlan && <RotateCw className="w-4 h-4 text-slate-400 animate-spin shrink-0" />}
+              <div>
+                <h3 className="text-base font-extrabold text-slate-900">
+                  {isFinnish ? "Päivän Parhaat Ajankohdat" : "Today's Optimal Time Windows"}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  {isFinnish ? "Pörssisähkön hinnan ja sään perusteella" : "Based on today's spot price & weather"}
+                </p>
+              </div>
             </div>
+            <button
+              type="button"
+              onClick={fetchDailyPlan}
+              disabled={isComputingPlan}
+              title={isFinnish ? "Päivitä AI-suositukset" : "Refresh AI plan"}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-700 text-[12px] font-bold transition shrink-0"
+            >
+              {isComputingPlan ? (
+                <RotateCw className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+              )}
+              <span>{isFinnish ? "Päivitä" : "Refresh"}</span>
+            </button>
+          </div>
 
-            {/* Sauna window */}
-            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200/80 space-y-1.5">
+          {/* EV charging window — mobility, not housing, kept separate from the section below */}
+          <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200/80 space-y-1.5">
+            <span className="text-xs font-extrabold text-blue-950 flex items-center gap-1.5">
+              <span>🚗</span>
+              <span>{isFinnish ? "Sähköauton lataus" : "EV Charging"}</span>
+            </span>
+            <p className="text-xs text-blue-900 leading-relaxed">
+              {aiEnergyPlan?.evChargingWindow ||
+                (isFinnish ? "01:00 - 05:00 (halvin yöikkuna)" : "01:00 - 05:00 (cheapest overnight window)")}
+            </p>
+          </div>
+
+          {/* Housing, sauna & heating advice — one section for every home-related recommendation */}
+          <div className="p-4 rounded-2xl bg-white border-2 border-amber-200 space-y-4">
+            <span className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
+              <span>🏠</span>
+              <span>{isFinnish ? "Asumisen, saunan & lämmityksen vinkit" : "Housing, Sauna & Heating Advice"}</span>
+            </span>
+
+            {/* Sauna window — cheapest/cleanest hour within realistic waking hours, not just the day's cheapest hour */}
+            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200/80 space-y-1.5">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs font-extrabold text-amber-950 flex items-center gap-1.5">
                   <span>🔥</span>
-                  <span>{isFinnish ? "Sauna" : "Sauna"}</span>
+                  <span>{isFinnish ? "Sauna (klo 08–22)" : "Sauna (08:00–22:00)"}</span>
                 </span>
-                <span className="text-sm font-black text-amber-900 text-right">
-                  {aiEnergyPlan?.peakSaunaWindow.recommendedTime || (isFinnish ? "klo 21:00 - 22:00" : "21:00 - 22:00")}
-                </span>
+                {bestSaunaSlot && (
+                  <span className="text-sm font-black text-amber-900 text-right">
+                    {String(bestSaunaSlot.hour).padStart(2, "0")}:00
+                  </span>
+                )}
               </div>
               <p className="text-xs text-amber-900 leading-relaxed">
-                {aiEnergyPlan?.peakSaunaWindow.reason ||
-                  (isFinnish
-                    ? "Sähkö on tyypillisesti halvempaa ja puhtaampaa illalla klo 21 jälkeen."
-                    : "Electricity is typically cheaper and cleaner after 21:00.")}
+                {bestSaunaSlot
+                  ? isFinnish
+                    ? `Halvin ja puhtain realistinen sauna-aika normaalien heräämisaikojen sisällä: ${bestSaunaSlot.priceCentsKwh} c/kWh, ${bestSaunaSlot.gridCo2IntensityGramsKwh} g CO₂/kWh.`
+                    : `The cheapest, cleanest realistic sauna slot within normal waking hours: ${bestSaunaSlot.priceCentsKwh} c/kWh, ${bestSaunaSlot.gridCo2IntensityGramsKwh} g CO₂/kWh.`
+                  : aiEnergyPlan?.peakSaunaWindow.reason ||
+                    (isFinnish
+                      ? "Sähkö on tyypillisesti halvempaa ja puhtaampaa illalla klo 21 jälkeen."
+                      : "Electricity is typically cheaper and cleaner after 21:00.")}
               </p>
-              {aiEnergyPlan?.peakSaunaWindow.savingsEur && (
+              {saunaImpact && (
                 <p className="text-[12px] text-amber-700 font-bold">
-                  {isFinnish ? "Säästö" : "Savings"}: {aiEnergyPlan.peakSaunaWindow.savingsEur}
-                  {aiEnergyPlan.peakSaunaWindow.co2ReductionPercent ? ` · -${aiEnergyPlan.peakSaunaWindow.co2ReductionPercent} CO₂` : ""}
+                  {isFinnish ? "Säästö iltahuippuun verrattuna" : "Savings vs. evening peak"}: +
+                  {saunaImpact.shiftComparison.costDifferenceEur} € · -{saunaImpact.shiftComparison.co2DifferenceKg} kg CO₂
                 </p>
               )}
             </div>
 
-            {/* EV charging window */}
-            <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200/80 space-y-1.5">
-              <span className="text-xs font-extrabold text-blue-950 flex items-center gap-1.5">
-                <span>🚗</span>
-                <span>{isFinnish ? "Sähköauton lataus" : "EV Charging"}</span>
-              </span>
-              <p className="text-xs text-blue-900 leading-relaxed">
-                {aiEnergyPlan?.evChargingWindow ||
-                  (isFinnish ? "01:00 - 05:00 (halvin yöikkuna)" : "01:00 - 05:00 (cheapest overnight window)")}
-              </p>
-            </div>
-
             {/* Thermostat optimization — deterministic, not AI-dependent */}
-            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200/80 space-y-2">
+            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200/80 space-y-2">
               <span className="text-xs font-extrabold text-emerald-950 flex items-center gap-1.5">
                 <span>🌡️</span>
                 <span>{isFinnish ? "Termostaatin optimointi (-1°C)" : "Thermostat Optimization (-1°C)"}</span>
@@ -560,74 +530,22 @@ export function NordPoolEnergyOptimizerView({
                   : `Dropping the thermostat by 1°C right now (${outdoorTempCelsius}°C outside) saves this much in daily use.`}
               </p>
             </div>
-          </div>
 
-          <div className="p-3.5 rounded-2xl bg-slate-900 text-white text-xs space-y-1">
-            <div className="font-bold text-amber-400 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>{isFinnish ? "Lämmityksen AI-Vinkki:" : "Heating System AI Advice:"}</span>
+            {/* Heat pump + ventilation tips */}
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+              <p className="text-xs text-slate-700 leading-relaxed">
+                <span className="font-bold text-slate-900">🌡️ {isFinnish ? "Lämpöpumppu: " : "Heat pump: "}</span>
+                {aiEnergyPlan?.heatPumpTip ||
+                  (isFinnish
+                    ? "Pidä ilmalämpöpumppu jatkuvalla HEAT-tilalla kiinteällä puhallusnopeudella."
+                    : "Keep the heat pump on continuous HEAT mode (never AUTO) with a fixed fan speed.")}
+              </p>
+              <p className="text-xs text-slate-700 leading-relaxed">
+                <span className="font-bold text-slate-900">💨 {isFinnish ? "Ilmanvaihto: " : "Ventilation: "}</span>
+                {aiEnergyPlan?.ventilationAdjustment ||
+                  (isFinnish ? "Sulje LTO-laitteen kesäohitus pakkasella." : "Close the HRV summer bypass in freezing weather.")}
+              </p>
             </div>
-            <p className="text-slate-300 text-xs leading-relaxed">
-              {aiEnergyPlan?.heatPumpTip ||
-                "Keep ilmalämpöpumppu on continuous HEAT mode (never AUTO) with a fixed fan speed to distribute warmth deeply."}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Espoo Clean Heating Transition & Fortum Clean Heat Info */}
-      <div className="rounded-3xl bg-white border border-slate-200 p-6 sm:p-8 space-y-6 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full text-[12px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                Fortum Espoo Clean Heat
-              </span>
-              <span className="text-xs text-slate-500 font-medium">Microsoft Datacenter Heat Reuse in Hepokorpi & Kolabacka</span>
-            </div>
-            <h3 className="text-lg font-extrabold text-slate-900 mt-1">
-              {isFinnish ? "Miten Espoon Kaukolämpö Muuttuu Hiilineutraaliksi 2030?" : "How Espoo District Heating Achieves Net-Zero by 2030"}
-            </h3>
-          </div>
-
-          <div className="px-4 py-2 rounded-2xl bg-emerald-50 border border-emerald-100 text-center shrink-0">
-            <div className="text-xl font-black text-emerald-800">-85%</div>
-            <div className="text-[12px] text-emerald-900 font-bold">{isFinnish ? "Kaukolämmön päästöt 2030" : "District Heat Emissions 2030"}</div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
-            <div className="font-bold text-slate-900 flex items-center gap-1.5">
-              <span>{isFinnish ? "🖥️ Microsoft Datakeskusten Hukkalämpö" : "🖥️ Microsoft Data Center Waste Heat"}</span>
-            </div>
-            <p className="text-slate-600 leading-relaxed text-xs">
-              {isFinnish
-                ? "Espoon Hepokorven ja Kolabackan konesalien tuottama lämpö ohjataan suoraan kaukolämpöverkkoon, kattaen jopa 40% Espoon, Kauniaisten ja Kirkkonummen lämmitystarpeesta."
-                : "Excess heat from Microsoft's mega data centers in Hepokorpi & Kolabacka is fed directly into Fortum's district network, covering up to 40% of the entire metropolitan heating demand."}
-            </p>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
-            <div className="font-bold text-slate-900 flex items-center gap-1.5">
-              <span>{isFinnish ? "🌡️ Suomenojan ja Otaniemen Lämpöpumput" : "🌡️ Suomenoja & Otaniemi Heat Pumps"}</span>
-            </div>
-            <p className="text-slate-600 leading-relaxed text-xs">
-              {isFinnish
-                ? "Suomenojan jätevedenpuhdistamon ja meriveden lämmöntalteenotto hyödyntää teollisuusmittakaavan lämpöpumppuja korvaten kivihiilen lopullisesti."
-                : "Industrial seawater and wastewater heat pumps at Suomenoja and Otaniemi capture low-grade thermal energy to fully phase out fossil coal."}
-            </p>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
-            <div className="font-bold text-slate-900 flex items-center gap-1.5">
-              <span>{isFinnish ? "📉 Asukkaan 1°C Lämpötilasääntö" : "📉 Resident 1°C Temperature Rule"}</span>
-            </div>
-            <p className="text-slate-600 leading-relaxed text-xs">
-              {isFinnish
-                ? "Huonelämpötilan laskeminen 21°C:sta 20°C:een säästää 5% koko asunnon lämmitysenergiasta, vähentää pölyisyyttä ja parantaa unen laatua."
-                : "Dropping indoor room temperature from 21°C to 20°C (and bedrooms to 18°C) cuts total heating energy by 5%, reduces dust dryness, and improves sleep quality."}
-            </p>
           </div>
         </div>
       </div>

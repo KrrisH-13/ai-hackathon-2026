@@ -103,31 +103,40 @@ export const ESPOO_2030_ROADMAP_MEASURES: EspooRoadmapMeasure[] = [
   },
 ];
 
+/**
+ * CO2 figures below are calibrated to Finland's actual grid mix (nuclear +
+ * hydro + wind baseload, rarely leaning on fossil peakers or imports) rather
+ * than a generic European curve — a live Fingrid reading on a normal day
+ * runs roughly 5-90 g CO2/kWh, not the 140g "fossil peakers active" shape
+ * this used to have. See lib/ecopilot/gridPrice.ts for the live overlay;
+ * these are just the fallback for hours it can't cover (no key, or hours
+ * later than "now" — Fingrid's feed is real-time only, it can't forecast).
+ */
 export const MOCK_HOURLY_SPOT_PRICES: SpotPricePoint[] = [
-  { hour: 0, timeLabel: '00:00 - 01:00', priceCentsKwh: 1.8, gridCo2IntensityGramsKwh: 28, status: 'optimal', recommendation: 'Super cheap! Ideal for EV charging & water heater.' },
-  { hour: 1, timeLabel: '01:00 - 02:00', priceCentsKwh: 1.2, gridCo2IntensityGramsKwh: 24, status: 'optimal', recommendation: 'Lowest price of the night. Max clean wind power.' },
-  { hour: 2, timeLabel: '02:00 - 03:00', priceCentsKwh: 1.4, gridCo2IntensityGramsKwh: 25, status: 'optimal', recommendation: 'Optimal for dishwasher & washing machine timer.' },
-  { hour: 3, timeLabel: '03:00 - 04:00', priceCentsKwh: 1.7, gridCo2IntensityGramsKwh: 26, status: 'optimal', recommendation: 'Low grid demand, minimal emissions.' },
-  { hour: 4, timeLabel: '04:00 - 05:00', priceCentsKwh: 2.1, gridCo2IntensityGramsKwh: 30, status: 'optimal', recommendation: 'Cheap off-peak window.' },
-  { hour: 5, timeLabel: '05:00 - 06:00', priceCentsKwh: 3.5, gridCo2IntensityGramsKwh: 42, status: 'moderate', recommendation: 'Morning demand starting to rise.' },
-  { hour: 6, timeLabel: '06:00 - 07:00', priceCentsKwh: 6.8, gridCo2IntensityGramsKwh: 65, status: 'moderate', recommendation: 'Moderate pricing.' },
-  { hour: 7, timeLabel: '07:00 - 08:00', priceCentsKwh: 12.4, gridCo2IntensityGramsKwh: 95, status: 'expensive', recommendation: 'Morning peak! Avoid high-power appliances.' },
-  { hour: 8, timeLabel: '08:00 - 09:00', priceCentsKwh: 14.8, gridCo2IntensityGramsKwh: 110, status: 'peak', recommendation: 'Peak hours. Reserve heating or switch to eco-mode.' },
-  { hour: 9, timeLabel: '09:00 - 10:00', priceCentsKwh: 9.2, gridCo2IntensityGramsKwh: 80, status: 'moderate', recommendation: 'Normal daytime rate.' },
-  { hour: 10, timeLabel: '10:00 - 11:00', priceCentsKwh: 5.6, gridCo2IntensityGramsKwh: 55, status: 'moderate', recommendation: 'Good daytime window.' },
-  { hour: 11, timeLabel: '11:00 - 12:00', priceCentsKwh: 4.8, gridCo2IntensityGramsKwh: 48, status: 'moderate', recommendation: 'Solar generation picking up.' },
-  { hour: 12, timeLabel: '12:00 - 13:00', priceCentsKwh: 3.9, gridCo2IntensityGramsKwh: 42, status: 'optimal', recommendation: 'Solar surplus period. Great for laundry!' },
-  { hour: 13, timeLabel: '13:00 - 14:00', priceCentsKwh: 3.4, gridCo2IntensityGramsKwh: 40, status: 'optimal', recommendation: 'Low daytime price.' },
-  { hour: 14, timeLabel: '14:00 - 15:00', priceCentsKwh: 4.1, gridCo2IntensityGramsKwh: 45, status: 'optimal', recommendation: 'Affordable power.' },
-  { hour: 15, timeLabel: '15:00 - 16:00', priceCentsKwh: 5.9, gridCo2IntensityGramsKwh: 60, status: 'moderate', recommendation: 'Afternoon transition.' },
-  { hour: 16, timeLabel: '16:00 - 17:00', priceCentsKwh: 9.8, gridCo2IntensityGramsKwh: 88, status: 'moderate', recommendation: 'Pre-evening rise.' },
-  { hour: 17, timeLabel: '17:00 - 18:00', priceCentsKwh: 15.6, gridCo2IntensityGramsKwh: 125, status: 'peak', recommendation: 'EVENING PEAK! Delay sauna heating until 21:00.' },
-  { hour: 18, timeLabel: '18:00 - 19:00', priceCentsKwh: 18.2, gridCo2IntensityGramsKwh: 140, status: 'peak', recommendation: 'National peak demand. High fossil peakers active.' },
-  { hour: 19, timeLabel: '19:00 - 20:00', priceCentsKwh: 13.5, gridCo2IntensityGramsKwh: 105, status: 'expensive', recommendation: 'High price period.' },
-  { hour: 20, timeLabel: '20:00 - 21:00', priceCentsKwh: 8.4, gridCo2IntensityGramsKwh: 72, status: 'moderate', recommendation: 'Prices easing.' },
-  { hour: 21, timeLabel: '21:00 - 22:00', priceCentsKwh: 4.5, gridCo2IntensityGramsKwh: 48, status: 'optimal', recommendation: '✨ BEST SAUNA WINDOW! 75% cheaper than 18:00.' },
-  { hour: 22, timeLabel: '22:00 - 23:00', priceCentsKwh: 3.1, gridCo2IntensityGramsKwh: 38, status: 'optimal', recommendation: 'Great for night sauna & heating boost.' },
-  { hour: 23, timeLabel: '23:00 - 24:00', priceCentsKwh: 2.2, gridCo2IntensityGramsKwh: 32, status: 'optimal', recommendation: 'Night rate starts. Set EV timer.' },
+  { hour: 0, timeLabel: '00:00 - 01:00', priceCentsKwh: 1.8, gridCo2IntensityGramsKwh: 12, status: 'optimal', recommendation: 'Super cheap! Ideal for EV charging & water heater.' },
+  { hour: 1, timeLabel: '01:00 - 02:00', priceCentsKwh: 1.2, gridCo2IntensityGramsKwh: 10, status: 'optimal', recommendation: 'Lowest price of the night. Max clean wind power.' },
+  { hour: 2, timeLabel: '02:00 - 03:00', priceCentsKwh: 1.4, gridCo2IntensityGramsKwh: 9, status: 'optimal', recommendation: 'Optimal for dishwasher & washing machine timer.' },
+  { hour: 3, timeLabel: '03:00 - 04:00', priceCentsKwh: 1.7, gridCo2IntensityGramsKwh: 9, status: 'optimal', recommendation: 'Low grid demand, minimal emissions.' },
+  { hour: 4, timeLabel: '04:00 - 05:00', priceCentsKwh: 2.1, gridCo2IntensityGramsKwh: 10, status: 'optimal', recommendation: 'Cheap off-peak window.' },
+  { hour: 5, timeLabel: '05:00 - 06:00', priceCentsKwh: 3.5, gridCo2IntensityGramsKwh: 14, status: 'moderate', recommendation: 'Morning demand starting to rise.' },
+  { hour: 6, timeLabel: '06:00 - 07:00', priceCentsKwh: 6.8, gridCo2IntensityGramsKwh: 22, status: 'moderate', recommendation: 'Moderate pricing.' },
+  { hour: 7, timeLabel: '07:00 - 08:00', priceCentsKwh: 12.4, gridCo2IntensityGramsKwh: 35, status: 'expensive', recommendation: 'Morning peak! Avoid high-power appliances.' },
+  { hour: 8, timeLabel: '08:00 - 09:00', priceCentsKwh: 14.8, gridCo2IntensityGramsKwh: 42, status: 'peak', recommendation: 'Peak hours. Reserve heating or switch to eco-mode.' },
+  { hour: 9, timeLabel: '09:00 - 10:00', priceCentsKwh: 9.2, gridCo2IntensityGramsKwh: 32, status: 'moderate', recommendation: 'Normal daytime rate.' },
+  { hour: 10, timeLabel: '10:00 - 11:00', priceCentsKwh: 5.6, gridCo2IntensityGramsKwh: 24, status: 'moderate', recommendation: 'Good daytime window.' },
+  { hour: 11, timeLabel: '11:00 - 12:00', priceCentsKwh: 4.8, gridCo2IntensityGramsKwh: 18, status: 'moderate', recommendation: 'Solar generation picking up.' },
+  { hour: 12, timeLabel: '12:00 - 13:00', priceCentsKwh: 3.9, gridCo2IntensityGramsKwh: 14, status: 'optimal', recommendation: 'Solar surplus period. Great for laundry!' },
+  { hour: 13, timeLabel: '13:00 - 14:00', priceCentsKwh: 3.4, gridCo2IntensityGramsKwh: 13, status: 'optimal', recommendation: 'Low daytime price.' },
+  { hour: 14, timeLabel: '14:00 - 15:00', priceCentsKwh: 4.1, gridCo2IntensityGramsKwh: 14, status: 'optimal', recommendation: 'Affordable power.' },
+  { hour: 15, timeLabel: '15:00 - 16:00', priceCentsKwh: 5.9, gridCo2IntensityGramsKwh: 20, status: 'moderate', recommendation: 'Afternoon transition.' },
+  { hour: 16, timeLabel: '16:00 - 17:00', priceCentsKwh: 9.8, gridCo2IntensityGramsKwh: 30, status: 'moderate', recommendation: 'Pre-evening rise.' },
+  { hour: 17, timeLabel: '17:00 - 18:00', priceCentsKwh: 15.6, gridCo2IntensityGramsKwh: 45, status: 'peak', recommendation: 'EVENING PEAK! Delay sauna heating until 21:00.' },
+  { hour: 18, timeLabel: '18:00 - 19:00', priceCentsKwh: 18.2, gridCo2IntensityGramsKwh: 52, status: 'peak', recommendation: 'National peak demand — price spikes more than emissions on Finland’s clean grid.' },
+  { hour: 19, timeLabel: '19:00 - 20:00', priceCentsKwh: 13.5, gridCo2IntensityGramsKwh: 40, status: 'expensive', recommendation: 'High price period.' },
+  { hour: 20, timeLabel: '20:00 - 21:00', priceCentsKwh: 8.4, gridCo2IntensityGramsKwh: 28, status: 'moderate', recommendation: 'Prices easing.' },
+  { hour: 21, timeLabel: '21:00 - 22:00', priceCentsKwh: 4.5, gridCo2IntensityGramsKwh: 18, status: 'optimal', recommendation: '✨ BEST SAUNA WINDOW! 75% cheaper than 18:00.' },
+  { hour: 22, timeLabel: '22:00 - 23:00', priceCentsKwh: 3.1, gridCo2IntensityGramsKwh: 14, status: 'optimal', recommendation: 'Great for night sauna & heating boost.' },
+  { hour: 23, timeLabel: '23:00 - 24:00', priceCentsKwh: 2.2, gridCo2IntensityGramsKwh: 12, status: 'optimal', recommendation: 'Night rate starts. Set EV timer.' },
 ];
 
 export const COMMON_CLIMATE_ACTIONS: ClimateActionItem[] = [

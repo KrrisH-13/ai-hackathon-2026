@@ -206,6 +206,15 @@ export async function projectWhatIfScenarioAPI(question: string, userProfile: Us
   }
 }
 
+export async function suggestHeatingOptimizationsAPI(userProfile: UserProfile): Promise<WhatIfProjection[]> {
+  try {
+    return await postJson(API_ROUTES.aiSuggestHeating, { userProfile });
+  } catch (error) {
+    console.error("Suggest heating API client error:", error);
+    return [];
+  }
+}
+
 export async function scanReceiptAPI(imageBase64: string): Promise<GroceryReceiptResult> {
   try {
     return await postJson(API_ROUTES.aiScanReceipt, { imageBase64 });

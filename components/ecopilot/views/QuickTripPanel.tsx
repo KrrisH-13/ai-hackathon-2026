@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, ArrowLeftRight, MapPinOff, RotateCw as Spinner, Undo2, Zap } from "lucide-react";
+import { Flame, MapPinOff, RotateCw as Spinner, Undo2, Zap } from "lucide-react";
 import type { UserProfile } from "@/lib/ecopilot/types";
 import type { QuickTrip } from "@/lib/ecopilot/frequentPlaces";
 import {
@@ -12,13 +12,11 @@ import {
   PLACE_MODE_LABEL,
 } from "@/lib/ecopilot/frequentPlaces";
 import { DEFAULT_COUNTRY } from "@/lib/ecopilot/emissionFactors";
+import { NORDIC_EMISSION_FACTORS } from "@/lib/ecopilot/calculations";
 import { addCo2LogAPI, deleteCo2LogAPI } from "@/lib/ecopilot/profileClient";
 import { FREQUENT_PLACE_ICONS } from "@/components/ecopilot/frequentPlaceIcons";
 import { ACTIVITY_MODE_ICONS } from "@/components/ecopilot/activityIcons";
 import { InfoHint } from "@/components/ecopilot/InfoHint";
-
-/** Whether a click logs one leg (home → place) or the there-and-back pair. */
-type Direction = "oneWay" | "roundTrip";
 
 interface QuickTripPanelProps {
   isFinnish: boolean;
@@ -41,15 +39,20 @@ interface LastLog {
 }
 
 /** Mirrors ActivityLoggerView's description format so quick and typed entries read alike in the ledger. */
-function buildTripDescription(trip: QuickTrip, direction: Direction, distanceKm: number, isFinnish: boolean): string {
+function buildTripDescription(trip: QuickTrip, distanceKm: number, isFinnish: boolean): string {
   const home = isFinnish ? "Koti" : "Home";
   const modeLabel = PLACE_MODE_LABEL[trip.mode];
   const mode = isFinnish ? modeLabel.fi : modeLabel.en;
-  const route =
-    direction === "roundTrip"
-      ? `${home} ↔ ${trip.place.label} · ${mode} (${isFinnish ? "meno-paluu" : "round trip"})`
-      : `${home} → ${trip.place.label} · ${mode}`;
+  const route = `${home} → ${trip.place.label} · ${mode}`;
   return `${route} (${distanceKm} km, ${DEFAULT_COUNTRY})`.slice(0, 200);
+}
+
+/** 6.8kW kiuas run for 1h, priced with the direct-electric (or wood) grid factor — a rough, illustrative figure, matching calculateDeterministicSaunaImpact's default kiuas power. */
+const SAUNA_SESSION_KWH = 6.8;
+
+function saunaSessionCo2Kg(saunaType: UserProfile["saunaType"]): number {
+  const factor = saunaType === "wood" ? NORDIC_EMISSION_FACTORS.WOOD_NET : NORDIC_EMISSION_FACTORS.DIRECT_ELECTRIC;
+  return Math.round(((SAUNA_SESSION_KWH * factor) / 1000) * 100) / 100;
 }
 
 /**
@@ -60,8 +63,8 @@ function buildTripDescription(trip: QuickTrip, direction: Direction, distanceKm:
  * it has no page shell of its own.
  */
 export function QuickTripPanel({ isFinnish, userProfile, profileHref, placesHref, source, onLogged }: QuickTripPanelProps) {
-  const [direction, setDirection] = useState<Direction>("oneWay");
   const [pendingPlaceId, setPendingPlaceId] = useState<string | null>(null);
+  const [isSaunaPending, setIsSaunaPending] = useState(false);
   const [lastLog, setLastLog] = useState<LastLog | null>(null);
   const [isUndoing, setIsUndoing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -69,19 +72,20 @@ export function QuickTripPanel({ isFinnish, userProfile, profileHref, placesHref
   const trips = useMemo(() => buildQuickTrips(userProfile), [userProfile]);
   const placesMissingAddress = countPlacesWithoutCoordinates(userProfile);
   const hasHomeCoords = userProfile.homeLat != null && userProfile.homeLon != null;
-  const multiplier = direction === "roundTrip" ? 2 : 1;
+  const showSaunaQuick = userProfile.saunaTimesPerWeek > 0;
+  const isAnyPending = pendingPlaceId !== null || isSaunaPending;
 
-  /** One-way distance scaled for the selected direction, rounded the way the estimator rounds. */
-  const legDistanceKm = (trip: QuickTrip) => Math.round(trip.distanceKm * multiplier * 10) / 10;
+  /** One-way distance, rounded the way the estimator rounds. */
+  const legDistanceKm = (trip: QuickTrip) => Math.round(trip.distanceKm * 10) / 10;
 
   const handleQuickLog = async (trip: QuickTrip) => {
-    if (pendingPlaceId) return;
+    if (isAnyPending) return;
     setPendingPlaceId(trip.place.id);
     setErrorMessage(null);
     setLastLog(null);
     try {
       const distanceKm = legDistanceKm(trip);
-      const description = buildTripDescription(trip, direction, distanceKm, isFinnish);
+      const description = buildTripDescription(trip, distanceKm, isFinnish);
       const log = await addCo2LogAPI({
         category: "transport",
         description,
@@ -94,6 +98,28 @@ export function QuickTripPanel({ isFinnish, userProfile, profileHref, placesHref
       setErrorMessage(err instanceof Error ? err.message : "Failed to log that trip");
     } finally {
       setPendingPlaceId(null);
+    }
+  };
+
+  const handleQuickLogSauna = async () => {
+    if (isAnyPending) return;
+    setIsSaunaPending(true);
+    setErrorMessage(null);
+    setLastLog(null);
+    try {
+      const description = isFinnish ? "Saunominen (1 h)" : "Sauna session (1h)";
+      const log = await addCo2LogAPI({
+        category: "energy",
+        description,
+        co2Kg: saunaSessionCo2Kg(userProfile.saunaType),
+        source,
+      });
+      setLastLog({ id: log.id, summary: description });
+      onLogged?.();
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Failed to log that sauna session");
+    } finally {
+      setIsSaunaPending(false);
     }
   };
 
@@ -160,36 +186,9 @@ export function QuickTripPanel({ isFinnish, userProfile, profileHref, placesHref
             example={isFinnish ? "Koti → Työ · Bussi · 8,4 km" : "Home → Work · Bus · 8.4 km"}
           />
         </h3>
-
-        {trips.length > 0 && (
-          <div className="flex gap-1 p-1 rounded-xl bg-slate-100 border border-slate-200">
-            {(["oneWay", "roundTrip"] as const).map((option) => (
-              <button
-                key={option}
-                type="button"
-                onClick={() => setDirection(option)}
-                aria-pressed={direction === option}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-bold transition ${
-                  direction === option ? "bg-white text-fuchsia-700 shadow-xs" : "text-slate-500 hover:text-slate-800"
-                }`}
-              >
-                {option === "oneWay" ? <ArrowRight className="w-3 h-3" /> : <ArrowLeftRight className="w-3 h-3" />}
-                <span>
-                  {option === "oneWay"
-                    ? isFinnish
-                      ? "Yhdensuuntainen"
-                      : "One way"
-                    : isFinnish
-                      ? "Meno-paluu"
-                      : "Round trip"}
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
-      {trips.length === 0 ? (
+      {trips.length === 0 && !showSaunaQuick ? (
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-2xl bg-slate-50 border border-dashed border-slate-300">
           <MapPinOff className="w-4 h-4 text-slate-400 shrink-0" />
           <p className="text-xs text-slate-600 flex-1">{emptyState.message}</p>
@@ -203,6 +202,31 @@ export function QuickTripPanel({ isFinnish, userProfile, profileHref, placesHref
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+            {showSaunaQuick && (
+              <button
+                type="button"
+                onClick={handleQuickLogSauna}
+                disabled={isAnyPending}
+                title={isFinnish ? "Perustuu profiilin saunatyyppiin, 1h istunto" : "Based on your profile's sauna type, 1h session"}
+                className="group flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200 hover:border-fuchsia-300 hover:bg-fuchsia-50/60 disabled:opacity-50 disabled:hover:border-slate-200 disabled:hover:bg-slate-50 transition text-left"
+              >
+                <div className="w-9 h-9 rounded-xl bg-white border border-slate-200 group-hover:border-fuchsia-200 flex items-center justify-center shrink-0">
+                  {isSaunaPending ? (
+                    <Spinner className="w-4 h-4 text-fuchsia-600 animate-spin" />
+                  ) : (
+                    <Flame className="w-4 h-4 text-slate-600 group-hover:text-fuchsia-700" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold text-slate-900 truncate">
+                    {isFinnish ? "Saunominen" : "Sauna session"}
+                  </p>
+                  <span className="flex items-center gap-1 text-[12px] text-slate-500">
+                    <span className="truncate">1h · {saunaSessionCo2Kg(userProfile.saunaType)} kg CO2e</span>
+                  </span>
+                </div>
+              </button>
+            )}
             {trips.map((trip) => {
               const PlaceIcon = FREQUENT_PLACE_ICONS[trip.place.icon];
               const ModeIcon = ACTIVITY_MODE_ICONS[trip.mode];
@@ -214,7 +238,7 @@ export function QuickTripPanel({ isFinnish, userProfile, profileHref, placesHref
                   key={trip.place.id}
                   type="button"
                   onClick={() => handleQuickLog(trip)}
-                  disabled={pendingPlaceId !== null}
+                  disabled={isAnyPending}
                   title={
                     [
                       trip.place.address,
@@ -240,7 +264,7 @@ export function QuickTripPanel({ isFinnish, userProfile, profileHref, placesHref
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-bold text-slate-900 truncate">
-                      {isFinnish ? "Koti" : "Home"} {direction === "roundTrip" ? "↔" : "→"} {trip.place.label}
+                      {isFinnish ? "Koti" : "Home"} → {trip.place.label}
                     </p>
                     <span className="flex items-center gap-1 text-[12px] text-slate-500">
                       <ModeIcon className="w-3 h-3 shrink-0" />
@@ -255,11 +279,13 @@ export function QuickTripPanel({ isFinnish, userProfile, profileHref, placesHref
             })}
           </div>
 
-          <p className="text-[12px] text-slate-400">
-            {isFinnish
-              ? "Arvio perustuu tallennettuihin koordinaatteihin ja paikan kulkutapaan — vaihda paikan kulkutapa profiilissa, jos matkustat toisin."
-              : "Estimated from the saved coordinates and each place's transport mode — change a place's mode in your profile if you travel differently."}
-          </p>
+          {trips.length > 0 && (
+            <p className="text-[12px] text-slate-400">
+              {isFinnish
+                ? "Arvio perustuu tallennettuihin koordinaatteihin ja paikan kulkutapaan — vaihda paikan kulkutapa profiilissa, jos matkustat toisin."
+                : "Estimated from the saved coordinates and each place's transport mode — change a place's mode in your profile if you travel differently."}
+            </p>
+          )}
         </>
       )}
 
