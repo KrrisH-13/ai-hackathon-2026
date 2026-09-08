@@ -28,6 +28,8 @@ interface EcopilotAppProps {
   spotPrices: SpotPricePoint[];
   /** Whether the live spot-price fetch actually succeeded this page load. */
   isLiveSpotPrices: boolean;
+  /** Whether the live Fingrid grid CO2 intensity fetch actually succeeded this page load. */
+  isLiveCo2Intensity: boolean;
 }
 
 /**
@@ -45,6 +47,7 @@ export function EcopilotApp({
   initialOutdoorTempCelsius,
   spotPrices,
   isLiveSpotPrices,
+  isLiveCo2Intensity,
 }: EcopilotAppProps) {
   const [profile] = useState<UserProfile>(initialProfile);
   // EcopilotPageShell (Profile, Favourite Locations) can't flip this state
@@ -116,6 +119,7 @@ export function EcopilotApp({
               outdoorTempCelsius={initialOutdoorTempCelsius}
               spotPrices={spotPrices}
               isLiveSpotPrices={isLiveSpotPrices}
+              isLiveCo2Intensity={isLiveCo2Intensity}
               isFinnish={isFinnish}
             />
           )}

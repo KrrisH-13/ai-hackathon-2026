@@ -85,6 +85,15 @@ const CONFIDENCE_LABEL: Record<WhatIfProjection["confidence"], { en: string; fi:
   low: { en: "Low confidence", fi: "Matala luotettavuus", className: "bg-slate-100 text-slate-700 border-slate-200" },
 };
 
+/**
+ * Suggestions survive here (module scope, not component state) because
+ * EcopilotApp mounts/unmounts each tab's view on every switch — without this,
+ * revisiting the What-If tab would re-run every HSL/Gemini call from scratch
+ * each time. Cleared on a full page reload; can go stale if the profile
+ * changes mid-session without one (acceptable — a rare case for a per-session cache).
+ */
+const suggestionsCache = new Map<string, Suggestion[]>();
+
 export function WhatIfView({ userProfile, isFinnish }: WhatIfViewProps) {
   const [draft, setDraft] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -94,11 +103,14 @@ export function WhatIfView({ userProfile, isFinnish }: WhatIfViewProps) {
   const [isLogging, setIsLogging] = useState(false);
   const [loggedKeys, setLoggedKeys] = useState<Set<string>>(new Set());
   const [logError, setLogError] = useState<string | null>(null);
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(true);
+  const cached = suggestionsCache.get(userProfile.id);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>(cached ?? []);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(!cached);
   const prompts = isFinnish ? EXAMPLE_PROMPTS_FI : EXAMPLE_PROMPTS_EN;
 
   useEffect(() => {
+    if (suggestionsCache.has(userProfile.id)) return;
+
     let cancelled = false;
 
     async function loadSuggestions() {
@@ -121,8 +133,10 @@ export function WhatIfView({ userProfile, isFinnish }: WhatIfViewProps) {
         ),
       ]);
 
+      const merged = [...transportSuggestions, ...heatingSuggestions];
+      suggestionsCache.set(userProfile.id, merged);
       if (!cancelled) {
-        setSuggestions([...transportSuggestions, ...heatingSuggestions]);
+        setSuggestions(merged);
         setIsLoadingSuggestions(false);
       }
     }
@@ -131,8 +145,8 @@ export function WhatIfView({ userProfile, isFinnish }: WhatIfViewProps) {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- one personalized batch per profile snapshot, mirrors ActivityLoggerView's mount-only load
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one personalized batch per profile id (see suggestionsCache above)
+  }, [userProfile.id]);
 
   const isCurrentAdded = projection ? planItems.includes(projection) : false;
   const projectionKey = projection ? projection.question + projection.narrative : null;
